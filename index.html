@@ -1752,6 +1752,21 @@ function saveActionsToken() {
   showToast('✅ Token Actions zapisany', 'ok');
 }
 
+async function checkRunningWorkflow() {
+  if (!_actionsToken) return null;
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/runs?per_page=1`,
+      { headers: { Authorization: `Bearer ${_actionsToken}`, 'User-Agent': 'KA-Asystent' } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const run = data.workflow_runs?.[0];
+    if (!run) return null;
+    return { status: run.status, conclusion: run.conclusion, url: run.html_url, updatedAt: run.updated_at };
+  } catch { return null; }
+}
+
 async function triggerScan() {
   if (!_actionsToken) {
     showToast('⚠️ Wpisz token GitHub Actions w ustawieniach (⚙️)', 'warn');
@@ -1769,7 +1784,23 @@ async function triggerScan() {
 
   try {
     const btn = document.getElementById('trigger-scan-btn');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Wysyłanie...'; }
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Sprawdzanie...'; }
+
+    // Sprawdź czy nie ma już trwającego runu
+    const lastRun = await checkRunningWorkflow();
+    if (lastRun && (lastRun.status === 'in_progress' || lastRun.status === 'queued')) {
+      showToast('⚠️ Skan już trwa na GitHubie — poczekaj na zakończenie', 'warn');
+      if (btn) { btn.disabled = false; btn.textContent = '🚀 Uruchom skan'; }
+      // Pokaż status aktualnego runu
+      const statusBox = document.getElementById('scan-status-box');
+      if (statusBox) statusBox.style.display = 'block';
+      const phaseEl = document.getElementById('scan-phase-label');
+      if (phaseEl) { phaseEl.textContent = lastRun.status === 'queued' ? '⏳ Oczekuje na runner...' : '🕷️ Trwa na GitHubie...'; phaseEl.style.color = '#E88B00'; }
+      startScanPolling();
+      return;
+    }
+
+    if (btn) btn.textContent = '⏳ Wysyłanie...';
 
     const res = await fetch(
       `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/dispatches`,
@@ -1825,7 +1856,8 @@ async function pollScanStatus() {
     const gist = await res.json();
     const file = gist.files && gist.files['ka-status.json'];
     if (!file) return;
-    const status = JSON.parse(file.content);
+    let status = JSON.parse(file.content);
+
     renderScanStatus(status);
 
     // Zatrzymaj polling gdy idle lub done/error i minęło 60s od updatedAt
@@ -1841,7 +1873,7 @@ async function pollScanStatus() {
 
 function renderScanStatus(status) {
   const phaseLabels = {
-    idle:      '💤 Czeka na komendę',
+    idle:      '💤 Gotowy',
     scraping:  '🕷️ Scrapowanie...',
     analyzing: '🤖 Analiza Gemini...',
     done:      '✅ Gotowe!',
