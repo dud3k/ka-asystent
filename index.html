@@ -119,6 +119,18 @@
     <button onclick="saveApiKey()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
   </div>
   <div style="font-size:11px;color:#aaa;margin-top:6px">Klucz API umożliwia analizę screenshotów i generowanie wiadomości. Klucz jest przechowywany tylko w tej sesji — po zamknięciu karty trzeba wpisać ponownie.</div>
+  <div style="margin-top:14px;border-top:1px solid #e8dfc9;padding-top:12px">
+    <div style="font-size:13px;font-weight:700;color:#888;margin-bottom:8px">☁️ GitHub Gist (sync danych)</div>
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <input type="password" id="github-token-input" placeholder="ghp_... (GitHub Token)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <input type="text" id="gist-id-input" placeholder="ID Gista (z URL gist.github.com)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
+      <button onclick="saveGistConfig()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Połącz</button>
+    </div>
+    <div id="gist-status" style="font-size:11px;color:#aaa;margin-top:4px"></div>
+    <div style="font-size:11px;color:#aaa;margin-top:4px">Token przechowywany tylko w tej sesji. ID Gista zapamiętane lokalnie. Utwórz prywatny Gist na <a href="https://gist.github.com" target="_blank" style="color:#E88B00">gist.github.com</a> z plikiem <code>ka-data.json</code>.</div>
+  </div>
 </div>
 
 <div id="screen-home" class="screen active">
@@ -223,6 +235,13 @@
     <button class="btn" onclick="fixSortDates()" style="width:100%;font-size:13px;padding:10px;background:#2471a3;margin-bottom:8px">🔧 Napraw sortowanie dat</button>
     <button class="btn" onclick="diagSortDates()" style="width:100%;font-size:13px;padding:10px;background:#555;margin-bottom:8px">🔍 Diagnostyka dat (pokaż w konsoli)</button>
     <button class="btn" onclick="if(confirm('Wyczyścić wszystkie dane?')){localStorage.setItem('ka_items_v2','[]');location.reload()}" style="width:100%;font-size:13px;padding:10px;background:#c0392b">🗑️ Wyczyść wszystkie dane</button>
+  </div>
+
+  <div class="card sync-section">
+    <h3>☁️ Krok 4: Import patch z chmury (Gist)</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Pobiera <code>ka-patch.json</code> z Gist i automatycznie aplikuje. Po sukcesie usuwa plik z Gist.</p>
+    <button class="btn" onclick="gistImportPatch()" style="width:100%">☁️ Importuj patch z Gist</button>
+    <div id="gist-patch-report"></div>
   </div>
 
   <div class="card sync-section">
@@ -461,6 +480,7 @@ function toggleSettings() {
   if (p.style.display === 'block') {
     const inp = document.getElementById('apikey-input');
     if (inp) inp.value = getApiKey() || '';
+    loadGistConfig();
   }
 }
 // Migrate old key from localStorage (one-time cleanup)
@@ -485,7 +505,15 @@ function loadItems() {
   items = PREFILLED.map(i => ({ ...i }));
   saveItems();
 }
-function saveItems() { localStorage.setItem('ka_items_v2', JSON.stringify(items)); }
+let _gistSaveTimer = null;
+function gistSaveDebounced() {
+  clearTimeout(_gistSaveTimer);
+  _gistSaveTimer = setTimeout(gistSave, 5000);
+}
+function saveItems() {
+  localStorage.setItem('ka_items_v2', JSON.stringify(items));
+  gistSaveDebounced();
+}
 function getItem(id) { return items.find(i => i.id === id) || null; }
 function trackChange(item, field, newValue, source = 'manual') {
   if (!item.changelog) item.changelog = [];
@@ -1516,8 +1544,157 @@ function applyPatch() {
 
 // ── End Sync ─────────────────────────────────────────────────────────────────
 
+// ── Gist Sync ────────────────────────────────────────────────────────────────
+
+let _githubToken = null;
+
+function showToast(msg, type = 'ok') {
+  let t = document.getElementById('ka-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'ka-toast';
+    t.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;pointer-events:none;transition:opacity .3s;max-width:90vw;text-align:center;font-family:inherit';
+    document.body.appendChild(t);
+  }
+  const colors = { ok: '#2ecc71', error: '#e74c3c', warn: '#E88B00', info: '#555' };
+  t.style.background = colors[type] || colors.info;
+  t.style.color = '#fff';
+  t.style.opacity = '1';
+  t.textContent = msg;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 3000);
+}
+
+function getGistConfig() {
+  const token = _githubToken;
+  const gistId = localStorage.getItem('ka_gist_id');
+  if (!token || !gistId) return null;
+  return { token, gistId };
+}
+
+function saveGistConfig() {
+  const token = document.getElementById('github-token-input')?.value?.trim();
+  const gistId = document.getElementById('gist-id-input')?.value?.trim();
+  const statusEl = document.getElementById('gist-status');
+  if (!token || !gistId) {
+    if (statusEl) statusEl.textContent = '⚠️ Wpisz token i ID Gista';
+    return;
+  }
+  _githubToken = token;
+  localStorage.setItem('ka_gist_id', gistId);
+  if (statusEl) statusEl.textContent = '☁️ Połączono — zapisuję dane...';
+  document.getElementById('github-token-input').value = '';
+  gistSave().then(() => {
+    if (statusEl) statusEl.textContent = '☁️ Połączono i zsynchronizowano';
+  }).catch(() => {
+    if (statusEl) statusEl.textContent = '⚠️ Połączono, ale zapis się nie powiódł';
+  });
+}
+
+async function gistSave() {
+  const cfg = getGistConfig();
+  if (!cfg) return;
+  const data = {
+    version: 'ka_items_v2',
+    savedAt: new Date().toISOString(),
+    items
+  };
+  try {
+    const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
+      body: JSON.stringify({ files: { 'ka-data.json': { content: JSON.stringify(data, null, 2) } } })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    localStorage.setItem('ka_last_gist_save', data.savedAt);
+    showToast('☁️ Zapisano', 'ok');
+  } catch (err) {
+    showToast('⚠️ Zapis offline', 'warn');
+    throw err;
+  }
+}
+
+async function gistLoad() {
+  const cfg = getGistConfig();
+  if (!cfg) return;
+  try {
+    const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      headers: { Authorization: `Bearer ${cfg.token}`, 'User-Agent': 'KA-Asystent' }
+    });
+    if (!res.ok) return;
+    const gist = await res.json();
+    const file = gist.files && gist.files['ka-data.json'];
+    if (!file) return;
+    const remote = JSON.parse(file.content);
+    if (!remote.items) return;
+    const localSave = localStorage.getItem('ka_last_gist_save');
+    const remoteSavedAt = remote.savedAt || '';
+    if (!localSave || remoteSavedAt > localSave) {
+      items = remote.items;
+      saveItems();
+      showToast('☁️ Dane załadowane z chmury', 'info');
+      renderHome();
+    } else if (localSave > remoteSavedAt) {
+      if (confirm('Lokalne dane są nowsze niż w Gist. Nadpisać chmurę?')) {
+        await gistSave();
+      }
+    }
+  } catch {}
+}
+
+async function gistImportPatch() {
+  const cfg = getGistConfig();
+  if (!cfg) { showToast('⚠️ Skonfiguruj Gist w ustawieniach', 'warn'); return; }
+  const reportEl = document.getElementById('gist-patch-report');
+  if (reportEl) reportEl.innerHTML = '<div style="color:#aaa;font-size:13px">Pobieranie...</div>';
+  try {
+    const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      headers: { Authorization: `Bearer ${cfg.token}`, 'User-Agent': 'KA-Asystent' }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const gist = await res.json();
+    const file = gist.files && gist.files['ka-patch.json'];
+    if (!file) {
+      if (reportEl) reportEl.innerHTML = '<div style="color:#aaa;font-size:13px">Brak ka-patch.json w Gist — nic do zaimportowania.</div>';
+      return;
+    }
+    const patch = JSON.parse(file.content);
+    const report = executePatch(patch, false, false);
+    renderPatchReport(report, false);
+    renderSyncOverview();
+    if (reportEl) {
+      const u = report.updated.length, c = report.created.length, sk = report.skipped.length;
+      reportEl.innerHTML = `<div class="sync-report" style="margin-top:8px">✅ Zaaplikowano patch z Gist: ${u} zaktualizowanych, ${c} nowych, ${sk} pominiętych</div>`;
+    }
+    // Usuń ka-patch.json z Gist
+    await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
+      body: JSON.stringify({ files: { 'ka-patch.json': { content: null } } })
+    });
+    showToast('✅ Patch zaaplikowany', 'ok');
+  } catch (err) {
+    if (reportEl) reportEl.innerHTML = `<div class="sync-report error">❌ Błąd: ${esc(err.message)}</div>`;
+    showToast('❌ Błąd importu', 'error');
+  }
+}
+
+function loadGistConfig() {
+  const gistId = localStorage.getItem('ka_gist_id');
+  const statusEl = document.getElementById('gist-status');
+  if (gistId && statusEl) {
+    statusEl.textContent = `ID Gista zapamiętane: ${gistId.slice(0,8)}... — podaj token żeby połączyć`;
+  }
+  const idInput = document.getElementById('gist-id-input');
+  if (idInput && gistId) idInput.value = gistId;
+}
+
+// ── End Gist ──────────────────────────────────────────────────────────────────
+
 migrateApiKey();
-loadItems();  renderHome();
+loadItems();
+gistLoad();
+renderHome();
 </script>
 <script>
   if ('serviceWorker' in navigator)
