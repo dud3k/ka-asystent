@@ -185,6 +185,34 @@
     <div style="font-size:12px;color:var(--muted);line-height:1.5">Eksportuj dane do Claude → pobierz aktualizacje → importuj patch</div>
   </div>
 
+  <div class="card sync-section" id="remote-scan-card">
+    <h3>🚀 Zdalne skanowanie</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Uruchamia scraper + Gemini na PC zdalnie przez Gist. PC musi mieć uruchomiony <code>node watch.js</code>.</p>
+    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+      <select id="scan-days" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;font-family:inherit">
+        <option value="2">Ostatnie 2 dni</option>
+        <option value="3" selected>Ostatnie 3 dni</option>
+        <option value="7">Ostatnie 7 dni</option>
+        <option value="30">Ostatnie 30 dni</option>
+      </select>
+      <input type="number" id="scan-limit" min="1" max="99" placeholder="limit" title="Limit konwersacji (puste = wszystkie)" style="width:70px;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;text-align:center;font-family:inherit">
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="scan-no-images" style="width:16px;height:16px;cursor:pointer">
+      Bez screenshotów (szybciej, mniejszy koszt Gemini)
+    </label>
+    <button class="btn" onclick="triggerScan()" id="trigger-scan-btn" style="width:100%;margin-bottom:10px">🚀 Uruchom skan</button>
+    <div id="scan-status-box" style="display:none;background:#1a1a2e;border-radius:10px;padding:12px;font-size:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span id="scan-phase-label" style="font-weight:700;font-size:13px"></span>
+        <span id="scan-step-label" style="color:#aaa"></span>
+      </div>
+      <div id="scan-log-lines" style="color:#aaa;line-height:1.6;font-size:11px;font-family:monospace"></div>
+      <div style="margin-top:8px;font-size:11px;color:#555" id="scan-updated-label"></div>
+    </div>
+    <div id="scan-last-scan" style="font-size:11px;color:#aaa;margin-top:6px"></div>
+  </div>
+
   <div class="card sync-section">
     <h3>📋 Krok 1: Eksport danych</h3>
     <p>Kopiuje pełny stan aplikacji (z wiadomościami) do schowka. Wklej go do Claude jako kontekst.</p>
@@ -643,7 +671,7 @@ function showScreen(name) {
   const title = document.getElementById('header-title');
   if (name === 'home') { backBtn.style.display = 'none'; title.innerHTML = '🛒 KA Asystent <span style="font-size:10px;color:#aaa;font-weight:400">v2.8 · Święty Józef</span>'; sub.style.display = 'none'; renderHome(); }
   else if (name === 'upload') { backBtn.style.display = 'block'; title.textContent = '📸 Analiza screenshota'; sub.style.display = 'none'; }
-  else if (name === 'sync') { backBtn.style.display = 'block'; title.textContent = '🔄 Synchronizacja'; sub.style.display = 'none'; renderSyncOverview(); }
+  else if (name === 'sync') { backBtn.style.display = 'block'; title.textContent = '🔄 Synchronizacja'; sub.style.display = 'none'; renderSyncOverview(); initRemoteScan(); }
   else if (name === 'item') {
     backBtn.style.display = 'block';
     const cur = getItem(currentId);
@@ -1689,7 +1717,141 @@ function loadGistConfig() {
   if (idInput && gistId) idInput.value = gistId;
 }
 
-// ── End Gist ──────────────────────────────────────────────────────────────────
+// ── Remote Scan ───────────────────────────────────────────────────────────────
+
+let _scanPollTimer = null;
+
+async function triggerScan() {
+  const cfg = getGistConfig();
+  if (!cfg) { showToast('⚠️ Skonfiguruj Gist w ustawieniach (⚙️)', 'warn'); return; }
+
+  const days     = parseInt(document.getElementById('scan-days')?.value || '3', 10);
+  const noImages = document.getElementById('scan-no-images')?.checked || false;
+  const limitRaw = document.getElementById('scan-limit')?.value?.trim();
+  const limit    = limitRaw ? parseInt(limitRaw, 10) : null;
+
+  if (limit !== null && (isNaN(limit) || limit < 1)) {
+    showToast('⚠️ Limit musi być liczbą >= 1', 'warn'); return;
+  }
+
+  const command = {
+    command:     'scrape',
+    days,
+    noImages,
+    limit:       limit || null,
+    requestedAt: new Date().toISOString()
+  };
+
+  try {
+    const btn = document.getElementById('trigger-scan-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Wysyłanie...'; }
+
+    await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
+      body: JSON.stringify({ files: { 'ka-command.json': { content: JSON.stringify(command, null, 2) } } })
+    }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); });
+
+    showToast('🚀 Komenda wysłana — PC ją odbierze w ciągu 30s', 'ok');
+    startScanPolling();
+  } catch (err) {
+    showToast('❌ Błąd: ' + err.message, 'error');
+    const btn = document.getElementById('trigger-scan-btn');
+    if (btn) { btn.disabled = false; btn.textContent = '🚀 Uruchom skan'; }
+  }
+}
+
+function startScanPolling() {
+  clearInterval(_scanPollTimer);
+  document.getElementById('scan-status-box').style.display = 'block';
+  pollScanStatus();
+  _scanPollTimer = setInterval(pollScanStatus, 10000);
+}
+
+async function pollScanStatus() {
+  const cfg = getGistConfig();
+  if (!cfg) return;
+  try {
+    const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      headers: { Authorization: `Bearer ${cfg.token}`, 'User-Agent': 'KA-Asystent' }
+    });
+    if (!res.ok) return;
+    const gist = await res.json();
+    const file = gist.files && gist.files['ka-status.json'];
+    if (!file) return;
+    const status = JSON.parse(file.content);
+    renderScanStatus(status);
+
+    // Zatrzymaj polling gdy idle lub done/error i minęło 60s od updatedAt
+    if (status.phase === 'idle') {
+      clearInterval(_scanPollTimer);
+      _scanPollTimer = null;
+    } else if ((status.phase === 'done' || status.phase === 'error')) {
+      const secAgo = (Date.now() - new Date(status.updatedAt).getTime()) / 1000;
+      if (secAgo > 60) { clearInterval(_scanPollTimer); _scanPollTimer = null; }
+    }
+  } catch {}
+}
+
+function renderScanStatus(status) {
+  const phaseLabels = {
+    idle:      '💤 Czeka na komendę',
+    scraping:  '🕷️ Scrapowanie...',
+    analyzing: '🤖 Analiza Gemini...',
+    done:      '✅ Gotowe!',
+    error:     '❌ Błąd'
+  };
+  const phaseColors = { idle: '#888', scraping: '#E88B00', analyzing: '#3498db', done: '#2ecc71', error: '#e74c3c' };
+
+  const phaseEl   = document.getElementById('scan-phase-label');
+  const stepEl    = document.getElementById('scan-step-label');
+  const logEl     = document.getElementById('scan-log-lines');
+  const updatedEl = document.getElementById('scan-updated-label');
+  const lastEl    = document.getElementById('scan-last-scan');
+  const btn       = document.getElementById('trigger-scan-btn');
+
+  if (phaseEl) {
+    phaseEl.textContent = phaseLabels[status.phase] || status.phase;
+    phaseEl.style.color = phaseColors[status.phase] || '#fff';
+  }
+  if (stepEl)    stepEl.textContent    = status.step ? `[${status.step}]` : '';
+  if (logEl)     logEl.innerHTML       = (status.log || []).slice(-6).map(l => esc(l)).join('<br>');
+  if (updatedEl && status.updatedAt) {
+    updatedEl.textContent = 'Aktualizacja: ' + new Date(status.updatedAt).toLocaleTimeString('pl-PL');
+  }
+  if (lastEl && status.lastScanAt) {
+    lastEl.textContent = 'Ostatni skan: ' + new Date(status.lastScanAt).toLocaleString('pl-PL');
+  }
+
+  if (btn) {
+    const running = status.phase === 'scraping' || status.phase === 'analyzing';
+    btn.disabled    = running;
+    btn.textContent = running ? '⏳ Trwa skanowanie...' : '🚀 Uruchom skan';
+  }
+
+  // Po done — pokaż przycisk importu patcha
+  if (status.phase === 'done') {
+    showToast('✅ Skan gotowy — importuj patch (Krok 4)', 'ok');
+  }
+}
+
+function initRemoteScan() {
+  const cfg = getGistConfig();
+  if (!cfg) return;
+  // Pobierz aktualny status przy wejściu w ekran sync
+  pollScanStatus().then(() => {
+    const statusBox = document.getElementById('scan-status-box');
+    if (statusBox && statusBox.style.display === 'none') {
+      // Pokaż box tylko jeśli coś jest do pokazania
+      const phaseEl = document.getElementById('scan-phase-label');
+      if (phaseEl && phaseEl.textContent && !phaseEl.textContent.includes('Czeka')) {
+        statusBox.style.display = 'block';
+      }
+    }
+  });
+}
+
+// ── End Remote Scan ───────────────────────────────────────────────────────────
 
 migrateApiKey();
 loadItems();
