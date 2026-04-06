@@ -1708,7 +1708,7 @@ async function gistImportPatch() {
     await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
-      body: JSON.stringify({ files: { 'ka-patch.json': { content: null } } })
+      body: JSON.stringify({ files: { 'ka-patch.json': null } })
     });
     showToast('✅ Patch zaaplikowany', 'ok');
   } catch (err) {
