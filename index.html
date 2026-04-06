@@ -131,6 +131,15 @@
     <div id="gist-status" style="font-size:11px;color:#aaa;margin-top:4px"></div>
     <div style="font-size:11px;color:#aaa;margin-top:4px">Token przechowywany tylko w tej sesji. ID Gista zapamiętane lokalnie. Utwórz prywatny Gist na <a href="https://gist.github.com" target="_blank" style="color:#E88B00">gist.github.com</a> z plikiem <code>ka-data.json</code>.</div>
   </div>
+  <div style="margin-top:14px;border-top:1px solid #e8dfc9;padding-top:12px">
+    <div style="font-size:13px;font-weight:700;color:#888;margin-bottom:8px">⚙️ GitHub Actions (zdalne skanowanie)</div>
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <input type="password" id="actions-token-input" placeholder="ghp_... (token z uprawnieniem Actions)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
+      <button onclick="saveActionsToken()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
+    </div>
+    <div id="actions-token-status" style="font-size:11px;color:#aaa;margin-top:4px"></div>
+    <div style="font-size:11px;color:#aaa;margin-top:4px">Wymagany token z uprawnieniem <code>Actions: Read and write</code> dla repo <code>dud3k/ka-scraper</code>. Utwórz w GitHub → Settings → Developer settings → Fine-grained tokens.</div>
+  </div>
 </div>
 
 <div id="screen-home" class="screen active">
@@ -1715,45 +1724,81 @@ function loadGistConfig() {
   }
   const idInput = document.getElementById('gist-id-input');
   if (idInput && gistId) idInput.value = gistId;
+
+  const actStatusEl = document.getElementById('actions-token-status');
+  if (actStatusEl) {
+    actStatusEl.textContent = _actionsToken ? '✅ Token zapisany (sesja)' : 'Brak tokena — wpisz żeby uruchamiać workflow z aplikacji';
+  }
 }
 
 // ── Remote Scan ───────────────────────────────────────────────────────────────
 
 let _scanPollTimer = null;
+let _actionsToken  = null;
+
+const GH_OWNER    = 'dud3k';
+const GH_REPO     = 'ka-scraper';
+const GH_WORKFLOW = 'scrape.yml';
+const GH_BRANCH   = 'master';
+
+function saveActionsToken() {
+  const token = document.getElementById('actions-token-input')?.value?.trim();
+  const statusEl = document.getElementById('actions-token-status');
+  if (!token) { if (statusEl) statusEl.textContent = '⚠️ Wpisz token'; return; }
+  _actionsToken = token;
+  document.getElementById('actions-token-input').value = '';
+  if (statusEl) statusEl.textContent = '✅ Token zapisany (sesja)';
+  showToast('✅ Token Actions zapisany', 'ok');
+}
 
 async function triggerScan() {
-  const cfg = getGistConfig();
-  if (!cfg) { showToast('⚠️ Skonfiguruj Gist w ustawieniach (⚙️)', 'warn'); return; }
+  if (!_actionsToken) {
+    showToast('⚠️ Wpisz token GitHub Actions w ustawieniach (⚙️)', 'warn');
+    return;
+  }
 
   const days     = parseInt(document.getElementById('scan-days')?.value || '3', 10);
   const noImages = document.getElementById('scan-no-images')?.checked || false;
   const limitRaw = document.getElementById('scan-limit')?.value?.trim();
-  const limit    = limitRaw ? parseInt(limitRaw, 10) : null;
+  const limit    = limitRaw ? parseInt(limitRaw, 10) : 0;
 
-  if (limit !== null && (isNaN(limit) || limit < 1)) {
+  if (limitRaw && (isNaN(limit) || limit < 1)) {
     showToast('⚠️ Limit musi być liczbą >= 1', 'warn'); return;
   }
-
-  const command = {
-    command:     'scrape',
-    days,
-    noImages,
-    limit:       limit || null,
-    requestedAt: new Date().toISOString()
-  };
 
   try {
     const btn = document.getElementById('trigger-scan-btn');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Wysyłanie...'; }
 
-    await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
-      body: JSON.stringify({ files: { 'ka-command.json': { content: JSON.stringify(command, null, 2) } } })
-    }).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); });
+    const res = await fetch(
+      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/dispatches`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${_actionsToken}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
+        body: JSON.stringify({
+          ref: GH_BRANCH,
+          inputs: {
+            days:      String(days),
+            limit:     String(limit || 0),
+            no_images: noImages
+          }
+        })
+      }
+    );
 
-    showToast('🚀 Komenda wysłana — PC ją odbierze w ciągu 30s', 'ok');
-    startScanPolling();
+    if (res.status === 204) {
+      showToast('🚀 Workflow uruchomiony na GitHubie!', 'ok');
+      // Zacznij odpytywać status za ~30s (job potrzebuje chwili na start)
+      setTimeout(startScanPolling, 30000);
+      const statusBox = document.getElementById('scan-status-box');
+      if (statusBox) statusBox.style.display = 'block';
+      const phaseEl = document.getElementById('scan-phase-label');
+      if (phaseEl) { phaseEl.textContent = '⏳ Oczekiwanie na start (~30s)...'; phaseEl.style.color = '#E88B00'; }
+      if (btn) btn.textContent = '⏳ Trwa skanowanie...';
+    } else {
+      const txt = await res.text();
+      throw new Error(`HTTP ${res.status}: ${txt.slice(0, 200)}`);
+    }
   } catch (err) {
     showToast('❌ Błąd: ' + err.message, 'error');
     const btn = document.getElementById('trigger-scan-btn');
