@@ -215,7 +215,10 @@
     <div id="scan-status-box" style="display:none;background:#1a1a2e;border-radius:10px;padding:12px;font-size:12px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <span id="scan-phase-label" style="font-weight:700;font-size:13px"></span>
-        <span id="scan-step-label" style="color:#aaa"></span>
+        <span style="display:flex;align-items:center;gap:8px">
+          <span id="scan-step-label" style="color:#aaa"></span>
+          <button id="scan-reset-btn" onclick="resetScanStatus()" style="display:none;padding:2px 8px;font-size:11px;background:#333;border:1px solid #555;border-radius:6px;color:#aaa;cursor:pointer">✖ Resetuj</button>
+        </span>
       </div>
       <div id="scan-log-lines" style="color:#aaa;line-height:1.6;font-size:11px;font-family:monospace"></div>
       <div style="margin-top:8px;font-size:11px;color:#555" id="scan-updated-label"></div>
@@ -1901,15 +1904,35 @@ function renderScanStatus(status) {
     lastEl.textContent = 'Ostatni skan: ' + new Date(status.lastScanAt).toLocaleString('pl-PL');
   }
 
+  const running = status.phase === 'scraping' || status.phase === 'analyzing';
   if (btn) {
-    const running = status.phase === 'scraping' || status.phase === 'analyzing';
     btn.disabled    = running;
     btn.textContent = running ? '⏳ Trwa skanowanie...' : '🚀 Uruchom skan';
   }
+  const resetBtn = document.getElementById('scan-reset-btn');
+  if (resetBtn) resetBtn.style.display = running ? 'inline-block' : 'none';
 
   // Po done — pokaż przycisk importu patcha
   if (status.phase === 'done') {
     showToast('✅ Skan gotowy — importuj patch (Krok 4)', 'ok');
+  }
+}
+
+async function resetScanStatus() {
+  const cfg = getGistConfig();
+  if (!cfg) return;
+  if (!confirm('Zresetować status skanowania do "idle"? Zrób to tylko jeśli skan został przerwany i nigdy nie wróci.')) return;
+  try {
+    const now = new Date().toISOString();
+    await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
+      body: JSON.stringify({ files: { 'ka-status.json': { content: JSON.stringify({ phase: 'idle', updatedAt: now }) } } })
+    });
+    showToast('✅ Status zresetowany', 'ok');
+    await pollScanStatus();
+  } catch (e) {
+    showToast('❌ Błąd resetu: ' + e.message, 'error');
   }
 }
 
