@@ -1,0 +1,15 @@
+{
+  "name": "KA Asystent",
+  "short_name": "KA",
+  "description": "Zarządzanie zakupami z Kleinanzeigen",
+  "start_url": "/ka-asystent/",
+  "scope": "/ka-asystent/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f4ee",
+  "theme_color": "#E88B00",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="KA Asystent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#E88B00">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>KA Asystent v2.8 — Święty Józef</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --ac: #E88B00; --bg: #f7f4ee; --white: #fff; --border: #e8dfc9; --text: #1a1a0a; --muted: #888; --danger: #cc4444; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 40px; }
+  #header { background: var(--white); border-bottom: 1px solid var(--border); padding: 11px 16px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 100; max-width: 480px; margin: 0 auto; }
+  #back-btn { background: none; border: none; cursor: pointer; font-size: 22px; color: var(--ac); padding: 2px 12px 2px 0; display: none; }
+  #header-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  #header-sub { font-size: 11px; color: var(--muted); margin-top: 1px; display: none; }
+  .screen { display: none; max-width: 480px; margin: 0 auto; padding: 16px; }
+  .screen.active { display: block; }
+  .card { background: var(--white); border-radius: 14px; padding: 14px 16px; border: 1px solid var(--border); margin-bottom: 14px; }
+  .lbl { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+  .upload-area { width: 100%; background: var(--ac); border-radius: 12px; margin-bottom: 18px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; min-height: 52px; }
+  .upload-area label { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 16px; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; user-select: none; }
+  .upload-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .item-row { background: var(--white); border-radius: 14px; padding: 12px 14px; border: 1px solid var(--border); margin-bottom: 10px; display: flex; gap: 12px; align-items: center; cursor: pointer; transition: background 0.15s; }
+  .item-row:active { background: #f9f6ef; }
+  .item-thumb { width: 54px; height: 54px; border-radius: 8px; background: #f0ead8; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; overflow: hidden; }
+  .item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .item-info { flex: 1; min-width: 0; }
+  .item-title { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-sub { font-size: 12px; color: #777; margin-top: 2px; }
+  .item-track { font-size: 11px; color: var(--ac); margin-top: 2px; font-weight: 600; }
+  .item-arrow { color: #ccc; font-size: 20px; flex-shrink: 0; }
+  .empty { text-align: center; padding: 44px 24px; color: #aaa; }
+  .btn { width: 100%; padding: 13px; background: var(--ac); color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; display: block; text-align: center; }
+  .btn.ghost { background: transparent; color: var(--danger); border: 1px solid #ffbbbb; font-size: 13px; }
+  .btn-outline { width: 100%; padding: 11px 16px; background: var(--white); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; text-align: left; cursor: pointer; font-size: 14px; font-weight: 500; font-family: inherit; display: block; }
+  .btn-sm { background: none; border: none; cursor: pointer; color: var(--ac); font-size: 13px; font-weight: 700; font-family: inherit; }
+  .mb8 { margin-bottom: 8px; } .mb10 { margin-bottom: 10px; } .mb14 { margin-bottom: 14px; } .mb18 { margin-bottom: 18px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { display: inline-block; animation: spin 1.2s linear infinite; font-size: 34px; margin-bottom: 10px; }
+  .analyzing-box { text-align: center; padding: 28px 24px; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeIn 0.3s ease; }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; margin-right: 6px; }
+  .badge.green { background: #e8f4e8; color: #2a7a2a; }
+  .badge.orange { background: #fff3e0; color: #a05000; }
+  .badge.blue { background: #e6f0ff; color: #1a4fa0; }
+  .badge.red { background: #fff0f0; color: #a00; }
+  .badge.yellow { background: #fffbe6; color: #8a6800; }
+  .track-box { padding: 10px 12px; background: #f0f8ff; border-radius: 10px; }
+  .track-num { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+  .track-link { display: inline-block; padding: 8px 16px; background: var(--ac); color: #fff; border-radius: 8px; font-size: 13px; text-decoration: none; font-weight: 700; }
+  .draft-result { margin-top: 12px; padding: 12px 14px; background: #f7f4ee; border-radius: 10px; border: 1px solid var(--border); }
+  .draft-text { font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+  .copy-btn { margin-top: 10px; padding: 6px 14px; background: var(--white); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; font-family: inherit; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row .inp { flex: 1; }
+  .info-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; }
+  .info-item { font-size: 13px; color: #666; }
+  .info-item.green { color: #1a7a1a; }
+  .error-box { background: #fff0f0; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; border: 1px solid #ffcccc; }
+  .preview-img { width: 100%; border-radius: 12px; margin-bottom: 14px; max-height: 260px; object-fit: contain; background: #eee; display: block; }
+  .upload-small { background: none; border: 1px solid var(--ac); border-radius: 8px; color: var(--ac); font-size: 12px; font-weight: 700; padding: 5px 10px; cursor: pointer; position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
+  .upload-small input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .status-select { font-size: 12px; padding: 4px 6px; border: 1px solid #ddd; border-radius: 6px; background: #fff; cursor: pointer; font-family: inherit; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .inp { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #fafaf7; outline: none; font-family: inherit; }
+  .inp:focus { border-color: var(--ac); }
+  textarea.inp { resize: vertical; min-height: 72px; }
+  .chat-list { display: flex; flex-direction: column; gap: 10px; }
+  .chat-row { display: flex; flex-direction: column; }
+  .chat-row.me { align-items: flex-end; }
+  .chat-row.them { align-items: flex-start; }
+  .chat-who { font-size: 10px; color: #bbb; margin-bottom: 3px; }
+  .bubble { max-width: 85%; padding: 9px 13px; font-size: 14px; line-height: 1.55; }
+  .bubble.me { background: var(--ac); color: #fff; border-radius: 16px 16px 4px 16px; }
+  .bubble.them { background: var(--white); color: var(--text); border: 1px solid var(--border); border-radius: 16px 16px 16px 4px; }
+  .bubble-orig { font-size: 11px; margin-top: 5px; opacity: 0.6; font-style: italic; border-top: 1px solid rgba(0,0,0,0.12); padding-top: 5px; }
+.note-box { background: #fffbe6; border: 1px solid #f0d060; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 12px; line-height: 1.6; color: #5a4800; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .tab { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--white); color: var(--muted); font-family: inherit; }
+  .tab.active { background: var(--ac); color: #fff; border-color: var(--ac); }
+  .sync-section { margin-bottom: 18px; }
+  .sync-section h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+  .sync-section p { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
+  .sync-textarea { width: 100%; min-height: 120px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; font-family: 'SF Mono', 'Menlo', 'Consolas', monospace; background: #fafaf7; outline: none; resize: vertical; line-height: 1.4; }
+  .sync-textarea:focus { border-color: var(--ac); }
+  .sync-report { margin-top: 12px; padding: 12px 14px; background: #f0fff0; border: 1px solid #b0e0b0; border-radius: 10px; font-size: 13px; line-height: 1.6; }
+  .sync-report.error { background: #fff0f0; border-color: #ffbbbb; }
+  .sync-report .rpt-item { padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+  .sync-report .rpt-item:last-child { border-bottom: none; }
+  .sync-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .sync-stat { padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; background: var(--white); border: 1px solid var(--border); }
+  .sync-stat .num { font-size: 20px; font-weight: 800; display: block; color: var(--ac); }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <button id="back-btn" onclick="goBack()">←</button>
+  <div style="flex:1">
+    <div id="header-title">🛒 KA Asystent <span style="font-size:10px;color:#aaa;font-weight:400">v2.5 · Święty Józef</span></div>
+    <div id="header-sub"></div>
+  </div>
+  <button onclick="toggleSettings()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Ustawienia API">⚙️</button>
+  <button onclick="showScreen('sync')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Synchronizacja danych">🔄</button>
+</div>
+
+<div id="settings-panel" style="display:none;max-width:480px;margin:0 auto;padding:12px 16px;background:#fff8ee;border-bottom:1px solid #e8dfc9;">
+  <div style="font-size:13px;font-weight:700;color:#888;margin-bottom:8px">🔑 Klucz API (opcjonalny — tylko do AI)</div>
+  <div style="display:flex;gap:8px">
+    <input type="password" id="apikey-input" placeholder="sk-ant-..." style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit" value="">
+    <button onclick="saveApiKey()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
+  </div>
+  <div style="font-size:11px;color:#aaa;margin-top:6px">Klucz API umożliwia analizę screenshotów i generowanie wiadomości. Klucz jest przechowywany tylko w tej sesji — po zamknięciu karty trzeba wpisać ponownie.</div>
+</div>
+
+<div id="screen-home" class="screen active">
+  <div class="upload-area">
+    <label for="file-home">📸 Dodaj screenshot z Kleinanzeigen</label>
+    <input type="file" id="file-home" accept="image/*" onchange="handleFile(event, null)">
+  </div>
+
+  <input type="text" id="search-input" placeholder="🔍 Szukaj (tytuł, nr przesyłki...)" oninput="setSearch(this.value)" class="inp" style="margin-bottom:10px">
+
+  <!-- Compact filter bar -->
+  <div id="filter-bar" style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+    <select id="filter-status" onchange="setFilter(this.value)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:10px;font-size:13px;background:#fff;cursor:pointer;font-family:inherit;font-weight:600;color:#1a1a0a">
+      <option value="all">📋 Wszystkie</option>
+      <option value="active">🟢 Aktywne</option>
+      <option value="closed">⛔ Zamknięte</option>
+      <option value="watchlist">🔁 Do powrotu</option>
+    </select>
+    <select id="filter-ls" onchange="setLsFilter(this.value)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:10px;font-size:13px;background:#fff;cursor:pointer;font-family:inherit;font-weight:600;color:#1a1a0a">
+      <option value="">🚦 Status logist.</option>
+      <option value="oplacony">💳 Opłacony</option>
+      <option value="wyslane_de">📤 Wysłane DE</option>
+      <option value="wyslane_pl">📦 Wysłane PL</option>
+      <option value="dostarczone_de">🏠 Dostarczone DE</option>
+      <option value="dostarczone_pl">✅ Dostarczone PL</option>
+      <option value="sprzedany">💰 Sprzedany</option>
+    </select>
+    <select id="filter-sort" onchange="setSortPref(this.value)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:10px;font-size:13px;background:#fff;cursor:pointer;font-family:inherit;font-weight:600;color:#1a1a0a">
+      <option value="updated">🕐 Ostatnio zmienione</option>
+      <option value="created">📅 Data utworzenia</option>
+      <option value="price">💰 Cena</option>
+      <option value="name">🔤 Nazwa A-Z</option>
+    </select>
+  </div>
+
+  <div id="items-list"></div>
+
+</div>
+
+<div id="screen-upload" class="screen">
+  <img id="upload-preview" class="preview-img" style="display:none" alt="">
+  <div id="upload-content"></div>
+</div>
+
+<div id="screen-item" class="screen">
+  <div id="item-content"></div>
+</div>
+
+<div id="screen-sync" class="screen">
+  <div class="card">
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px">🔄 Synchronizacja danych</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.5">Eksportuj dane do Claude → pobierz aktualizacje → importuj patch</div>
+  </div>
+
+  <div class="card sync-section">
+    <h3>📋 Krok 1: Eksport danych</h3>
+    <p>Kopiuje pełny stan aplikacji (z wiadomościami) do schowka. Wklej go do Claude jako kontekst.</p>
+    <button class="btn" onclick="exportData()" id="export-btn">📋 Kopiuj dane do schowka</button>
+    <div id="export-stats" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card sync-section">
+    <h3>📋 Krok 2: Import skanu bezpośredniego</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Tworzy szkielety rekordów z <code>ka-changes-latest.json</code> bez udziału Gemini. Wiadomości bez tłumaczenia — Gemini dorzuci je w kroku 3.</p>
+    <label style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:var(--white);border:2px dashed #2ecc71;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;color:#2ecc71;font-family:inherit;position:relative;overflow:hidden">
+      📋 Wgraj ka-changes-latest.json
+      <input type="file" accept=".json,application/json" onchange="importScanDirect(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer">
+    </label>
+    <div id="scan-report" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card sync-section">
+    <h3>📥 Krok 3: Import patch Gemini</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Wgraj plik JSON lub wklej patch wygenerowany przez Gemini.</p>
+    <div style="margin-bottom:10px">
+      <label style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:var(--white);border:2px dashed var(--ac);border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;color:var(--ac);font-family:inherit;position:relative;overflow:hidden">
+        📁 Wgraj plik patch JSON
+        <input type="file" accept=".json,application/json" onchange="loadPatchFile(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer">
+      </label>
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px">— lub wklej ręcznie —</div>
+    <textarea class="sync-textarea" id="patch-input" placeholder='Wklej tutaj patch JSON z Gemini...'></textarea>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;padding:8px;background:#1a1a2e;border-radius:8px">
+      <input type="checkbox" id="strict-mode-cb" style="cursor:pointer;width:16px;height:16px;flex-shrink:0">
+      <label for="strict-mode-cb" style="cursor:pointer;font-size:12px;color:var(--muted);line-height:1.4">🔒 Tryb ścisły — tylko aktualizuj istniejące rekordy (zalecane po imporcie skanu z kroku 2)</label>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button class="btn" onclick="applyPatch()" style="flex:1">🔄 Zastosuj aktualizację</button>
+      <button class="btn" onclick="previewPatch()" style="flex:1;background:#555">👁 Podgląd</button>
+    </div>
+    <div id="patch-report"></div>
+  </div>
+
+  <div class="card sync-section">
+    <h3>💾 Backup danych</h3>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <button class="btn" onclick="exportBackup()" style="flex:1;font-size:13px;padding:10px">📤 Eksportuj backup</button>
+      <label class="btn" style="flex:1;font-size:13px;padding:10px;cursor:pointer;position:relative;overflow:hidden">📥 Importuj backup
+        <input type="file" accept=".json,application/json" onchange="importBackup(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer">
+      </label>
+    </div>
+    <button class="btn" onclick="fixSortDates()" style="width:100%;font-size:13px;padding:10px;background:#2471a3;margin-bottom:8px">🔧 Napraw sortowanie dat</button>
+    <button class="btn" onclick="diagSortDates()" style="width:100%;font-size:13px;padding:10px;background:#555;margin-bottom:8px">🔍 Diagnostyka dat (pokaż w konsoli)</button>
+    <button class="btn" onclick="if(confirm('Wyczyścić wszystkie dane?')){localStorage.setItem('ka_items_v2','[]');location.reload()}" style="width:100%;font-size:13px;padding:10px;background:#c0392b">🗑️ Wyczyść wszystkie dane</button>
+  </div>
+
+  <div class="card sync-section">
+    <h3>📊 Stan aplikacji</h3>
+    <div id="sync-overview"></div>
+  </div>
+
+  <div class="card sync-section">
+    <h3>📖 Format patcha</h3>
+    <div style="font-size:11px;color:var(--muted);line-height:1.6;font-family:'SF Mono','Menlo','Consolas',monospace;background:#fafaf7;padding:10px;border-radius:8px;white-space:pre-wrap">{
+  "updates": [
+    {
+      "match": "conversationId tutaj",
+      "set": {"logisticStatus": "wyslane_de", "trackingNumber": "123...", "listingUrl": "https://..."},
+      "addMessages": [{"sender":"seller", "originalText":"...", "translatedText":"..."}]
+    }
+  ],
+  "newItems": [
+    {
+      "title": "Nowy przedmiot",
+      "conversationUrl": "https://...",
+      "listingUrl": "https://www.kleinanzeigen.de/s-anzeige/...",
+      "status": "negotiating",
+      "messages": [...]
+    }
+  ]
+}</div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://api.anthropic.com/v1/messages';
+const MODEL = 'claude-sonnet-4-20250514';
+const AC = '#E88B00';
+let currentFilter = 'all';
+let currentLsFilter = '';
+let currentSort = localStorage.getItem('ka_sort_pref') || 'updated';
+let currentSearch = '';
+
+function genId() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+
+function getTrackUrl(carrier, num) {
+  if (!carrier || !num) return null;
+  const n = num.trim();
+  if (carrier === 'DHL') return `https://www.dhl.com/global-en/home/tracking/tracking-express.html?submit=1&tracking-id=${n}`;
+  if (carrier === 'Hermes') return `https://www.myhermes.de/empfangen/sendungsverfolgung/sendungsinformation#${n}`;
+  if (carrier === 'DPD') return `https://www.dpd.com/de/de/empfangen/sendungsverfolgung/?parcelNumber=${n}`;
+  if (carrier === 'GLS') return `https://gls-group.eu/DE/de/paketverfolgung?match=${n}`;
+  return null;
+}
+
+const APP_VERSION = '2.8';
+const APP_CODENAME = 'Święty Józef';
+
+// Auto-detect logistic status from conversation analysis
+function autoLogisticStatus(analysis, existingStatus) {
+  if (existingStatus) return existingStatus; // don't overwrite manual setting
+  const txt = JSON.stringify(analysis).toLowerCase();
+  if (analysis.trackingNumber) return 'wyslane_de';
+  if (txt.includes('geld wurde überwiesen') || txt.includes('überwiesen') ||
+      txt.includes('artikel bezahlt') || txt.includes('bezahlung') ||
+      txt.includes('sicher bezahlen') || analysis.finalPrice) return 'oplacony';
+  return '';
+}
+
+// ── Pre-filled data from Kleinanzeigen scan ──────────────────────────────────
+const PREFILLED = [
+  {
+    id: genId(), status: 'purchased', title: 'Canon EF 24-70mm f/2.8 USM',
+    description: 'Obiektyw Canon EF 24-70mm f/2.8 USM. Negocjacje: Marcin 300€ → Paul 350€ → zgoda na 325€ inkl. wysyłka.',
+    askingPrice: 350, finalPrice: 325, carrier: null, trackingNumber: null, trackingUrl: null,
+    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=z49x:49tct93:2p0cz9m0g',
+    notes: '⚠️ Paul obiecał wysłać 20.03 ale nie przesłał numeru śledzenia. Sprawdź czy paczka dotarła.', logisticStatus: 'oplacony',
+    watchlist: false,
+    messages: [
+      { id: genId(), sender: 'buyer', originalText: 'Ich kann Ihnen daher 300 € anbieten.', translatedText: 'Mogę zaoferować 300 EUR.' },
+      { id: genId(), sender: 'seller', originalText: 'Ich würde noch auf 350,00 € gehen.', translatedText: 'Zejdę do 350 EUR.' },
+      { id: genId(), sender: 'buyer', originalText: 'Machen wir 325 € inklusive Versand!', translatedText: 'Robimy 325 EUR inkl. wysyłka!' },
+      { id: genId(), sender: 'seller', originalText: 'Mmh ja können wir machen.', translatedText: 'Ok, możemy tak zrobić.' },
+      { id: genId(), sender: 'seller', originalText: 'super, ich verpacke es heute abend und schicke es morgen raus.', translatedText: 'Super, pakuję dziś wieczór i wysyłam jutro.' },
+    ], createdAt: '2026-03-19T00:00:00Z', updatedAt: new Date().toISOString()
+  },
+  {
+    id: genId(), status: 'shipped', title: 'Nikon D3500 Kamera',
+    description: 'Nikon D3500. Negocjacje: Marcin 200€ → Bertram 150€ → długie targowanie → zgoda na 230€.',
+    askingPrice: 250, finalPrice: 230, carrier: 'Hermes', trackingNumber: '02077168012884',
+    trackingUrl: 'https://www.myhermes.de/empfangen/sendungsverfolgung/sendungsinformation#02077168012884',
+    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=90vs:1qsjf2z:2p2wmdnv1',
+    notes: 'Wysłano Hermes 19.03.2026 17:00. Koszt wysyłki 7 EUR (refundowany).', watchlist: false, logisticStatus: 'wyslane_de',
+    messages: [
+      { id: genId(), sender: 'buyer', originalText: 'Ich kann Ihnen daher 200 € anbieten.', translatedText: 'Oferuję 200 EUR.' },
+      { id: genId(), sender: 'seller', originalText: 'Hi wir können gerne 150€ machen.', translatedText: 'Możemy zrobić 150 EUR.' },
+      { id: genId(), sender: 'seller', originalText: 'Jo perfekt danke schicke ihnen gleich die sendungsnummer', translatedText: 'Super, zaraz wyślę numer śledzenia.' },
+    ], createdAt: '2026-03-15T00:00:00Z', updatedAt: new Date().toISOString()
+  },
+  {
+    id: genId(), status: 'purchased', title: '2 Digitalkameras (kompakt)',
+    description: '2 kompaktowe aparaty cyfrowe (czarny i srebrny). Brak ładowarek, nieprzetestowane — zakup na ryzyko.',
+    askingPrice: 70, finalPrice: 50, carrier: 'DHL', trackingNumber: '00340434391975897307',
+    trackingUrl: getTrackUrl('DHL', '00340434391975897307'),
+    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=9djp:5sgnpgc:2p2x05k8v',
+    notes: 'Wysłano DHL 18.03.2026. Zakup bez ładowarki, na ryzyko. ✅ Dostarczone 20.03.2026 o 11:12.', watchlist: false, logisticStatus: 'dostarczone_de',
+    messages: [
+      { id: genId(), sender: 'buyer', originalText: 'Ich kann Ihnen daher 70 € anbieten für beide.', translatedText: 'Oferuję 70 EUR za oba.' },
+      { id: genId(), sender: 'seller', originalText: 'Für beide ?', translatedText: 'Za oba?' },
+      { id: genId(), sender: 'seller', originalText: 'Ja ist ok', translatedText: 'Ok, zgoda.' },
+    ], createdAt: '2026-03-15T00:00:00Z', updatedAt: new Date().toISOString()
+  },
+  {
+    id: genId(), status: 'shipped', title: 'Canon EOS 5D Classic',
+    description: 'Canon EOS 5D Classic (DS126091), 12.8MP Full Frame. Brak akumulatora — używał dummy akku na kabel (zasilanie sieciowe). Kup akku LP-E6 osobno.',
+    askingPrice: 120, finalPrice: 100, carrier: 'DHL', trackingNumber: '00340434391977366078',
+    trackingUrl: getTrackUrl('DHL', '00340434391977366078'),
+    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=9f62:10d77tw:2p2x0q8h7',
+    notes: 'Wysłano DHL 19.03.2026. Brak akumulatora — trzeba dokupić.', watchlist: false, logisticStatus: 'wyslane_de',
+    messages: [
+      { id: genId(), sender: 'buyer', originalText: 'Ich kann Ihnen 100 € anbieten — kein Akku dabei.', translatedText: 'Oferuję 100 EUR — brak akumulatora.' },
+      { id: genId(), sender: 'seller', originalText: 'Ja, ich bin froh wenn sie in gute Hände kommt.', translatedText: 'Tak, cieszę się że trafi w dobre ręce.' },
+      { id: genId(), sender: 'seller', originalText: 'Ich melde mich sobald das Paket auf dem Weg ist.', translatedText: 'Dam znać gdy paczka jest w drodze.' },
+    ], createdAt: '2026-03-15T00:00:00Z', updatedAt: new Date().toISOString()
+  },
+  {
+    id: genId(), status: 'purchased', title: 'Nikon D7100 + 18-55mm VR + 55-200mm VR',
+    description: 'Nikon D7100 z dwoma obiektywami VR. 31 600 auslösungen. Brak jednej nakrętki obiektywu.',
+    askingPrice: 220, finalPrice: 210, carrier: null, trackingNumber: null, trackingUrl: null,
+    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=1r27f:6z8t51:2p1lf1qgx',
+    notes: '⚠️ Sprzedawca wysłał link śledzenia ale był oznaczony jako ryzyko (zablokowany). Sprawdź czy paczka dotarła.', watchlist: false, logisticStatus: 'oplacony',
+    messages: [
+      { id: genId(), sender: 'buyer', originalText: 'Würde 180 € anbieten für das komplette Set.', translatedText: 'Oferuję 180 EUR za cały zestaw.' },
+      { id: genId(), sender: 'seller', originalText: 'Ich würde auf 220 gehen, weil die eine Kappe fehlt.', translatedText: 'Schodzę do 220 EUR bo brak nakrętki.' },
+      { id: genId(), sender: 'buyer', originalText: 'Machen wir glatte 210 € inkl. Versand!', translatedText: 'Robimy okrągłe 210 EUR inkl. wysyłka!' },
+      { id: genId(), sender: 'seller', originalText: 'Das Geld wurde überwiesen.', translatedText: 'Pieniądze zostały przelane.' },
+    ], createdAt: '2026-03-10T00:00:00Z', updatedAt: new Date().toISOString()
+  },
+  {
+    id: genId(), status: 'negotiating', title: 'Panasonic Kamera (Sicher bezahlen)',
+    description: 'Panasonic — zakup przez "Sicher bezahlen". Artykuł opłacony, sprzedawca ma 48h na potwierdzenie.',
+    askingPrice: null, finalPrice: 59.74, carrier: null, trackingNumber: null, trackingUrl: null,
+    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=rrbq:32gzvws:2p3pk3x2n',
+    notes: '⏳ Opłacono 22.03.2026 przez Sicher bezahlen (50€ + 2,75€ ochrona + 6,99€ wysyłka = 59,74€). Czeka na wysyłkę od sprzedającej Saskia.', watchlist: false, logisticStatus: 'oplacony',
+    messages: [], createdAt: '2026-03-22T00:00:00Z', updatedAt: new Date().toISOString()
+  },
+  {
+    id: genId(), status: 'negotiating', title: 'Canon EF 24-70mm f/2.8 ⚠️ REKLAMACJA',
+    description: 'Canon EF 24-70 f/2.8 — zakupiony za 310 EUR. WADLIWY — Flexkabel szumi przy 24mm.',
+    askingPrice: null, finalPrice: 310, carrier: null, trackingNumber: null, trackingUrl: null,
+    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=9nk6:30t06vw:2p251h2cm',
+    notes: '⚠️ REKLAMACJA — obiektyw ma wadliwy Flexkabel (szum przy 24mm). Marcin/sprzedawca ustalili: naprawa w Polsce z kosztorysem, Marko musi zatwierdzić cenę przed naprawą.', watchlist: false, logisticStatus: 'oplacony',
+    messages: [
+      { id: genId(), sender: 'buyer', originalText: 'Ich kann daher 300 € anbieten.', translatedText: 'Oferuję 300 EUR.' },
+      { id: genId(), sender: 'seller', originalText: 'Ich würde vorschlagen, 320 Euro incl. versicherten Versand.', translatedText: 'Proponuję 320 EUR inkl. ubezpieczony wysyłka.' },
+      { id: genId(), sender: 'buyer', originalText: 'Machen wir 310 € inkl. Versand!', translatedText: 'Robimy 310 EUR inkl. wysyłka!' },
+      { id: genId(), sender: 'buyer', originalText: 'Das Flexkabel schleift an den Ringen bei 24mm — zu 100% das Flexkabel.', translatedText: 'Flexkabel ślizga się po pierścieniach przy 24mm — na 100% to Flexkabel.' },
+      { id: genId(), sender: 'seller', originalText: 'so machen wir das VG Marko', translatedText: 'Tak to zrobimy. Pozdrawiam, Marko.' },
+    ], createdAt: '2026-03-09T00:00:00Z', updatedAt: new Date().toISOString()
+  },
+  // WATCHLIST
+  {
+    id: genId(), status: 'negotiating', title: '🔁 Canon EF 24-70 2.8f — WRÓĆ',
+    description: 'Canon EF 24-70 2.8f. Aleksander zgodził się na wysyłkę ale wyjechał na urlop. Wróci wkrótce.',
+    askingPrice: null, finalPrice: null, carrier: null, trackingNumber: null, trackingUrl: null,
+    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=kd1p:5qr3gpg:2p3c0mwxj',
+    notes: '🔁 Wróć za 1-2 tygodnie. Aleksander był chętny na wysyłkę, pojechał na urlop. Napisz "Ich stelle das rein nach dem Urlaub."', watchlist: true,
+    messages: [
+      { id: genId(), sender: 'buyer', originalText: 'Wäre ein Versand möglich?', translatedText: 'Czy możliwy wysyłka?' },
+      { id: genId(), sender: 'seller', originalText: 'Ich stelle das rein nach dem Urlaub.', translatedText: 'Wystawię to po urlopie.' },
+    ], createdAt: '2026-03-19T00:00:00Z', updatedAt: new Date().toISOString()
+  },
+  {
+    id: genId(), status: 'negotiating', title: '🔁 Nikon D7100 (yannic) — WRÓĆ',
+    description: 'Nikon D7100. Duża różnica cenowa: Marcin 200€ vs yannic 300€. Ogłoszenie wciąż aktywne.',
+    askingPrice: 300, finalPrice: null, carrier: null, trackingNumber: null, trackingUrl: null,
+    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=1qvjz:4nlsrf6:2p1lbx004',
+    notes: '🔁 Wróć za 2-3 tygodnie. Jeśli nie sprzeda — może zejdzie z ceny. Ostatnia oferta Marcina: 200 EUR.', watchlist: true,
+    messages: [
+      { id: genId(), sender: 'buyer', originalText: 'Wären 200 € dafür für Sie in Ordnung?', translatedText: 'Czy 200 EUR byłoby OK?' },
+      { id: genId(), sender: 'seller', originalText: 'mit 300€ wäre ich einverstanden aber drunter leider nicht', translatedText: 'Na 300€ się zgadzam, ale nie mniej.' },
+    ], createdAt: '2026-03-13T00:00:00Z', updatedAt: new Date().toISOString()
+  },
+  {
+    id: genId(), status: 'negotiating', title: '🔁 Nikon D7100 Kamera Set (BK) — ZŁÓŻ OFERTĘ',
+    description: 'Nikon D7100 Kamera Set z obiektywami. 29 790 auslösungen. Brak złożonej oferty — tylko pytanie o auslösungen.',
+    askingPrice: null, finalPrice: null, carrier: null, trackingNumber: null, trackingUrl: null,
+    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=m5bx:xk1jvq:2p3g5h486',
+    notes: '🔁 Złóż ofertę teraz! Niski przebieg (29 790), rozmowa nie doszła do ceny. Zaproponuj ok. 180-200 EUR.', watchlist: true,
+    messages: [
+      { id: genId(), sender: 'buyer', originalText: 'Können Sie mir sagen, wie viele Fotos gemacht wurden?', translatedText: 'Ile zdjęć zostało zrobionych?' },
+      { id: genId(), sender: 'seller', originalText: '29790 Fotos wurden gemacht', translatedText: '29 790 zdjęć zostało zrobionych.' },
+    ], createdAt: '2026-03-20T00:00:00Z', updatedAt: new Date().toISOString()
+  },
+  {
+    id: genId(), status: 'negotiating', title: '🔁 Nikon D7100 (Anima) — WRÓĆ',
+    description: 'Nikon D7100. Anima odrzucił ofertę 150 EUR bez podania swojej ceny.',
+    askingPrice: null, finalPrice: null, carrier: null, trackingNumber: null, trackingUrl: null,
+    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=1qtf5:50pk9ht:2p1lc6j24',
+    notes: '🔁 Wróć za 2 tygodnie. Odrzucił 150 EUR bez kontrpropozycji — może zejdzie jeśli nie znajdzie kupca.', watchlist: true,
+    messages: [
+      { id: genId(), sender: 'buyer', originalText: 'Ich kann Ihnen daher 150 € anbieten.', translatedText: 'Oferuję 150 EUR.' },
+      { id: genId(), sender: 'seller', originalText: 'Das geht leider nicht', translatedText: 'Niestety nie.' },
+    ], createdAt: '2026-03-20T00:00:00Z', updatedAt: new Date().toISOString()
+  },
+];
+
+// ── State ────────────────────────────────────────────────────────────────────
+let items = [];
+let currentScreen = 'home';
+let currentId = null;
+let fromId = null;
+let currentImgPrev = null;
+let currentImgB64 = null;
+let currentAnalysis = null;
+let draftOut = '';
+
+// API key — session-only (never in localStorage)
+let _sessionApiKey = null;
+
+function getApiKey() { return _sessionApiKey || ''; }
+function saveApiKey() {
+  const key = document.getElementById('apikey-input').value.trim();
+  if (key && !key.startsWith('sk-')) { alert('Nieprawidłowy klucz API — powinien zaczynać się od sk-'); return; }
+  _sessionApiKey = key || null;
+  const btn = event.target; btn.textContent = '✅ Zapisano (sesja)'; setTimeout(() => btn.textContent = 'Zapisz', 2000);
+}
+function promptApiKey() {
+  if (_sessionApiKey) return _sessionApiKey;
+  _sessionApiKey = prompt('Podaj klucz API Anthropic (opcjonalnie — potrzebny tylko do funkcji AI):');
+  if (_sessionApiKey) {
+    const inp = document.getElementById('apikey-input');
+    if (inp) inp.value = _sessionApiKey;
+  }
+  return _sessionApiKey;
+}
+function toggleSettings() {
+  const p = document.getElementById('settings-panel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  if (p.style.display === 'block') {
+    const inp = document.getElementById('apikey-input');
+    if (inp) inp.value = getApiKey() || '';
+  }
+}
+// Migrate old key from localStorage (one-time cleanup)
+function migrateApiKey() {
+  const oldKey = localStorage.getItem('ka_apikey');
+  if (oldKey) {
+    localStorage.removeItem('ka_apikey');
+    alert('Klucz API został usunięty z pamięci trwałej ze względów bezpieczeństwa. Będzie pytany przy każdej sesji.');
+  }
+}
+
+function loadItems() {
+  try {
+    const raw = localStorage.getItem('ka_items_v2');
+    if (raw !== null) {
+      // User has data (or explicitly cleared to [])
+      items = JSON.parse(raw) || [];
+      return;
+    }
+  } catch {}
+  // First run only (no key in localStorage) — load prefilled data
+  items = PREFILLED.map(i => ({ ...i }));
+  saveItems();
+}
+function saveItems() { localStorage.setItem('ka_items_v2', JSON.stringify(items)); }
+function getItem(id) { return items.find(i => i.id === id) || null; }
+function trackChange(item, field, newValue, source = 'manual') {
+  if (!item.changelog) item.changelog = [];
+  const oldValue = item[field];
+  if (oldValue === newValue) return;
+  item.changelog.push({
+    date: new Date().toISOString(),
+    field,
+    oldValue: oldValue ?? null,
+    newValue,
+    source
+  });
+  // Trim to max 50 entries
+  if (item.changelog.length > 50) item.changelog = item.changelog.slice(-50);
+}
+
+const TRACKED_FIELDS = ['status', 'logisticStatus', 'finalPrice', 'trackingNumber', 'carrier', 'notes'];
+
+function updateItem(id, patch, source = 'manual') {
+  items = items.map(i => {
+    if (i.id !== id) return i;
+    const updated = { ...i };
+    // Track changes on monitored fields
+    for (const field of TRACKED_FIELDS) {
+      if (field in patch && patch[field] !== undefined && patch[field] !== i[field]) {
+        trackChange(updated, field, patch[field], source);
+      }
+    }
+    Object.assign(updated, patch);
+    updated.updatedAt = new Date().toISOString();
+    return updated;
+  });
+  saveItems();
+}
+
+const ST = {
+  negotiating: { l: 'Negocjacje', e: '🟡' },
+  purchased:   { l: 'Kupiono',    e: '🟢' },
+  shipped:     { l: 'W drodze',   e: '🚚' },
+  received:    { l: 'Odebrano',   e: '✅' },
+  closed:      { l: 'Zamknięte',  e: '⛔' },
+};
+
+const LS = [
+  { value: '', label: '— brak —' },
+  { value: 'oplacony',       label: '💳 Opłacony' },
+  { value: 'wyslane_de',     label: '📤 Wysłane DE' },
+  { value: 'wyslane_pl',     label: '📦 Wysłane PL' },
+  { value: 'dostarczone_de', label: '🏠 Dostarczone DE' },
+  { value: 'dostarczone_pl', label: '✅ Dostarczone PL' },
+  { value: 'sprzedany',      label: '💰 Sprzedany' },
+];
+
+function lsLabel(val) {
+  if (!val) return '';
+  const found = LS.find(l => l.value === val);
+  return found ? found.label : val;
+}
+
+function setSearch(val) {
+  currentSearch = val;
+  renderHome();
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  renderHome();
+}
+
+function resetFilters() {
+  currentFilter = 'all';
+  currentLsFilter = '';
+  currentSearch = '';
+  const si = document.getElementById('search-input');
+  if (si) si.value = '';
+  syncFilterSelects();
+  renderHome();
+}
+
+function setLsFilter(val) {
+  currentLsFilter = val;
+  renderHome();
+}
+
+function setSortPref(val) {
+  currentSort = val;
+  localStorage.setItem('ka_sort_pref', val);
+  renderHome();
+}
+
+function sortItems(arr, sortBy) {
+  return [...arr].sort((a, b) => {
+    switch (sortBy) {
+      case 'updated': return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+      case 'created': return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      case 'price':   return (b.finalPrice || b.askingPrice || 0) - (a.finalPrice || a.askingPrice || 0);
+      case 'name':    return (a.title || '').localeCompare(b.title || '');
+      default:        return 0;
+    }
+  });
+}
+
+function getAlertBadges(item) {
+  const badges = [];
+  const n = item.notes || '';
+  const bs = (emoji, bg, color) => `<span class="badge" style="background:${bg};color:${color};font-size:10px;padding:2px 5px">${emoji}</span>`;
+  if (n.includes('\u26a0')) badges.push(bs('\u26a0\ufe0f', '#fff3e0', '#a05000'));
+  if (n.includes('\u26d4')) badges.push(bs('\u26d4', '#fff0f0', '#a00'));
+  if (n.includes('\ud83d\udd01')) badges.push(bs('\ud83d\udd01', '#e6f0ff', '#1a4fa0'));
+  if (n.includes('\ud83d\udd25')) badges.push(bs('\ud83d\udd25', '#fff0f0', '#c00'));
+  return badges.join(' ');
+}
+
+function syncFilterSelects() {
+  const fs = document.getElementById('filter-status');
+  const fl = document.getElementById('filter-ls');
+  if (fs) fs.value = currentFilter;
+  if (fl) fl.value = currentLsFilter;
+}
+
+function showScreen(name) {
+  currentScreen = name;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  const backBtn = document.getElementById('back-btn');
+  const sub = document.getElementById('header-sub');
+  const title = document.getElementById('header-title');
+  if (name === 'home') { backBtn.style.display = 'none'; title.innerHTML = '🛒 KA Asystent <span style="font-size:10px;color:#aaa;font-weight:400">v2.8 · Święty Józef</span>'; sub.style.display = 'none'; renderHome(); }
+  else if (name === 'upload') { backBtn.style.display = 'block'; title.textContent = '📸 Analiza screenshota'; sub.style.display = 'none'; }
+  else if (name === 'sync') { backBtn.style.display = 'block'; title.textContent = '🔄 Synchronizacja'; sub.style.display = 'none'; renderSyncOverview(); }
+  else if (name === 'item') {
+    backBtn.style.display = 'block';
+    const cur = getItem(currentId);
+    title.textContent = cur ? cur.title : 'Przedmiot';
+    sub.style.display = cur ? 'block' : 'none';
+    if (cur) sub.textContent = ST[cur.status]?.e + ' ' + ST[cur.status]?.l;
+    renderItem();
+  }
+}
+
+function goBack() {
+  if (currentScreen === 'upload' && fromId) goItem(fromId);
+  else if (currentScreen === 'sync') showScreen('home');
+  else showScreen('home');
+}
+
+function goItem(id) { currentId = id; draftOut = ''; showScreen('item'); }
+
+function handleFile(e, fromItemId) {
+  const f = e.target.files[0]; if (!f) return; e.target.value = '';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const dataUrl = ev.target.result;
+    currentImgPrev = dataUrl; currentImgB64 = dataUrl.split(',')[1];
+    currentAnalysis = null; fromId = fromItemId || null;
+    const prev = document.getElementById('upload-preview');
+    prev.src = dataUrl; prev.style.display = 'block';
+    showScreen('upload'); renderUploadAnalyzing(); runAnalysis(currentImgB64);
+  };
+  reader.readAsDataURL(f);
+}
+
+// Fetch listing page to enrich product name
+async function enrichFromListing(listingId, currentTitle) {
+  if (!listingId || !getApiKey()) return currentTitle;
+  const key = getApiKey();
+  try {
+    const url = `https://www.kleinanzeigen.de/s-anzeige/x-x/${listingId}`;
+    const resp = await fetch(`https://api.anthropic.com/v1/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': getApiKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: MODEL, max_tokens: 200,
+        system: 'Jesteś ekspertem od sprzętu fotograficznego. Na podstawie podanego tytułu ogłoszenia lub numeru modelu zwróć TYLKO pełną handlową nazwę produktu (np. "Canon EOS 5D Classic 12.8MP", "Nikon D7100 24MP"). Żadnego innego tekstu.',
+        messages: [{ role: 'user', content: `Ogłoszenie: "${currentTitle}". Jak nazywa się ten produkt?` }]
+      })
+    });
+    if (!resp.ok) return currentTitle;
+    const d = await resp.json();
+    const name = d.content?.[0]?.text?.trim();
+    return (name && name.length < 80) ? name : currentTitle;
+  } catch { return currentTitle; }
+}
+
+async function callAI(messages, sys) {
+  const key = getApiKey() || promptApiKey(); if (!key) { throw new Error('Funkcje AI wymagają klucza API. Podaj go w ustawieniach (⚙️) lub przy następnym wywołaniu.'); }
+  const r = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model: MODEL, max_tokens: 1000, system: sys, messages }) });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e?.error?.message || 'Błąd API: ' + r.status); }
+  const d = await r.json(); return d.content?.[0]?.text || '';
+}
+
+async function runAnalysis(data) {
+  setAnalyzing(true);
+  try {
+    const sys = `Analizujesz zrzuty ekranu z Kleinanzeigen. Zwróć TYLKO prawidłowy JSON bez backtick-ów:
+{"type":"listing","itemTitle":null,"itemDescription":null,"price":null,"messages":[],"trackingNumber":null,"carrier":null,"finalPrice":null,"listingId":null}
+messages: [{"sender":"seller","originalText":"","translatedText":""}]
+carrier: "DHL"|"Hermes"|"DPD"|"GLS"|null. Tłumacz z niemieckiego na polski w translatedText.
+Dla itemTitle podaj czytelną nazwę produktu (np. "Canon EOS 5D Classic" zamiast "DS126091", "Nikon D7100" zamiast numeru modelu).
+Jeśli widzisz numer ogłoszenia lub URL na screenshocie, zapisz ID ogłoszenia w polu listingId.`;
+    const txt = await callAI([{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } }, { type: 'text', text: 'Przeanalizuj screenshot z Kleinanzeigen.' }] }], sys);
+    currentAnalysis = JSON.parse(txt.replace(/```json|```/g, '').trim());
+    renderUploadResult();
+  } catch(e) { currentAnalysis = { error: e.message }; renderUploadError(e.message); }
+  finally { setAnalyzing(false); }
+}
+
+function setAnalyzing(v) { /* handled by renderUploadAnalyzing */ }
+
+function applyTo(itemId) {
+  if (!currentAnalysis || currentAnalysis.error) return;
+  const a = currentAnalysis;
+  const msgs = (a.messages || []).map(m => ({ id: genId(), timestamp: new Date().toISOString(), sender: m.sender, originalText: m.originalText, translatedText: m.translatedText }));
+  const url = a.trackingNumber ? getTrackUrl(a.carrier, a.trackingNumber) : null;
+  const cur = getItem(itemId);
+  const autoLS = autoLogisticStatus(a, cur.logisticStatus);
+  updateItem(itemId, { trackingNumber: a.trackingNumber || cur.trackingNumber, carrier: a.carrier || cur.carrier, trackingUrl: url || cur.trackingUrl, finalPrice: a.finalPrice || cur.finalPrice, messages: [...(cur.messages || []), ...msgs], logisticStatus: autoLS });
+  goItem(itemId);
+}
+
+async function createNewItem() {
+  const a = currentAnalysis || {};
+  const url = a.trackingNumber ? getTrackUrl(a.carrier, a.trackingNumber) : null;
+  const autoLS2 = autoLogisticStatus(a, '');
+  // Try to enrich product name from model number
+  if (a.listingId && getApiKey()) {
+    const enriched = await enrichFromListing(a.listingId, a.itemTitle || 'Nowy przedmiot');
+    if (enriched) a.itemTitle = enriched;
+  }
+  const item = { id: genId(), title: a.itemTitle || 'Nowy przedmiot', description: a.itemDescription || '', askingPrice: a.price || null, finalPrice: a.finalPrice || null, status: 'negotiating', carrier: a.carrier || null, trackingNumber: a.trackingNumber || null, trackingUrl: url, thumbnail: currentImgPrev, watchlist: false, conversationUrl: null, listingUrl: null, notes: '', logisticStatus: autoLS2, messages: (a.messages || []).map(m => ({ id: genId(), timestamp: new Date().toISOString(), sender: m.sender, originalText: m.originalText, translatedText: m.translatedText })), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  items.unshift(item); saveItems(); goItem(item.id);
+}
+
+function renderHome() {
+  const list = document.getElementById('items-list');
+  let filtered = items;
+  if (currentFilter === 'active') filtered = items.filter(i => !i.watchlist && i.status !== 'received' && i.status !== 'closed');
+  if (currentFilter === 'closed') filtered = items.filter(i => i.status === 'closed');
+  if (currentFilter === 'watchlist') filtered = items.filter(i => i.watchlist);
+  if (currentLsFilter) filtered = filtered.filter(i => (i.logisticStatus || '') === currentLsFilter);
+  if (currentSearch) {
+    const q = currentSearch.toLowerCase();
+    filtered = filtered.filter(i =>
+      (i.title || '').toLowerCase().includes(q) ||
+      (i.trackingNumber || '').toLowerCase().includes(q)
+    );
+  }
+  filtered = sortItems(filtered, currentSort);
+
+  syncFilterSelects();
+  const sortSel = document.getElementById('filter-sort');
+  if (sortSel) sortSel.value = currentSort;
+  if (filtered.length === 0) {
+    const hasFilters = currentFilter !== 'all' || currentLsFilter !== '' || currentSearch !== '';
+    list.innerHTML = `<div class="empty" style="padding:32px 24px">
+      <div style="font-size:42px;margin-bottom:10px">${hasFilters ? '🔍' : '📦'}</div>
+      <div style="font-size:15px;font-weight:700;color:#777">${hasFilters ? 'Brak wyników' : 'Brak przedmiotów'}</div>
+      <div style="font-size:13px;color:#aaa;margin-top:6px;margin-bottom:${hasFilters?'14px':'0'}">${hasFilters ? 'Żaden przedmiot nie pasuje do aktywnych filtrów.' : 'Dodaj screenshot ogłoszenia.'}</div>
+      ${hasFilters ? '<button onclick="resetFilters()" style="padding:8px 18px;background:#E88B00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✕ Wyczyść filtry</button>' : ''}
+    </div>`;
+    return;
+  }
+  // Update count in filter bar
+  const countEl = document.getElementById('item-count');
+  if (countEl) countEl.textContent = filtered.length + ' poz.';
+
+  list.innerHTML = filtered.map(item => {
+    const statusBadge = item.watchlist ? `<span class="badge blue">\ud83d\udd01 Wróć</span>` : item.status === 'closed' ? `<span class="badge" style="background:#eee;color:#999">\u26d4 Zamknięte</span>` : item.status === 'purchased' ? `<span class="badge green">\u2705 Kupiono</span>` : item.status === 'shipped' ? `<span class="badge orange">\ud83d\ude9a W drodze</span>` : item.status === 'received' ? `<span class="badge green">\u2705 Odebrano</span>` : `<span class="badge yellow">\ud83d\udfe1 Negocjacje</span>`;
+    const closedStyle = item.status === 'closed' ? 'opacity:0.5;' : '';
+    const lsBadge = item.logisticStatus ? `<span class="badge blue">${lsLabel(item.logisticStatus)}</span>` : '';
+    const alertBadges = getAlertBadges(item);
+    const priceStr = item.finalPrice ? `\ud83d\udcb0 ${item.finalPrice} EUR` : item.askingPrice ? `Cena wywoławcza: ${item.askingPrice} EUR` : 'Cena nieznana';
+    const trackStr = item.trackingNumber ? `<div class="item-track">\ud83d\ude9a ${item.carrier}: ${item.trackingNumber}</div>` : '';
+    const notesStr = item.notes ? `<div style="font-size:11px;color:#888;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${esc(item.notes.substring(0, 60))}${item.notes.length > 60 ? '...' : ''}</div>` : '';
+    return `<div class="item-row" onclick="goItem('${item.id}')" style="${closedStyle}">
+      <div class="item-thumb">${item.thumbnail ? `<img src="${item.thumbnail}" alt="">` : '\ud83d\udce6'}</div>
+      <div class="item-info">
+        <div class="item-title">${esc(item.title)}</div>
+        <div class="item-sub">${statusBadge} ${lsBadge} ${alertBadges} ${priceStr}</div>
+        ${trackStr}
+        ${notesStr}
+      </div>
+      <div class="item-arrow">\u203a</div>
+    </div>`;
+  }).join('');
+}
+
+function renderUploadAnalyzing() {
+  document.getElementById('upload-content').innerHTML = `<div class="card analyzing-box"><div class="spinner">🔍</div><div style="font-size:15px;font-weight:700">Analizuję screenshot...</div><div style="font-size:12px;color:#888;margin-top:5px">AI wyciąga informacje i tłumaczy wiadomości</div></div>`;
+}
+
+function renderUploadError(msg) {
+  document.getElementById('upload-content').innerHTML = `<div class="error-box"><div style="color:#c00;font-weight:700;margin-bottom:8px">❌ Błąd analizy</div><div style="font-size:13px;color:#a00;margin-bottom:12px">${esc(msg)}</div><button class="btn" style="width:auto;padding:8px 20px;font-size:13px" onclick="renderUploadAnalyzing();runAnalysis(currentImgB64)">Spróbuj ponownie</button></div>`;
+}
+
+function renderUploadResult() {
+  const a = currentAnalysis;
+  const msgsHtml = (a.messages || []).length > 0 ? `<div style="margin-top:10px"><div class="lbl">Wiadomości (${a.messages.length})</div>${a.messages.map(m => `<div style="margin-bottom:8px;padding:8px 10px;background:${m.sender==='buyer'?'#fff8ee':'#f7f4ee'};border-radius:8px;border-left:3px solid ${m.sender==='buyer'?AC:'#ccc'}"><div style="font-size:10px;color:#888;margin-bottom:3px">${m.sender==='seller'?'Sprzedający 🇩🇪':'Ty'}</div><div style="font-size:13px">${esc(m.translatedText)}</div>${m.originalText!==m.translatedText?`<div style="font-size:11px;color:#bbb;font-style:italic;margin-top:2px">🇩🇪 ${esc(m.originalText)}</div>`:''}</div>`).join('')}</div>` : '';
+  const existingItems = items.map(item => `<button class="btn-outline" onclick="applyTo('${item.id}')">📦 ${esc(item.title)}</button>`).join('');
+  document.getElementById('upload-content').innerHTML = `<div class="card fade-in"><div style="margin-bottom:10px"><span class="badge green">✅ Przeanalizowano</span><span class="badge orange">${a.type==='listing'?'Ogłoszenie':a.type==='conversation'?'Rozmowa':'Śledzenie'}</span></div>${a.itemTitle?`<div style="font-weight:700;font-size:15px;margin-bottom:6px">${esc(a.itemTitle)}</div>`:''} ${a.price?`<div style="font-size:13px;color:#555;margin-bottom:4px">💰 Cena: <strong>${a.price} EUR</strong></div>`:''} ${a.trackingNumber?`<div style="font-size:13px;color:${AC};font-weight:700">📦 ${esc(a.carrier)}: ${esc(a.trackingNumber)}</div>`:''} ${msgsHtml}</div><div class="lbl mb10">Dodaj do:</div>${fromId?`<button class="btn mb10" onclick="applyTo('${fromId}')">➕ Dodaj do bieżącego przedmiotu</button>`:''} ${existingItems}<button class="btn" style="background:${fromId?'#555':AC}" onclick="createNewItem()">✨ Utwórz nowy przedmiot</button>`;
+}
+
+function renderItem() {
+  const cur = getItem(currentId); if (!cur) return;
+  const statusOptions = Object.entries(ST).map(([v, { l }]) => `<option value="${v}" ${cur.status===v?'selected':''}>${l}</option>`).join('');
+  const trackHtml = cur.trackingNumber ? `<div class="track-box"><div class="track-num">${esc(cur.carrier)}: ${esc(cur.trackingNumber)}</div>${cur.trackingUrl?`<a class="track-link" href="${cur.trackingUrl}" target="_blank">🔍 Śledź paczkę →</a>`:''}</div>` : `<div style="font-size:13px;color:#bbb">Brak numeru śledzenia.</div>`;
+  const convUrl = cur.conversationUrl ? `<a href="${cur.conversationUrl}" target="_blank" style="font-size:12px;color:${AC};font-weight:600;text-decoration:none">💬 Otwórz rozmowę na Kleinanzeigen →</a>` : '';
+  const listingUrl = cur.listingUrl ? `<a href="${cur.listingUrl}" target="_blank" style="font-size:12px;color:${AC};font-weight:600;text-decoration:none">🏷️ Zobacz ogłoszenie →</a>` : '';
+  const notesHtml = cur.notes ? `<div class="note-box">${linkify(cur.notes)}</div>` : '';
+  const msgsHtml = cur.messages && cur.messages.length > 0 ? `<div class="chat-list">${cur.messages.map(msg => `<div class="chat-row ${msg.sender==='buyer'?'me':'them'}"><div class="chat-who">${msg.sender==='seller'?'🇩🇪 Sprzedający':'Ty'}</div><div class="bubble ${msg.sender==='buyer'?'me':'them'}">${esc(msg.translatedText||msg.originalText)}${msg.originalText&&msg.originalText!==msg.translatedText?`<div class="bubble-orig">🇩🇪 ${esc(msg.originalText)}</div>`:''}</div></div>`).join('')}</div>` : `<div style="text-align:center;padding:14px 0;color:#bbb;font-size:13px">Brak wiadomości. Dodaj screenshot z rozmowy.</div>`;
+  const draftResultHtml = draftOut ? `<div class="draft-result" id="draft-result-box"><div class="lbl">GOTOWA WIADOMOŚĆ — skopiuj do Kleinanzeigen:</div><div class="draft-text" id="draft-text-out">${esc(draftOut)}</div><button class="copy-btn" onclick="copyDraft()">📋 Kopiuj</button></div>` : '';
+
+  document.getElementById('item-content').innerHTML = `
+    <div class="card">
+      <div class="section-header" style="margin-bottom:8px">
+        <div style="font-weight:700;font-size:16px;flex:1;margin-right:8px">${esc(cur.title)}</div>
+        <select class="status-select" onchange="changeStatus(this.value)">${statusOptions}</select>
+      </div>
+      <div class="info-row">
+        ${cur.askingPrice?`<div class="info-item">Wywoławcza: <strong>${cur.askingPrice} EUR</strong></div>`:''}
+        ${cur.finalPrice?`<div class="info-item green">💰 Zapłacono: <strong>${cur.finalPrice} EUR</strong></div>`:''}
+        ${cur.logisticStatus?`<div class="info-item"><span class="badge blue">${lsLabel(cur.logisticStatus)}</span></div>`:''}
+      </div>
+      ${cur.description?`<div style="font-size:12px;color:#888;margin-top:6px;line-height:1.5">${esc(cur.description)}</div>`:''}
+      ${cur.watchlist?`<div style="margin-top:8px"><span class="badge blue">🔁 Lista obserwowanych</span></div>`:''}
+    </div>
+
+    ${notesHtml}
+
+    ${convUrl || listingUrl ? `<div class="card" style="padding:10px 14px;display:flex;flex-direction:column;gap:8px">${convUrl}${listingUrl}</div>` : ''}
+
+    <div class="card">
+      <div class="section-header" style="margin-bottom:8px">
+        <div class="lbl">🚦 Status logistyczny</div>
+      </div>
+      ${buildLsSelect(cur.logisticStatus)}
+    </div>
+
+    <div class="card">
+      <div class="section-header">
+        <div class="lbl">📦 Śledzenie przesyłki</div>
+        <button class="btn-sm" onclick="toggleTrackEdit()">${cur.trackingNumber?'Edytuj':'+ Dodaj'}</button>
+      </div>
+      <div id="track-view">${trackHtml}</div>
+      <div id="track-edit" style="display:none">
+        <select class="inp mb8" id="track-carrier">${['DHL','Hermes','DPD','GLS'].map(c=>`<option ${(cur.carrier||'DHL')===c?'selected':''}>${c}</option>`).join('')}</select>
+        <input class="inp mb8" id="track-num" type="text" placeholder="Numer śledzenia" value="${esc(cur.trackingNumber||'')}">
+        <button class="btn" onclick="saveTracking()">Zapisz numer</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header mb14" style="margin-bottom:12px">
+        <div class="lbl">💬 Rozmowa (${(cur.messages||[]).length})</div>
+        <label class="upload-small">+ Screenshot<input type="file" accept="image/*" onchange="handleFile(event,'${cur.id}')"></label>
+      </div>
+      ${msgsHtml}
+    </div>
+
+    <div class="card">
+      <div class="lbl">✍️ Napisz odpowiedź po niemiecku</div>
+      <textarea class="inp mb8" id="draft-input" placeholder="Opisz po polsku co chcesz napisać..."></textarea>
+      <button class="btn" id="draft-btn" onclick="generateDraft()">🇩🇪 Generuj wiadomość po niemiecku</button>
+      ${draftResultHtml}
+    </div>
+
+    <div class="card">
+      <div class="lbl">💰 Cena zakupu</div>
+      <div class="row">
+        <input class="inp" id="fp-input" type="number" placeholder="Kwota w EUR" value="${cur.finalPrice||''}">
+        <button style="padding:10px 18px;background:${AC};color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;font-family:inherit;flex-shrink:0" onclick="savePrice()">Zapisz</button>
+      </div>
+    </div>
+
+    ${(cur.changelog && cur.changelog.length > 0) ? `<div class="card">
+      <div class="lbl">📜 Historia zmian (${cur.changelog.length})</div>
+      <div style="max-height:200px;overflow-y:auto;font-size:12px;line-height:1.6">
+        ${[...cur.changelog].reverse().map(c => {
+          const d = new Date(c.date).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+          const src = c.source === 'patch' ? '🔄' : c.source === 'auto' ? '⚙️' : '✏️';
+          return `<div style="padding:3px 0;border-bottom:1px solid rgba(0,0,0,0.05)">${src} <strong>${esc(c.field)}</strong>: ${esc(String(c.oldValue ?? '—'))} → ${esc(String(c.newValue ?? '—'))} <span style="color:#aaa">${d}</span></div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
+
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <button class="btn" style="background:${cur.watchlist?'#888':'#1a7a1a'}" onclick="toggleWatchlist()">${cur.watchlist?'Usuń z listy obserwowanych':'🔁 Dodaj do listy obserwowanych'}</button>
+    </div>
+    <button class="btn ghost" onclick="deleteItem()">🗑️ Usuń przedmiot</button>
+  `;
+}
+
+function changeStatus(val) { updateItem(currentId, { status: val }); document.getElementById('header-sub').textContent = ST[val]?.e + ' ' + ST[val]?.l; }
+function toggleTrackEdit() {
+  const v = document.getElementById('track-view'); const e = document.getElementById('track-edit');
+  const cur = getItem(currentId);
+  if (e.style.display === 'none') { e.style.display = 'block'; v.style.display = 'none'; }
+  else { e.style.display = 'none'; v.style.display = 'block'; }
+}
+function saveLogisticStatus(val) { updateItem(currentId, { logisticStatus: val }); }
+
+function buildLsSelect(currentVal) {
+  const opts = LS.map(l => `<option value="${l.value}" ${(currentVal||'') === l.value ? 'selected' : ''}>${l.label}</option>`).join('');
+  return `<select onchange="saveLogisticStatus(this.value)" style="width:100%;font-size:14px;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;background:#fafaf7;cursor:pointer;font-family:inherit">${opts}</select>`;
+}
+
+function saveTracking() {
+  const num = document.getElementById('track-num').value.trim();
+  const car = document.getElementById('track-carrier').value;
+  if (!num) return;
+  updateItem(currentId, { trackingNumber: num, carrier: car, trackingUrl: getTrackUrl(car, num) });
+  renderItem();
+}
+function savePrice() { const v = parseFloat(document.getElementById('fp-input').value); if (isNaN(v)) return; updateItem(currentId, { finalPrice: v, status: 'purchased' }); renderItem(); }
+function toggleWatchlist() { const cur = getItem(currentId); if (!cur) return; updateItem(currentId, { watchlist: !cur.watchlist }); renderItem(); }
+function deleteItem() { if (!confirm('Usunąć ten przedmiot?')) return; items = items.filter(i => i.id !== currentId); saveItems(); showScreen('home'); }
+
+async function generateDraft() {
+  const txt = document.getElementById('draft-input')?.value?.trim(); if (!txt) return;
+  const cur = getItem(currentId); if (!cur) return;
+  const btn = document.getElementById('draft-btn'); btn.textContent = '⏳ Generuję...'; btn.disabled = true;
+  try {
+    const ctx = (cur.messages||[]).slice(-8).map(m => `${m.sender==='seller'?'Sprzedający':'Kupujący'}: ${m.originalText}`).join('\n');
+    draftOut = await callAI([{ role: 'user', content: `Kupuję na Kleinanzeigen.\nPrzedmiot: ${cur.title}\nCena: ${cur.finalPrice?cur.finalPrice+' EUR':cur.askingPrice?cur.askingPrice+' EUR':'nieznana'}${ctx?'\nRozmowa:\n'+ctx:''}\nMoje zamierzenie: ${txt}\nNapisz krótką, grzeczną wiadomość po niemiecku. Zwróć TYLKO tekst wiadomości.` }], 'Pomagasz pisać wiadomości po niemiecku na Kleinanzeigen. Pisz naturalnie, grzecznie i zwięźle.');
+    draftOut = draftOut.trim(); renderItem();
+    const inp = document.getElementById('draft-input'); if (inp) inp.value = txt;
+  } catch(e) { draftOut = 'Błąd: '+e.message; renderItem(); }
+}
+
+function copyDraft() {
+  const txt = document.getElementById('draft-text-out')?.textContent || draftOut;
+  if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => { const btn = document.querySelector('.copy-btn'); if (btn) { btn.textContent = '✅ Skopiowano!'; setTimeout(() => btn.textContent = '📋 Kopiuj', 2000); } });
+  else { const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+}
+
+function esc(str) { if (!str && str !== 0) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function linkify(str) {
+  if (!str) return '';
+  const escaped = esc(str);
+  return escaped.replace(/(https?:\/\/[^\s<&]+)/g, '<a href="$1" target="_blank" style="color:var(--ac);word-break:break-all">$1</a>');
+}
+
+// ── Backup: Export / Import (Google Drive compatible) ──────────────────────
+
+function exportBackup() {
+  const data = {
+    version: 'ka_items_v2',
+    exportedAt: new Date().toISOString(),
+    itemCount: items.length,
+    items: JSON.parse(localStorage.getItem('ka_items_v2') || '[]')
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const u = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = u;
+  a.download = `ka-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(u);
+  log('📤', `Backup exported: ${data.itemCount} items`);
+}
+
+function importBackup(e) {
+  const f = e.target.files[0]; if (!f) return;
+  e.target.value = '';
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.version !== 'ka_items_v2') {
+        alert('Niekompatybilna wersja backupu! Oczekiwano: ka_items_v2');
+        return;
+      }
+      const currentCount = items.length;
+      if (!confirm(`Zastąpić ${currentCount} pozycji przez ${data.items.length} z backupu z ${data.exportedAt}?`)) return;
+      localStorage.setItem('ka_items_v2', JSON.stringify(data.items));
+      location.reload();
+    } catch (err) {
+      alert('Błąd parsowania pliku: ' + err.message);
+    }
+  };
+  reader.readAsText(f);
+}
+
+function diagSortDates() {
+  // Show items in DISPLAY order (after sort+filter), same as renderHome
+  let filtered = [...items];
+  if (currentFilter === 'active') filtered = filtered.filter(i => !i.watchlist && i.status !== 'received' && i.status !== 'closed');
+  if (currentFilter === 'closed') filtered = filtered.filter(i => i.status === 'closed');
+  if (currentFilter === 'watchlist') filtered = filtered.filter(i => i.watchlist);
+  if (currentLsFilter) filtered = filtered.filter(i => (i.logisticStatus || '') === currentLsFilter);
+  filtered = sortItems(filtered, currentSort);
+
+  const rows = filtered.map((item, idx) => {
+    const msgs = item.messages || [];
+    const timestamps = msgs.map(m => m.timestamp).filter(Boolean)
+      .map(t => new Date(t).getTime()).filter(t => !isNaN(t));
+    const allClose = timestamps.length > 0 &&
+      (Math.max(...timestamps) - Math.min(...timestamps)) < 60000;
+    return {
+      pos: idx + 1,
+      title: (item.title || '?').slice(0, 35),
+      status: item.status || '—',
+      updatedAt: item.updatedAt,
+      msgTsAllClose: allClose,
+      msgTsExample: timestamps.length > 0 ? new Date(timestamps[0]).toISOString() : null
+    };
+  });
+  console.log(`Aktywny filtr: "${currentFilter}", sortowanie: "${currentSort}", widocznych itemów: ${filtered.length}`);
+  console.table(rows);
+  alert(`Aktywny filtr: "${currentFilter}", sort: "${currentSort}"\nWidocznych itemów: ${filtered.length}\n\nPełna tabela w konsoli (F12 → Console)`);
+}
+
+function fixSortDates() {
+  let fixed = 0;
+  items.forEach(item => {
+    const msgs = item.messages || [];
+    const maxMsgTs = msgs.map(m => m.timestamp).filter(Boolean)
+      .map(t => new Date(t).getTime()).filter(t => !isNaN(t))
+      .reduce((max, t) => Math.max(max, t), 0);
+    if (maxMsgTs === 0) return;
+    const updatedTs = item.updatedAt ? new Date(item.updatedAt).getTime() : 0;
+    if (maxMsgTs > updatedTs) {
+      item.updatedAt = new Date(maxMsgTs).toISOString();
+      fixed++;
+    }
+  });
+  if (fixed > 0) {
+    saveItems();
+    renderItems();
+    alert(`Naprawiono daty sortowania dla ${fixed} pozycji.`);
+  } else {
+    alert('Wszystkie daty sortowania są już poprawne.');
+  }
+}
+
+// ── Sync: Export / Import ────────────────────────────────────────────────────
+
+function exportData() {
+  const exportObj = {
+    exportedAt: new Date().toISOString(),
+    appVersion: APP_VERSION,
+    itemCount: items.length,
+    items: items.map(item => ({
+      title: item.title,
+      description: item.description || '',
+      status: item.status,
+      logisticStatus: item.logisticStatus || '',
+      askingPrice: item.askingPrice,
+      finalPrice: item.finalPrice,
+      carrier: item.carrier,
+      trackingNumber: item.trackingNumber,
+      conversationUrl: item.conversationUrl,
+      listingUrl: item.listingUrl || null,
+      notes: item.notes || '',
+      watchlist: item.watchlist || false,
+      messages: (item.messages || []).map(m => ({
+        sender: m.sender,
+        originalText: m.originalText,
+        translatedText: m.translatedText,
+        timestamp: m.timestamp
+      })),
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt
+    }))
+  };
+  const json = JSON.stringify(exportObj, null, 2);
+  const btn = document.getElementById('export-btn');
+  // Show in textarea for easy viewing
+  const patchInput = document.getElementById('patch-input');
+  if (patchInput) { patchInput.value = json; patchInput.scrollTop = 0; }
+  // Copy to clipboard
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(json).then(() => {
+      btn.textContent = '✅ Skopiowano do schowka!';
+      btn.style.background = '#1a7a1a';
+      setTimeout(() => { btn.textContent = '📋 Kopiuj dane do schowka'; btn.style.background = ''; }, 3000);
+    });
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = json; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    btn.textContent = '✅ Skopiowano!'; setTimeout(() => btn.textContent = '📋 Kopiuj dane do schowka', 3000);
+  }
+  const stats = document.getElementById('export-stats');
+  const sizeKb = (new Blob([json]).size / 1024).toFixed(1);
+  stats.innerHTML = `<div class="sync-stats">
+    <div class="sync-stat"><span class="num">${items.length}</span>pozycji</div>
+    <div class="sync-stat"><span class="num">${items.reduce((a,i) => a + (i.messages||[]).length, 0)}</span>wiadomości</div>
+    <div class="sync-stat"><span class="num">${sizeKb} KB</span>rozmiar</div>
+  </div>
+  <div style="font-size:11px;color:var(--muted);margin-top:6px">💡 Dane skopiowane do schowka i wyświetlone w polu importu poniżej.</div>`;
+}
+
+function renderSyncOverview() {
+  const el = document.getElementById('sync-overview');
+  if (!el) return;
+  const byStatus = {};
+  items.forEach(i => { const k = i.logisticStatus || 'brak'; byStatus[k] = (byStatus[k]||0)+1; });
+  const byTx = {};
+  items.forEach(i => { byTx[i.status] = (byTx[i.status]||0)+1; });
+  const withTracking = items.filter(i => i.trackingNumber).length;
+  const watchlist = items.filter(i => i.watchlist).length;
+  el.innerHTML = `<div class="sync-stats">
+    <div class="sync-stat"><span class="num">${items.length}</span>pozycji</div>
+    <div class="sync-stat"><span class="num">${withTracking}</span>z numerem śledzenia</div>
+    <div class="sync-stat"><span class="num">${watchlist}</span>do obserwowania</div>
+  </div>
+  <div style="font-size:12px;color:var(--muted);margin-top:8px">
+    <div style="margin-bottom:4px;font-weight:600">Status transakcji:</div>
+    ${Object.entries(byTx).map(([k,v]) => `${ST[k]?.e||''} ${ST[k]?.l||k}: ${v}`).join(' · ')}
+  </div>
+  <div style="font-size:12px;color:var(--muted);margin-top:6px">
+    <div style="margin-bottom:4px;font-weight:600">Status logistyczny:</div>
+    ${Object.entries(byStatus).map(([k,v]) => `${lsLabel(k)||'— brak —'}: ${v}`).join(' · ')}
+  </div>
+  <div style="font-size:11px;color:#bbb;margin-top:10px">Ostatnia aktualizacja: ${items.length > 0 ? new Date(Math.max(...items.map(i => new Date(i.updatedAt||0).getTime()))).toLocaleString('pl-PL') : '—'}</div>`;
+}
+
+// ── Direct Scan Import ────────────────────────────────────────────────────────
+
+function importScanDirect(ev) {
+  const file = ev.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const convs = (data.conversations || []).filter(c => c.changeStatus !== 'unchanged');
+      if (!convs.length) {
+        document.getElementById('scan-report').innerHTML = `<div class="sync-report">ℹ️ Brak nowych lub zaktualizowanych konwersacji w pliku.</div>`;
+        return;
+      }
+      const report = { created: [], updated: [], skipped: [], failed: [] };
+
+      convs.forEach(conv => {
+        // Skip records scraper failed to open (no conversationId + no messages)
+        if (!conv.conversationId && (!conv.messages || conv.messages.length === 0)) {
+          report.failed.push(conv.sellerName || conv.listingTitle || '?');
+          return;
+        }
+
+        const convUrl = conv.conversationUrl || null;
+        const existing = convUrl ? items.find(i => i.conversationUrl === convUrl) : null;
+
+        // Build title
+        const rawTitle = [conv.listingTitle, conv.sellerName ? `(${conv.sellerName})` : ''].filter(Boolean).join(' ').trim();
+        const title = rawTitle || conv.sellerName || 'Nieznany przedmiot';
+
+        // Build auto-note from listing data
+        const l = conv.listing;
+        const noteParts = [];
+        if (l?.location) noteParts.push(`📍 ${l.location}`);
+        if (l?.condition) noteParts.push(`Stan: ${l.condition}`);
+        if (l?.shippingAvailable) noteParts.push(`Wysyłka: ${l.shippingCost || 'tak'}`);
+        const autoNote = noteParts.join(' | ');
+
+        // Map messages — raw text, no translation yet
+        const mappedMsgs = (conv.messages || []).map(m => ({
+          id: genId(),
+          sender: m.sender === 'buyer' ? 'buyer' : 'seller',
+          originalText: m.text || '',
+          translatedText: '',
+          timestamp: (m.date && !isNaN(new Date(m.date))) ? m.date : new Date().toISOString()
+        })).filter(m => m.originalText);
+
+        const pc = conv.preClassification || {};
+        const trackUrl = pc.detectedTracking && pc.detectedCarrier ? getTrackUrl(pc.detectedCarrier, pc.detectedTracking) : null;
+        const ts = conv.lastMessageDate || getLastMsgDate(mappedMsgs) || conv.lastActivity || new Date().toISOString();
+
+        if (conv.changeStatus === 'updated' && existing) {
+          // Add only new messages to existing record
+          const existingTexts = new Set((existing.messages||[]).map(m => m.originalText));
+          const uniqueNew = mappedMsgs.filter(m => m.originalText && !existingTexts.has(m.originalText));
+          if (uniqueNew.length > 0) {
+            existing.messages = [...(existing.messages||[]), ...uniqueNew];
+            existing.updatedAt = conv.lastMessageDate || getLastMsgDate(existing.messages) || new Date().toISOString();
+            report.updated.push(`${title} (+${uniqueNew.length} wiad.)`);
+          } else {
+            report.skipped.push(title);
+          }
+        } else if (existing) {
+          report.skipped.push(`${title} (już istnieje)`);
+        } else {
+          // Create new skeleton
+          const item = {
+            id: genId(),
+            title,
+            description: l?.description || '',
+            status: pc.suggestedStatus || 'negotiating',
+            logisticStatus: pc.suggestedLogistic || '',
+            askingPrice: l?.price || null,
+            finalPrice: null,
+            carrier: pc.detectedCarrier || null,
+            trackingNumber: pc.detectedTracking || null,
+            trackingUrl: trackUrl,
+            conversationUrl: convUrl,
+            listingUrl: conv.listingUrl || null,
+            notes: autoNote,
+            watchlist: false,
+            thumbnail: null,
+            messages: mappedMsgs,
+            createdAt: ts,
+            updatedAt: ts,
+          };
+          items.unshift(item);
+          report.created.push(title);
+        }
+      });
+
+      saveItems();
+      renderSyncOverview();
+      document.getElementById('scan-report').innerHTML = `<div class="sync-report">
+        ✅ Import skanu zakończony:<br>
+        📋 ${report.created.length} nowych szkieletów<br>
+        ✏️ ${report.updated.length} zaktualizowanych wiadomości<br>
+        ⏭️ ${report.skipped.length} pominiętych (już istnieją)<br>
+        ${report.failed.length ? `⚠️ ${report.failed.length} rekordów bez danych (scraper nie otworzył):<br><small style="color:#b45309">${report.failed.map(n => esc(n)).join(', ')}</small>` : ''}
+      </div>`;
+    } catch(err) {
+      document.getElementById('scan-report').innerHTML = `<div class="sync-report error">❌ Błąd parsowania pliku: ${esc(err.message)}</div>`;
+    }
+    ev.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function parsePatch(raw) {
+  try {
+    const clean = raw.trim().replace(/```json|```/g, '').trim();
+    const patch = JSON.parse(clean);
+    // Validate structure
+    if (!patch || typeof patch !== 'object') throw new Error('Patch musi być obiektem JSON');
+    if (!patch.updates && !patch.newItems) throw new Error('Patch musi zawierać "updates" lub "newItems"');
+    if (patch.updates && !Array.isArray(patch.updates)) throw new Error('"updates" musi być tablicą');
+    if (patch.newItems && !Array.isArray(patch.newItems)) throw new Error('"newItems" musi być tablicą');
+    return { ok: true, patch };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+function findItemByMatch(matchStr) {
+  // Match by conversationUrl (full URL or just conversationId part)
+  if (!matchStr) return null;
+  // Reject generic placeholders — they match every record (e.g. "conversationId" is in every URL)
+  const INVALID = ['conversationid', 'conversationurl', 'match', 'id', 'url', 'tutaj', 'here'];
+  if (INVALID.includes(matchStr.toLowerCase().trim())) return null;
+  return items.find(i => {
+    if (!i.conversationUrl) return false;
+    // Exact match
+    if (i.conversationUrl === matchStr) return true;
+    // Match by conversationId fragment
+    if (i.conversationUrl.includes(matchStr)) return true;
+    if (matchStr.includes('conversationId=') && i.conversationUrl.includes(matchStr.split('conversationId=')[1])) return true;
+    return false;
+  }) || items.find(i => {
+    // Fallback: match by title (partial, case-insensitive)
+    if (!matchStr || !i.title) return false;
+    return i.title.toLowerCase().includes(matchStr.toLowerCase()) || matchStr.toLowerCase().includes(i.title.toLowerCase());
+  }) || null;
+}
+
+function parseMsgDate(m) {
+  // ISO timestamp (from app)
+  if (m.timestamp) {
+    const t = new Date(m.timestamp).getTime();
+    if (!isNaN(t)) return t;
+  }
+  // DD.MM.YYYY or DD.MM.YYYY HH:MM (from scraper)
+  if (m.date) {
+    const match = m.date.match(/^(\d{2})\.(\d{2})\.(\d{4})(?:\s+(\d{2}):(\d{2}))?$/);
+    if (match) {
+      const [, dd, mm, yyyy, hh = '00', min = '00'] = match;
+      const t = new Date(`${yyyy}-${mm}-${dd}T${hh}:${min}:00`).getTime();
+      if (!isNaN(t)) return t;
+    }
+  }
+  return null;
+}
+
+function getLastMsgDate(msgs) {
+  if (!msgs || msgs.length === 0) return null;
+  const dates = msgs.map(parseMsgDate).filter(t => t !== null);
+  return dates.length > 0 ? new Date(Math.max(...dates)).toISOString() : null;
+}
+
+function executePatch(patch, dryRun, strictMode = false) {
+  const report = { updated: [], created: [], errors: [], details: [] };
+
+  // Process updates
+  (patch.updates || []).forEach((upd, idx) => {
+    let item = findItemByMatch(upd.match);
+    if (!item) {
+      if (strictMode) {
+        report.errors.push(`Nie znaleziono rekordu dla "${upd.match}"`);
+        report.details.push(`⛔ Pominięto (tryb ścisły) — brak rekordu dla: "${esc(upd.match)}"`);
+        return;
+      }
+      // Auto-create new item from update data
+      const s = upd.set || {};
+      const convUrl = upd.match.startsWith('http') ? upd.match : `https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=${upd.match}`;
+      const trackUrl = s.trackingNumber && s.carrier ? getTrackUrl(s.carrier, s.trackingNumber) : null;
+      item = {
+        id: genId(),
+        title: s.title || 'Nowy przedmiot',
+        description: s.description || '',
+        status: s.status || 'negotiating',
+        logisticStatus: s.logisticStatus || '',
+        askingPrice: s.askingPrice || null,
+        finalPrice: s.finalPrice || null,
+        carrier: s.carrier || null,
+        trackingNumber: s.trackingNumber || null,
+        trackingUrl: trackUrl,
+        conversationUrl: convUrl,
+        listingUrl: s.listingUrl || null,
+        notes: s.notes || '',
+        watchlist: s.watchlist || false,
+        thumbnail: null,
+        messages: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      if (!dryRun) items.unshift(item);
+      report.created.push({ title: item.title });
+      report.details.push(`🆕 <strong>${esc(item.title)}</strong> — auto-utworzono z update (match: "${upd.match}")`);
+    }
+    const changes = [];
+    if (upd.set && typeof upd.set === 'object') {
+      Object.entries(upd.set).forEach(([key, val]) => {
+        // Track change for patch source
+        if (!dryRun && TRACKED_FIELDS.includes(key)) trackChange(item, key, val, 'patch');
+        if (val !== undefined && val !== null && item[key] !== val) {
+          changes.push(`${key}: "${item[key]||'—'}" → "${val}"`);
+          if (!dryRun) item[key] = val;
+        }
+      });
+      // Auto-generate trackingUrl if tracking number changed
+      if (upd.set.trackingNumber && upd.set.carrier) {
+        const url = getTrackUrl(upd.set.carrier, upd.set.trackingNumber);
+        if (url && !dryRun) item.trackingUrl = url;
+      } else if (upd.set.trackingNumber && item.carrier) {
+        const url = getTrackUrl(item.carrier, upd.set.trackingNumber);
+        if (url && !dryRun) item.trackingUrl = url;
+      }
+    }
+    // Append new messages
+    if (upd.addMessages && Array.isArray(upd.addMessages) && upd.addMessages.length > 0) {
+      const newMsgs = upd.addMessages.map(m => ({
+        id: genId(),
+        sender: m.sender || 'seller',
+        originalText: m.originalText || '',
+        translatedText: m.translatedText || m.originalText || '',
+        timestamp: m.timestamp || (parseMsgDate(m) ? new Date(parseMsgDate(m)).toISOString() : new Date().toISOString())
+      }));
+      // Deduplicate: skip messages with identical originalText already in item
+      const existingTexts = new Set((item.messages||[]).map(m => m.originalText));
+      const uniqueNew = newMsgs.filter(m => !existingTexts.has(m.originalText));
+      if (uniqueNew.length > 0) {
+        changes.push(`+${uniqueNew.length} nowych wiadomości`);
+        if (!dryRun) item.messages = [...(item.messages||[]), ...uniqueNew];
+      }
+    }
+    if (changes.length > 0) {
+      if (!dryRun) {
+        item.updatedAt = getLastMsgDate(item.messages) || new Date().toISOString();
+      }
+      report.updated.push({ title: item.title, changes });
+      report.details.push(`✏️ <strong>${esc(item.title)}</strong>: ${changes.join(', ')}`);
+    }
+  });
+
+  // Process new items
+  (patch.newItems || []).forEach((newItem, idx) => {
+    // Check if already exists by conversationUrl — merge instead of reject
+    if (newItem.conversationUrl) {
+      const existing = items.find(i => i.conversationUrl && i.conversationUrl === newItem.conversationUrl);
+      if (existing) {
+        // Force overwrite: replace all fields with patch data (null clears old values)
+        const mergeFields = ['title', 'status', 'logisticStatus', 'askingPrice', 'finalPrice', 'carrier', 'trackingNumber', 'listingUrl', 'notes', 'watchlist'];
+        const changes = [];
+        mergeFields.forEach(key => {
+          if (!(key in newItem)) return; // skip fields not present in patch
+          const val = newItem[key];
+          const norm = val ?? null;
+          const oldNorm = existing[key] ?? null;
+          if (oldNorm !== norm) {
+            if (!dryRun && TRACKED_FIELDS.includes(key)) trackChange(existing, key, norm, 'patch');
+            changes.push(`${key}: "${oldNorm||'—'}" → "${norm||'—'}"`);
+            if (!dryRun) existing[key] = norm;
+          }
+        });
+        // Auto-generate or clear trackingUrl
+        if (!dryRun) {
+          existing.trackingUrl = (newItem.trackingNumber && newItem.carrier) ? getTrackUrl(newItem.carrier, newItem.trackingNumber) : null;
+        }
+        // Replace messages entirely with patch data (only if patch provides messages)
+        if (newItem.messages && newItem.messages.length > 0) {
+          const newMsgs = newItem.messages.map(m => ({
+            id: genId(), sender: m.sender || 'seller',
+            originalText: m.originalText || '', translatedText: m.translatedText || m.originalText || '',
+            timestamp: m.timestamp || (parseMsgDate(m) ? new Date(parseMsgDate(m)).toISOString() : new Date().toISOString())
+          }));
+          const existingCount = (existing.messages||[]).length;
+          if (newMsgs.length !== existingCount || newMsgs.some((m, i) => m.originalText !== (existing.messages[i]||{}).originalText)) {
+            changes.push(`wiadomości: ${existingCount} → ${newMsgs.length}`);
+            if (!dryRun) existing.messages = newMsgs;
+          }
+        }
+        if (changes.length > 0) {
+          if (!dryRun) existing.updatedAt = getLastMsgDate(existing.messages) || new Date().toISOString();
+          report.updated.push({ title: existing.title, changes });
+          report.details.push(`🔄 <strong>${esc(existing.title)}</strong> (merge): ${changes.join(', ')}`);
+        }
+        return;
+      }
+    }
+    if (strictMode) {
+      report.errors.push(`Nie znaleziono rekordu dla "${newItem.conversationUrl || newItem.title}"`);
+      report.details.push(`⛔ Pominięto (tryb ścisły) — brak rekordu dla: "<strong>${esc(newItem.title || newItem.conversationUrl || '?')}</strong>"`);
+      return;
+    }
+    const trackUrl = newItem.trackingNumber && newItem.carrier ? getTrackUrl(newItem.carrier, newItem.trackingNumber) : null;
+    const mappedMsgs = (newItem.messages || []).map(m => ({
+      id: genId(),
+      sender: m.sender || 'seller',
+      originalText: m.originalText || '',
+      translatedText: m.translatedText || m.originalText || '',
+      timestamp: m.timestamp || (parseMsgDate(m) ? new Date(parseMsgDate(m)).toISOString() : new Date().toISOString())
+    }));
+    const item = {
+      id: genId(),
+      title: newItem.title || 'Nowy przedmiot',
+      description: newItem.description || '',
+      status: newItem.status || 'negotiating',
+      logisticStatus: newItem.logisticStatus || '',
+      askingPrice: newItem.askingPrice || null,
+      finalPrice: newItem.finalPrice || null,
+      carrier: newItem.carrier || null,
+      trackingNumber: newItem.trackingNumber || null,
+      trackingUrl: trackUrl,
+      conversationUrl: newItem.conversationUrl || null,
+      listingUrl: newItem.listingUrl || null,
+      notes: newItem.notes || '',
+      watchlist: newItem.watchlist || false,
+      thumbnail: null,
+      messages: mappedMsgs,
+      createdAt: newItem.createdAt || newItem.lastMessageDate || newItem.lastActivity || new Date().toISOString(),
+      updatedAt: newItem.lastMessageDate || getLastMsgDate(mappedMsgs) || newItem.lastActivity || new Date().toISOString()
+    };
+    if (!dryRun) items.unshift(item);
+    report.created.push({ title: item.title });
+    report.details.push(`🆕 <strong>${esc(item.title)}</strong> — nowa pozycja (${(newItem.messages||[]).length} wiad.)`);
+  });
+
+  if (!dryRun) saveItems();
+  return report;
+}
+
+function renderPatchReport(report, isDryRun) {
+  const el = document.getElementById('patch-report');
+  const hasChanges = report.updated.length > 0 || report.created.length > 0;
+  const hasErrors = report.errors.length > 0;
+  
+  el.innerHTML = `<div class="sync-report ${!hasChanges && hasErrors ? 'error' : ''}">
+    <div style="font-weight:700;margin-bottom:8px">${isDryRun ? '👁 Podgląd zmian' : '✅ Aktualizacja zastosowana'}</div>
+    <div class="sync-stats" style="margin-bottom:8px">
+      <div class="sync-stat"><span class="num" style="color:#1a7a1a">${report.updated.length}</span>zaktualizowanych</div>
+      <div class="sync-stat"><span class="num" style="color:#0066cc">${report.created.length}</span>nowych</div>
+      ${hasErrors ? `<div class="sync-stat"><span class="num" style="color:#cc0000">${report.errors.length}</span>błędów</div>` : ''}
+    </div>
+    ${report.details.length > 0 ? report.details.map(d => `<div class="rpt-item">${d}</div>`).join('') : '<div style="color:#aaa">Brak zmian do zastosowania.</div>'}
+    ${hasErrors ? `<div style="margin-top:8px;padding:8px;background:#fff8f0;border-radius:6px;font-size:12px;color:#a05000">${report.errors.map(e => `⚠️ ${esc(e)}`).join('<br>')}</div>` : ''}
+  </div>`;
+}
+
+function loadPatchFile(e) {
+  const f = e.target.files[0]; if (!f) return;
+  e.target.value = '';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const text = ev.target.result;
+    document.getElementById('patch-input').value = text;
+    // Auto-preview
+    const result = parsePatch(text);
+    if (result.ok) {
+      const backup = JSON.parse(JSON.stringify(items));
+      const report = executePatch(result.patch, true);
+      items = backup;
+      renderPatchReport(report, true);
+    } else {
+      document.getElementById('patch-report').innerHTML = `<div class="sync-report error">❌ Błąd parsowania pliku: ${esc(result.error)}</div>`;
+    }
+  };
+  reader.readAsText(f);
+}
+
+function previewPatch() {
+  const raw = document.getElementById('patch-input').value;
+  if (!raw.trim()) { alert('Wklej patch JSON.'); return; }
+  const result = parsePatch(raw);
+  if (!result.ok) {
+    document.getElementById('patch-report').innerHTML = `<div class="sync-report error">❌ Błąd parsowania: ${esc(result.error)}</div>`;
+    return;
+  }
+  const strictMode = document.getElementById('strict-mode-cb')?.checked || false;
+  const backup = JSON.parse(JSON.stringify(items));
+  const report = executePatch(result.patch, true, strictMode);
+  items = backup;
+  renderPatchReport(report, true);
+}
+
+function applyPatch() {
+  const raw = document.getElementById('patch-input').value;
+  if (!raw.trim()) { alert('Wklej patch JSON.'); return; }
+  const result = parsePatch(raw);
+  if (!result.ok) {
+    document.getElementById('patch-report').innerHTML = `<div class="sync-report error">❌ Błąd parsowania: ${esc(result.error)}</div>`;
+    return;
+  }
+  const strictMode = document.getElementById('strict-mode-cb')?.checked || false;
+  const modeLabel = strictMode ? ' [tryb ścisły]' : '';
+  if (!confirm(`Zastosować aktualizację?${modeLabel}\n\n${(result.patch.updates||[]).length} aktualizacji\n${(result.patch.newItems||[]).length} nowych pozycji`)) return;
+  const report = executePatch(result.patch, false, strictMode);
+  renderPatchReport(report, false);
+  renderSyncOverview();
+  if (report.updated.length > 0 || report.created.length > 0) {
+    document.getElementById('patch-input').value = '';
+  }
+}
+
+// ── End Sync ─────────────────────────────────────────────────────────────────
+
+migrateApiKey();
+loadItems();  renderHome();
+</script>
+<script>
+  if ('serviceWorker' in navigator)
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
