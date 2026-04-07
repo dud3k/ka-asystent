@@ -1704,8 +1704,8 @@ async function gistImportPatch() {
     renderPatchReport(report, false);
     renderSyncOverview();
     if (reportEl) {
-      const u = report.updated.length, c = report.created.length, sk = report.skipped.length;
-      reportEl.innerHTML = `<div class="sync-report" style="margin-top:8px">✅ Zaaplikowano patch z Gist: ${u} zaktualizowanych, ${c} nowych, ${sk} pominiętych</div>`;
+      const u = report.updated.length, c = report.created.length, e = report.errors.length;
+      reportEl.innerHTML = `<div class="sync-report" style="margin-top:8px">✅ Zaaplikowano patch z Gist: ${u} zaktualizowanych, ${c} nowych${e ? ', ' + e + ' błędów' : ''}</div>`;
     }
     // Usuń ka-patch.json z Gist
     await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
