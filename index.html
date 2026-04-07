@@ -1417,7 +1417,7 @@ function executePatch(patch, dryRun, strictMode = false) {
     }
     if (changes.length > 0) {
       if (!dryRun) {
-        item.updatedAt = getLastMsgDate(item.messages) || new Date().toISOString();
+        item.updatedAt = upd.lastMessageDate || getLastMsgDate(item.messages) || new Date().toISOString();
       }
       report.updated.push({ title: item.title, changes });
       report.details.push(`✏️ <strong>${esc(item.title)}</strong>: ${changes.join(', ')}`);
@@ -1462,7 +1462,7 @@ function executePatch(patch, dryRun, strictMode = false) {
           }
         }
         if (changes.length > 0) {
-          if (!dryRun) existing.updatedAt = getLastMsgDate(existing.messages) || new Date().toISOString();
+          if (!dryRun) existing.updatedAt = newItem.lastMessageDate || getLastMsgDate(existing.messages) || new Date().toISOString();
           report.updated.push({ title: existing.title, changes });
           report.details.push(`🔄 <strong>${esc(existing.title)}</strong> (merge): ${changes.join(', ')}`);
         }
