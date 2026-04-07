@@ -214,6 +214,13 @@
   </div>
 
   <div class="card sync-section">
+    <h3>🔧 Napraw sortowanie</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Ustawia datę ostatniej zmiany każdej pozycji na podstawie ostatniej wiadomości w historii. Uruchom jednorazowo jeśli kolejność nie zgadza się z Kleinanzeigen.</p>
+    <button class="btn" onclick="fixSortDates()" style="width:100%;background:#555">🔧 Napraw daty sortowania</button>
+    <div id="fix-sort-report" style="font-size:12px;color:#aaa;margin-top:8px"></div>
+  </div>
+
+  <div class="card sync-section">
     <h3>📋 Krok 1: Eksport danych</h3>
     <p>Kopiuje pełny stan aplikacji (z wiadomościami) do schowka. Wklej go do Claude jako kontekst.</p>
     <button class="btn" onclick="exportData()" id="export-btn">📋 Kopiuj dane do schowka</button>
@@ -1361,6 +1368,21 @@ function getLastMsgDate(msgs) {
   if (!msgs || msgs.length === 0) return null;
   const dates = msgs.map(parseMsgDate).filter(t => t !== null);
   return dates.length > 0 ? new Date(Math.max(...dates)).toISOString() : null;
+}
+
+function fixSortDates() {
+  let fixed = 0;
+  items.forEach(item => {
+    const fromMsgs = getLastMsgDate(item.messages);
+    if (fromMsgs && fromMsgs !== item.updatedAt) {
+      item.updatedAt = fromMsgs;
+      fixed++;
+    }
+  });
+  saveItems();
+  renderList();
+  const el = document.getElementById('fix-sort-report');
+  if (el) el.textContent = fixed > 0 ? `✅ Poprawiono ${fixed} pozycji` : 'Brak zmian — daty już są poprawne';
 }
 
 function executePatch(patch, dryRun, strictMode = false) {
