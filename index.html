@@ -113,33 +113,20 @@
 </div>
 
 <div id="settings-panel" style="display:none;max-width:480px;margin:0 auto;padding:12px 16px;background:#fff8ee;border-bottom:1px solid #e8dfc9;">
-  <div style="font-size:13px;font-weight:700;color:#888;margin-bottom:8px">🔑 Klucz API (opcjonalny — tylko do AI)</div>
-  <div style="display:flex;gap:8px">
-    <input type="password" id="apikey-input" placeholder="sk-ant-..." style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit" value="">
-    <button onclick="saveApiKey()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
+  <div style="font-size:13px;font-weight:700;color:#888;margin-bottom:8px">🔑 Dane logowania</div>
+  <textarea id="credentials-input" rows="4" placeholder="Wklej każdą wartość w osobnym wierszu (kolejność nieważna):&#10;ghp_TOKEN_GITHUB&#10;ID_GISTA_32_ZNAKI&#10;sk-ant-KLUCZ_ANTHROPIC (opcjonalnie)" style="width:100%;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:12px;background:#fafaf7;outline:none;font-family:monospace;resize:none;box-sizing:border-box;line-height:1.6"></textarea>
+  <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+    <button onclick="saveCredentials()" style="padding:8px 18px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz i sprawdź</button>
+    <div id="cred-status" style="font-size:12px;color:#aaa;flex:1"></div>
   </div>
-  <div style="font-size:11px;color:#aaa;margin-top:6px">Klucz API umożliwia analizę screenshotów i generowanie wiadomości. Klucz jest przechowywany tylko w tej sesji — po zamknięciu karty trzeba wpisać ponownie.</div>
-  <div style="margin-top:14px;border-top:1px solid #e8dfc9;padding-top:12px">
-    <div style="font-size:13px;font-weight:700;color:#888;margin-bottom:8px">☁️ GitHub Gist (sync danych)</div>
-    <div style="display:flex;gap:8px;margin-bottom:6px">
-      <input type="password" id="github-token-input" placeholder="ghp_... (GitHub Token)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:6px">
-      <input type="text" id="gist-id-input" placeholder="ID Gista (z URL gist.github.com)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-      <button onclick="saveGistConfig()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Połącz</button>
-    </div>
-    <div id="gist-status" style="font-size:11px;color:#aaa;margin-top:4px"></div>
-    <div style="font-size:11px;color:#aaa;margin-top:4px">Token przechowywany tylko w tej sesji. ID Gista zapamiętane lokalnie. Utwórz prywatny Gist na <a href="https://gist.github.com" target="_blank" style="color:#E88B00">gist.github.com</a> z plikiem <code>ka-data.json</code>.</div>
-  </div>
-  <div style="margin-top:14px;border-top:1px solid #e8dfc9;padding-top:12px">
-    <div style="font-size:13px;font-weight:700;color:#888;margin-bottom:8px">⚙️ GitHub Actions (zdalne skanowanie)</div>
-    <div style="display:flex;gap:8px;margin-bottom:6px">
-      <input type="password" id="actions-token-input" placeholder="ghp_... (token z uprawnieniem Actions)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-      <button onclick="saveActionsToken()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
-    </div>
-    <div id="actions-token-status" style="font-size:11px;color:#aaa;margin-top:4px"></div>
-    <div style="font-size:11px;color:#aaa;margin-top:4px">Wymagany token z uprawnieniem <code>Actions: Read and write</code> dla repo <code>dud3k/ka-scraper</code>. Utwórz w GitHub → Settings → Developer settings → Fine-grained tokens.</div>
-  </div>
+  <div style="font-size:11px;color:#aaa;margin-top:8px;line-height:1.5">Token i klucz API przechowywane tylko w tej sesji (nie w pamięci). ID Gista zapamiętane lokalnie.</div>
+  <!-- hidden compat inputs for old code -->
+  <input type="hidden" id="github-token-input">
+  <input type="hidden" id="gist-id-input">
+  <input type="hidden" id="actions-token-input">
+  <input type="hidden" id="gist-status">
+  <input type="hidden" id="actions-token-status">
+  <input type="hidden" id="apikey-input">
 </div>
 
 <div id="screen-home" class="screen active">
@@ -502,27 +489,62 @@ let _sessionApiKey = null;
 function getApiKey() { return _sessionApiKey || ''; }
 function saveApiKey() {
   const key = document.getElementById('apikey-input').value.trim();
-  if (key && !key.startsWith('sk-')) { alert('Nieprawidłowy klucz API — powinien zaczynać się od sk-'); return; }
+  if (key && !key.startsWith('sk-')) { return; }
   _sessionApiKey = key || null;
-  const btn = event.target; btn.textContent = '✅ Zapisano (sesja)'; setTimeout(() => btn.textContent = 'Zapisz', 2000);
 }
 function promptApiKey() {
   if (_sessionApiKey) return _sessionApiKey;
   _sessionApiKey = prompt('Podaj klucz API Anthropic (opcjonalnie — potrzebny tylko do funkcji AI):');
-  if (_sessionApiKey) {
-    const inp = document.getElementById('apikey-input');
-    if (inp) inp.value = _sessionApiKey;
-  }
   return _sessionApiKey;
 }
+
+async function saveCredentials() {
+  const raw = document.getElementById('credentials-input').value;
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  const statusEl = document.getElementById('cred-status');
+  let token = null, gistId = null, apiKey = null;
+  for (const line of lines) {
+    if (line.startsWith('ghp_') || line.startsWith('github_pat_') || line.startsWith('gho_')) token = line;
+    else if (/^[a-f0-9]{32}$/i.test(line)) gistId = line;
+    else if (line.startsWith('sk-')) apiKey = line;
+  }
+  const missing = [];
+  if (!token) missing.push('token GitHub (ghp_...)');
+  if (!gistId) missing.push('ID Gista (32 znaki hex)');
+  if (missing.length) {
+    statusEl.textContent = '⚠️ Brak: ' + missing.join(', ');
+    statusEl.style.color = '#E88B00';
+    return;
+  }
+  statusEl.textContent = '⏳ Sprawdzam...';
+  statusEl.style.color = '#aaa';
+  try {
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'KA-Asystent' }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    // All good — save to session/localStorage
+    _githubToken = token;
+    _actionsToken = token;
+    localStorage.setItem('ka_gist_id', gistId);
+    if (apiKey) _sessionApiKey = apiKey;
+    document.getElementById('credentials-input').value = '';
+    const parts = ['✅ Token OK', '✅ Gist OK'];
+    if (apiKey) parts.push('✅ Klucz AI zapisany');
+    statusEl.textContent = parts.join(' · ');
+    statusEl.style.color = '#1a7a1a';
+    showToast('✅ Połączono z Gist', 'ok');
+    gistLoad();
+  } catch (err) {
+    statusEl.textContent = `❌ Błąd: ${err.message} — sprawdź token i ID Gista`;
+    statusEl.style.color = '#c00';
+  }
+}
+
 function toggleSettings() {
   const p = document.getElementById('settings-panel');
   p.style.display = p.style.display === 'none' ? 'block' : 'none';
-  if (p.style.display === 'block') {
-    const inp = document.getElementById('apikey-input');
-    if (inp) inp.value = getApiKey() || '';
-    loadGistConfig();
-  }
+  if (p.style.display === 'block') loadGistConfig();
 }
 // Migrate old key from localStorage (one-time cleanup)
 function migrateApiKey() {
@@ -1613,24 +1635,7 @@ function getGistConfig() {
   return { token, gistId };
 }
 
-function saveGistConfig() {
-  const token = document.getElementById('github-token-input')?.value?.trim();
-  const gistId = document.getElementById('gist-id-input')?.value?.trim();
-  const statusEl = document.getElementById('gist-status');
-  if (!token || !gistId) {
-    if (statusEl) statusEl.textContent = '⚠️ Wpisz token i ID Gista';
-    return;
-  }
-  _githubToken = token;
-  localStorage.setItem('ka_gist_id', gistId);
-  if (statusEl) statusEl.textContent = '☁️ Połączono — zapisuję dane...';
-  document.getElementById('github-token-input').value = '';
-  gistSave().then(() => {
-    if (statusEl) statusEl.textContent = '☁️ Połączono i zsynchronizowano';
-  }).catch(() => {
-    if (statusEl) statusEl.textContent = '⚠️ Połączono, ale zapis się nie powiódł';
-  });
-}
+function saveGistConfig() { /* replaced by saveCredentials() */ }
 
 async function gistSave() {
   const cfg = getGistConfig();
@@ -1722,16 +1727,17 @@ async function gistImportPatch() {
 
 function loadGistConfig() {
   const gistId = localStorage.getItem('ka_gist_id');
-  const statusEl = document.getElementById('gist-status');
-  if (gistId && statusEl) {
-    statusEl.textContent = `ID Gista zapamiętane: ${gistId.slice(0,8)}... — podaj token żeby połączyć`;
-  }
-  const idInput = document.getElementById('gist-id-input');
-  if (idInput && gistId) idInput.value = gistId;
-
-  const actStatusEl = document.getElementById('actions-token-status');
-  if (actStatusEl) {
-    actStatusEl.textContent = _actionsToken ? '✅ Token zapisany (sesja)' : 'Brak tokena — wpisz żeby uruchamiać workflow z aplikacji';
+  const statusEl = document.getElementById('cred-status');
+  if (!statusEl) return;
+  if (_githubToken && gistId) {
+    statusEl.textContent = '✅ Token OK · ✅ Gist OK' + (_sessionApiKey ? ' · ✅ Klucz AI' : '');
+    statusEl.style.color = '#1a7a1a';
+  } else if (gistId) {
+    statusEl.textContent = `ID Gista: ${gistId.slice(0,8)}… — wklej token żeby połączyć`;
+    statusEl.style.color = '#E88B00';
+  } else {
+    statusEl.textContent = 'Brak danych — wklej token i ID Gista';
+    statusEl.style.color = '#aaa';
   }
 }
 
@@ -1745,15 +1751,7 @@ const GH_REPO     = 'ka-scraper';
 const GH_WORKFLOW = 'scrape.yml';
 const GH_BRANCH   = 'master';
 
-function saveActionsToken() {
-  const token = document.getElementById('actions-token-input')?.value?.trim();
-  const statusEl = document.getElementById('actions-token-status');
-  if (!token) { if (statusEl) statusEl.textContent = '⚠️ Wpisz token'; return; }
-  _actionsToken = token;
-  document.getElementById('actions-token-input').value = '';
-  if (statusEl) statusEl.textContent = '✅ Token zapisany (sesja)';
-  showToast('✅ Token Actions zapisany', 'ok');
-}
+function saveActionsToken() { /* replaced by saveCredentials() */ }
 
 async function checkRunningWorkflow() {
   if (!_actionsToken) return null;
