@@ -508,8 +508,10 @@ async function saveCredentials() {
     else if (/^[a-f0-9]{32}$/i.test(line)) gistId = line;
     else if (line.startsWith('sk-')) apiKey = line;
   }
+  // Fall back to saved Gist ID from localStorage
+  if (!gistId) gistId = localStorage.getItem('ka_gist_id');
   const missing = [];
-  if (!token) missing.push('token GitHub (ghp_...)');
+  if (!token) missing.push('token GitHub (ghp_... lub github_pat_...)');
   if (!gistId) missing.push('ID Gista (32 znaki hex)');
   if (missing.length) {
     statusEl.textContent = '⚠️ Brak: ' + missing.join(', ');
