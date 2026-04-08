@@ -895,7 +895,11 @@ function renderItem() {
   const convUrl = cur.conversationUrl ? `<a href="${cur.conversationUrl}" target="_blank" style="font-size:12px;color:${AC};font-weight:600;text-decoration:none">💬 Otwórz rozmowę na Kleinanzeigen →</a>` : '';
   const listingUrl = cur.listingUrl ? `<a href="${cur.listingUrl}" target="_blank" style="font-size:12px;color:${AC};font-weight:600;text-decoration:none">🏷️ Zobacz ogłoszenie →</a>` : '';
   const notesHtml = cur.notes ? `<div class="note-box">${linkify(cur.notes)}</div>` : '';
-  const msgsHtml = cur.messages && cur.messages.length > 0 ? `<div class="chat-list">${cur.messages.map(msg => `<div class="chat-row ${msg.sender==='buyer'?'me':'them'}"><div class="chat-who">${msg.sender==='seller'?'🇩🇪 Sprzedający':'Ty'}</div><div class="bubble ${msg.sender==='buyer'?'me':'them'}">${esc(msg.translatedText||msg.originalText)}${msg.originalText&&msg.originalText!==msg.translatedText?`<div class="bubble-orig">🇩🇪 ${esc(msg.originalText)}</div>`:''}</div></div>`).join('')}</div>` : `<div style="text-align:center;padding:14px 0;color:#bbb;font-size:13px">Brak wiadomości. Dodaj screenshot z rozmowy.</div>`;
+  const msgsHtml = cur.messages && cur.messages.length > 0 ? `<div class="chat-list">${cur.messages.map(msg => {
+    const tsRaw = msg.timestamp || msg.date || null;
+    const tsLabel = tsRaw ? (() => { const d = new Date(tsRaw); return isNaN(d) ? tsRaw : d.toLocaleString('pl-PL', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); })() : '';
+    return `<div class="chat-row ${msg.sender==='buyer'?'me':'them'}"><div class="chat-who">${msg.sender==='seller'?'🇩🇪 Sprzedający':'Ty'}${tsLabel?` <span style="font-size:10px;color:#bbb;font-weight:400">${tsLabel}</span>`:''}</div><div class="bubble ${msg.sender==='buyer'?'me':'them'}">${esc(msg.translatedText||msg.originalText)}${msg.originalText&&msg.originalText!==msg.translatedText?`<div class="bubble-orig">🇩🇪 ${esc(msg.originalText)}</div>`:''}</div></div>`;
+  }).join('')}</div>` : `<div style="text-align:center;padding:14px 0;color:#bbb;font-size:13px">Brak wiadomości. Dodaj screenshot z rozmowy.</div>`;
   const draftResultHtml = draftOut ? `<div class="draft-result" id="draft-result-box"><div class="lbl">GOTOWA WIADOMOŚĆ — skopiuj do Kleinanzeigen:</div><div class="draft-text" id="draft-text-out">${esc(draftOut)}</div><button class="copy-btn" onclick="copyDraft()">📋 Kopiuj</button></div>` : '';
 
   document.getElementById('item-content').innerHTML = `
@@ -1486,6 +1490,8 @@ function executePatch(patch, dryRun, strictMode = false) {
           const val = newItem[key];
           const norm = val ?? null;
           const oldNorm = existing[key] ?? null;
+          // Don't overwrite existing URL/notes with null from patch
+          if (norm === null && oldNorm !== null && ['listingUrl', 'conversationUrl', 'notes'].includes(key)) return;
           if (oldNorm !== norm) {
             if (!dryRun && TRACKED_FIELDS.includes(key)) trackChange(existing, key, norm, 'patch');
             changes.push(`${key}: "${oldNorm||'—'}" → "${norm||'—'}"`);
