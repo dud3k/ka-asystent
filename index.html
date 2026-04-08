@@ -120,25 +120,14 @@
   </div>
   <div style="font-size:11px;color:#aaa;margin-top:6px">Klucz API umożliwia analizę screenshotów i generowanie wiadomości. Klucz jest przechowywany tylko w tej sesji — po zamknięciu karty trzeba wpisać ponownie.</div>
   <div style="margin-top:14px;border-top:1px solid #e8dfc9;padding-top:12px">
-    <div style="font-size:13px;font-weight:700;color:#888;margin-bottom:8px">☁️ GitHub Gist (sync danych)</div>
+    <div style="font-size:13px;font-weight:700;color:#888;margin-bottom:8px">☁️ GitHub Token (classic)</div>
     <div style="display:flex;gap:8px;margin-bottom:6px">
-      <input type="password" id="github-token-input" placeholder="ghp_... (GitHub Token)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:6px">
-      <input type="text" id="gist-id-input" placeholder="ID Gista (z URL gist.github.com)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
+      <input type="password" id="github-token-input" placeholder="ghp_... (classic token)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
       <button onclick="saveGistConfig()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Połącz</button>
     </div>
-    <div id="gist-status" style="font-size:11px;color:#aaa;margin-top:4px"></div>
-    <div style="font-size:11px;color:#aaa;margin-top:4px">Token przechowywany tylko w tej sesji. ID Gista zapamiętane lokalnie. Utwórz prywatny Gist na <a href="https://gist.github.com" target="_blank" style="color:#E88B00">gist.github.com</a> z plikiem <code>ka-data.json</code>.</div>
-  </div>
-  <div style="margin-top:14px;border-top:1px solid #e8dfc9;padding-top:12px">
-    <div style="font-size:13px;font-weight:700;color:#888;margin-bottom:8px">⚙️ GitHub Actions (zdalne skanowanie)</div>
-    <div style="display:flex;gap:8px;margin-bottom:6px">
-      <input type="password" id="actions-token-input" placeholder="ghp_... (token z uprawnieniem Actions)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-      <button onclick="saveActionsToken()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
-    </div>
-    <div id="actions-token-status" style="font-size:11px;color:#aaa;margin-top:4px"></div>
-    <div style="font-size:11px;color:#aaa;margin-top:4px">Wymagany token z uprawnieniem <code>Actions: Read and write</code> dla repo <code>dud3k/ka-scraper</code>. Utwórz w GitHub → Settings → Developer settings → Fine-grained tokens.</div>
+    <input type="text" id="gist-id-input" placeholder="ID Gista (z URL gist.github.com/...)" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit;margin-bottom:6px">
+    <div id="gist-status" style="font-size:11px;color:#aaa;margin-top:2px"></div>
+    <div style="font-size:11px;color:#aaa;margin-top:4px">Jeden token classic (<code>ghp_</code>) z uprawnieniami <code>gist</code> + <code>workflow</code> wystarczy do wszystkiego. Token przechowywany tylko w tej sesji, ID Gista zapamiętane lokalnie.</div>
   </div>
 </div>
 
@@ -1628,6 +1617,7 @@ function saveGistConfig() {
     return;
   }
   _githubToken = token;
+  _actionsToken = token; // classic token obsługuje i Gist i Actions
   localStorage.setItem('ka_gist_id', gistId);
   if (statusEl) statusEl.textContent = '☁️ Połączono — zapisuję dane...';
   document.getElementById('github-token-input').value = '';
