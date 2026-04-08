@@ -1464,6 +1464,14 @@ function executePatch(patch, dryRun, strictMode = false) {
         changes.push(`+${uniqueNew.length} nowych wiadomości`);
         if (!dryRun) item.messages = [...(item.messages||[]), ...uniqueNew];
       }
+      // Update timestamps on existing messages (may have been set wrong on first import)
+      if (!dryRun) {
+        const tsMap = new Map(newMsgs.map(m => [m.originalText, m.timestamp]));
+        item.messages = item.messages.map(m => {
+          const newTs = tsMap.get(m.originalText);
+          return (newTs && newTs !== m.timestamp) ? { ...m, timestamp: newTs } : m;
+        });
+      }
     }
     if (!dryRun && upd.lastMessageDate) {
       item.updatedAt = upd.lastMessageDate;
@@ -1513,6 +1521,13 @@ function executePatch(patch, dryRun, strictMode = false) {
           if (newMsgs.length !== existingCount || newMsgs.some((m, i) => m.originalText !== (existing.messages[i]||{}).originalText)) {
             changes.push(`wiadomości: ${existingCount} → ${newMsgs.length}`);
             if (!dryRun) existing.messages = newMsgs;
+          } else if (!dryRun) {
+            // Same messages — but update timestamps (may have been wrong on first import)
+            const tsMap = new Map(newMsgs.map(m => [m.originalText, m.timestamp]));
+            existing.messages = existing.messages.map(m => {
+              const newTs = tsMap.get(m.originalText);
+              return (newTs && newTs !== m.timestamp) ? { ...m, timestamp: newTs } : m;
+            });
           }
         }
         if (!dryRun && newItem.lastMessageDate) {
