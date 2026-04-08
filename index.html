@@ -1623,12 +1623,13 @@ function saveGistConfig() {
   _githubToken = token;
   _actionsToken = token; // classic token obsługuje i Gist i Actions
   localStorage.setItem('ka_gist_id', gistId);
-  if (statusEl) statusEl.textContent = '☁️ Połączono — zapisuję dane...';
+  if (statusEl) statusEl.textContent = '☁️ Połączono — synchronizuję...';
   document.getElementById('github-token-input').value = '';
-  gistSave().then(() => {
+  gistLoad().then(() => {
     if (statusEl) statusEl.textContent = '☁️ Połączono i zsynchronizowano';
+    renderSyncOverview();
   }).catch(() => {
-    if (statusEl) statusEl.textContent = '⚠️ Połączono, ale zapis się nie powiódł';
+    if (statusEl) statusEl.textContent = '⚠️ Połączono, ale sync się nie powiódł';
   });
 }
 
