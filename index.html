@@ -196,9 +196,13 @@
       </select>
       <input type="number" id="scan-limit" min="1" max="99" placeholder="limit" title="Limit konwersacji (puste = wszystkie)" style="width:70px;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;text-align:center;font-family:inherit">
     </div>
-    <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;cursor:pointer">
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;cursor:pointer">
       <input type="checkbox" id="scan-no-images" style="width:16px;height:16px;cursor:pointer">
       Bez screenshotów (szybciej, mniejszy koszt Gemini)
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="scan-force-rescan" style="width:16px;height:16px;cursor:pointer">
+      Force rescan — ignoruj poprzedni skan, oznacz wszystko jako nowe
     </label>
     <button class="btn" onclick="triggerScan()" id="trigger-scan-btn" style="width:100%;margin-bottom:10px">🚀 Uruchom skan</button>
     <div id="scan-status-box" style="display:none;background:#1a1a2e;border-radius:10px;padding:12px;font-size:12px">
@@ -1772,9 +1776,10 @@ async function triggerScan() {
     return;
   }
 
-  const days     = parseInt(document.getElementById('scan-days')?.value || '3', 10);
-  const noImages = document.getElementById('scan-no-images')?.checked || false;
-  const limitRaw = document.getElementById('scan-limit')?.value?.trim();
+  const days        = parseInt(document.getElementById('scan-days')?.value || '3', 10);
+  const noImages    = document.getElementById('scan-no-images')?.checked || false;
+  const forceRescan = document.getElementById('scan-force-rescan')?.checked || false;
+  const limitRaw    = document.getElementById('scan-limit')?.value?.trim();
   const limit    = limitRaw ? parseInt(limitRaw, 10) : 0;
 
   if (limitRaw && (isNaN(limit) || limit < 1)) {
@@ -1809,9 +1814,10 @@ async function triggerScan() {
         body: JSON.stringify({
           ref: GH_BRANCH,
           inputs: {
-            days:      String(days),
-            limit:     String(limit || 0),
-            no_images: noImages
+            days:         String(days),
+            limit:        String(limit || 0),
+            no_images:    noImages,
+            force_rescan: forceRescan
           }
         })
       }
