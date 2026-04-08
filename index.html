@@ -186,7 +186,11 @@
   <div class="card sync-section" id="remote-scan-card">
     <h3>🚀 Zdalne skanowanie</h3>
     <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Uruchamia scraper + Gemini na PC zdalnie przez Gist. PC musi mieć uruchomiony <code>node watch.js</code>.</p>
-    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <button id="scan-mode-days-btn" onclick="setScanMode('days')" style="flex:1;padding:6px 10px;border:1px solid var(--ac);border-radius:8px;font-size:12px;font-weight:700;background:var(--ac);color:#fff;cursor:pointer;font-family:inherit">Dni wstecz</button>
+      <button id="scan-mode-dates-btn" onclick="setScanMode('dates')" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:700;background:#fff;color:var(--muted);cursor:pointer;font-family:inherit">Zakres dat</button>
+    </div>
+    <div id="scan-mode-days" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
       <select id="scan-days" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;font-family:inherit">
         <option value="1">Ostatni 1 dzień</option>
         <option value="2">Ostatnie 2 dni</option>
@@ -196,6 +200,19 @@
         <option value="30">Ostatnie 30 dni</option>
       </select>
       <input type="number" id="scan-limit" min="1" max="99" placeholder="limit" title="Limit konwersacji (puste = wszystkie)" style="width:70px;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;text-align:center;font-family:inherit">
+    </div>
+    <div id="scan-mode-dates" style="display:none;margin-bottom:8px">
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <div style="flex:1">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:3px">Od</div>
+          <input type="date" id="scan-date-from" style="width:100%;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;font-family:inherit">
+        </div>
+        <div style="flex:1">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:3px">Do</div>
+          <input type="date" id="scan-date-to" style="width:100%;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;font-family:inherit">
+        </div>
+        <input type="number" id="scan-limit-dates" min="1" max="99" placeholder="limit" title="Limit konwersacji (puste = wszystkie)" style="width:70px;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;text-align:center;font-family:inherit">
+      </div>
     </div>
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;cursor:pointer">
       <input type="checkbox" id="scan-no-images" style="width:16px;height:16px;cursor:pointer">
@@ -1772,20 +1789,42 @@ async function checkRunningWorkflow() {
   } catch { return null; }
 }
 
+let _scanMode = 'days';
+function setScanMode(mode) {
+  _scanMode = mode;
+  document.getElementById('scan-mode-days').style.display  = mode === 'days'  ? 'flex'  : 'none';
+  document.getElementById('scan-mode-dates').style.display = mode === 'dates' ? 'block' : 'none';
+  const daysBtn  = document.getElementById('scan-mode-days-btn');
+  const datesBtn = document.getElementById('scan-mode-dates-btn');
+  if (daysBtn)  { daysBtn.style.background  = mode === 'days'  ? 'var(--ac)' : '#fff'; daysBtn.style.color  = mode === 'days'  ? '#fff' : 'var(--muted)'; daysBtn.style.borderColor  = mode === 'days'  ? 'var(--ac)' : 'var(--border)'; }
+  if (datesBtn) { datesBtn.style.background = mode === 'dates' ? 'var(--ac)' : '#fff'; datesBtn.style.color = mode === 'dates' ? '#fff' : 'var(--muted)'; datesBtn.style.borderColor = mode === 'dates' ? 'var(--ac)' : 'var(--border)'; }
+}
+
 async function triggerScan() {
   if (!_actionsToken) {
     showToast('⚠️ Wpisz token GitHub Actions w ustawieniach (⚙️)', 'warn');
     return;
   }
 
-  const days        = parseInt(document.getElementById('scan-days')?.value || '3', 10);
   const noImages    = document.getElementById('scan-no-images')?.checked || false;
   const forceRescan = document.getElementById('scan-force-rescan')?.checked || false;
-  const limitRaw    = document.getElementById('scan-limit')?.value?.trim();
-  const limit    = limitRaw ? parseInt(limitRaw, 10) : 0;
 
-  if (limitRaw && (isNaN(limit) || limit < 1)) {
-    showToast('⚠️ Limit musi być liczbą >= 1', 'warn'); return;
+  let inputs;
+  if (_scanMode === 'dates') {
+    const dateFrom = document.getElementById('scan-date-from')?.value || '';
+    const dateTo   = document.getElementById('scan-date-to')?.value   || '';
+    if (!dateFrom || !dateTo) { showToast('⚠️ Podaj obie daty', 'warn'); return; }
+    if (dateTo < dateFrom)    { showToast('⚠️ Data DO musi być >= OD', 'warn'); return; }
+    const limitRaw = document.getElementById('scan-limit-dates')?.value?.trim();
+    const limit    = limitRaw ? parseInt(limitRaw, 10) : 0;
+    if (limitRaw && (isNaN(limit) || limit < 1)) { showToast('⚠️ Limit musi być liczbą >= 1', 'warn'); return; }
+    inputs = { days: '3', date_from: dateFrom, date_to: dateTo, limit: String(limit || 0), no_images: noImages, force_rescan: forceRescan };
+  } else {
+    const days     = parseInt(document.getElementById('scan-days')?.value || '3', 10);
+    const limitRaw = document.getElementById('scan-limit')?.value?.trim();
+    const limit    = limitRaw ? parseInt(limitRaw, 10) : 0;
+    if (limitRaw && (isNaN(limit) || limit < 1)) { showToast('⚠️ Limit musi być liczbą >= 1', 'warn'); return; }
+    inputs = { days: String(days), date_from: '', date_to: '', limit: String(limit || 0), no_images: noImages, force_rescan: forceRescan };
   }
 
   try {
@@ -1813,15 +1852,7 @@ async function triggerScan() {
       {
         method: 'POST',
         headers: { Authorization: `Bearer ${_actionsToken}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
-        body: JSON.stringify({
-          ref: GH_BRANCH,
-          inputs: {
-            days:         String(days),
-            limit:        String(limit || 0),
-            no_images:    noImages,
-            force_rescan: forceRescan
-          }
-        })
+        body: JSON.stringify({ ref: GH_BRANCH, inputs })
       }
     );
 
@@ -1962,6 +1993,15 @@ migrateApiKey();
 loadItems();
 gistLoad();
 renderHome();
+(function() {
+  const today = new Date();
+  const from  = new Date(today); from.setDate(from.getDate() - 14);
+  const fmt   = d => d.toISOString().slice(0, 10);
+  const fromEl = document.getElementById('scan-date-from');
+  const toEl   = document.getElementById('scan-date-to');
+  if (fromEl) fromEl.value = fmt(from);
+  if (toEl)   toEl.value   = fmt(today);
+})();
 </script>
 <script>
   if ('serviceWorker' in navigator)
