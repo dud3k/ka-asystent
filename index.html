@@ -163,7 +163,8 @@
     <button onclick="saveGistSettings()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
   </div>
   <input type="password" id="gist-token-input" placeholder="GitHub Token (ghp_... — do skanowania, statusu i importu patcha)" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-  <div style="font-size:11px;color:#aaa;margin-top:6px">GIST_ID to końcówka URL Gista. Ten sam token używany do uruchamiania skanowania (Actions), odczytu statusu i importu patcha.</div>
+  <div id="gist-status" style="font-size:12px;margin-top:7px;padding:5px 9px;border-radius:6px;display:none"></div>
+  <div style="font-size:11px;color:#aaa;margin-top:4px">GIST_ID to końcówka URL Gista. Ten sam token używany do uruchamiania skanowania (Actions), odczytu statusu i importu patcha.</div>
   <div style="font-size:13px;font-weight:700;color:#888;margin-top:14px;margin-bottom:8px">⚙️ Ustawienia aplikacji</div>
   <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
     <label style="font-size:12px;color:#888;white-space:nowrap;width:130px">Kurs EUR/PLN:</label>
@@ -800,6 +801,7 @@ function toggleSettings() {
     if (gi) gi.value = getGistId();
     const gt = document.getElementById('gist-token-input');
     if (gt) gt.value = getGistToken();
+    updateGistStatus();
     const s = getSettings();
     const exEl = document.getElementById('setting-exchange');   if (exEl) exEl.value = s.exchangeRate;
     const fwEl = document.getElementById('setting-forwarding'); if (fwEl) fwEl.value = s.forwardingPL;
@@ -2201,12 +2203,55 @@ async function loadFromGist() {
 function getGistId() { return localStorage.getItem('ka_gist_id') || ''; }
 function getGistToken() { return localStorage.getItem('ka_gist_token') || ''; }
 
-function saveGistSettings() {
+function setGistStatusEl(type, msg) {
+  const el = document.getElementById('gist-status');
+  if (!el) return;
+  const styles = {
+    ok:      'background:#edfbf0;color:#1a7a3c;border:1px solid #b2e5c4',
+    error:   'background:#fff0f0;color:#c0392b;border:1px solid #f5c6c6',
+    warn:    'background:#fffbe6;color:#8a6d00;border:1px solid #ffe58f',
+    loading: 'background:#f5f5f5;color:#888;border:1px solid #e0e0e0',
+  };
+  el.style.cssText = `font-size:12px;margin-top:7px;padding:5px 9px;border-radius:6px;${styles[type] || styles.warn}`;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+async function saveGistSettings() {
   const id = (document.getElementById('gist-id-input').value || '').trim();
   const token = (document.getElementById('gist-token-input').value || '').trim();
   if (id) localStorage.setItem('ka_gist_id', id);
   if (token) localStorage.setItem('ka_gist_token', token);
-  alert('Ustawienia Gist zapisane.');
+
+  if (!id || !token) {
+    setGistStatusEl('warn', '⚠️ Podaj zarówno Gist ID jak i token.');
+    return;
+  }
+  setGistStatusEl('loading', '🔄 Sprawdzam połączenie...');
+  try {
+    const res = await fetch(`https://api.github.com/gists/${id}`, {
+      headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'KA-Asystent' }
+    });
+    if (res.status === 401) { setGistStatusEl('error', '🔴 Token nieprawidłowy lub wygasły (401)'); return; }
+    if (res.status === 404) { setGistStatusEl('error', '🔴 Gist nie znaleziony — sprawdź Gist ID (404)'); return; }
+    if (!res.ok)            { setGistStatusEl('error', `🔴 Błąd GitHub API: HTTP ${res.status}`); return; }
+    const gist = await res.json();
+    const login = gist.owner?.login || '?';
+    const files = Object.keys(gist.files || {}).join(', ') || '(brak plików)';
+    setGistStatusEl('ok', `🟢 Połączony — @${login} · pliki: ${files}`);
+  } catch {
+    setGistStatusEl('error', '🔴 Brak połączenia z GitHub');
+  }
+}
+
+function updateGistStatus() {
+  const id = getGistId();
+  const token = getGistToken();
+  if (!id && !token) { setGistStatusEl('warn', '⚪ Nie skonfigurowano — wpisz Gist ID i token'); return; }
+  if (!token)        { setGistStatusEl('warn', '⚠️ Brak tokenu GitHub'); return; }
+  if (!id)           { setGistStatusEl('warn', '⚠️ Brak Gist ID'); return; }
+  // Token jest zapisany — pokaż skrót, nie weryfikuj (żeby nie spowalniać otwarcia ustawień)
+  setGistStatusEl('ok', `🟢 Token skonfigurowany · Gist: ${id.slice(0, 8)}…  (kliknij Zapisz żeby zweryfikować)`);
 }
 
 async function importPatchFromGist(autoImport = false) {
@@ -2434,6 +2479,7 @@ function showKanbanSettings() {
     if (gi) gi.value = getGistId();
     const gt = document.getElementById('gist-token-input');
     if (gt) gt.value = getGistToken();
+    updateGistStatus();
     const s = getSettings();
     const exEl = document.getElementById('setting-exchange');   if (exEl) exEl.value = s.exchangeRate;
     const fwEl = document.getElementById('setting-forwarding'); if (fwEl) fwEl.value = s.forwardingPL;
