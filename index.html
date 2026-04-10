@@ -5,13 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="KA Asystent">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#E88B00">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<title>KA Asystent v2.8 — Święty Józef</title>
+<title>KA Deal Tracker v3.0 — Święty Józef</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root { --ac: #E88B00; --bg: #f7f4ee; --white: #fff; --border: #e8dfc9; --text: #1a1a0a; --muted: #888; --danger: #cc4444; }
@@ -98,6 +93,47 @@
   .sync-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
   .sync-stat { padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; background: var(--white); border: 1px solid var(--border); }
   .sync-stat .num { font-size: 20px; font-weight: 800; display: block; color: var(--ac); }
+  /* ── FAZA B: Kanban / Deal Tracker ──────────────────────────────────── */
+  body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  #screen-kanban { max-width: 100%; padding: 0; background: #f1f5f9; min-height: 100vh; }
+  .kb-header { background: linear-gradient(135deg, #1e293b, #0f172a); padding: 14px 16px 10px; position: sticky; top: 0; z-index: 100; }
+  .kb-header-row { display: flex; justify-content: space-between; align-items: center; }
+  .kb-title { font-size: 17px; font-weight: 800; color: #fff; }
+  .kb-sub { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+  .kb-toggle { display: flex; gap: 4px; }
+  .kb-toggle-btn { padding: 5px 12px; border-radius: 8px; border: none; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .kb-toggle-btn.active { background: #3b82f6; color: #fff; }
+  .kb-toggle-btn:not(.active) { background: #334155; color: #94a3b8; }
+  .finance-summary { margin: 12px 16px 10px; padding: 12px 14px; border-radius: 10px; background: linear-gradient(135deg, #1e293b, #334155); color: #fff; }
+  .finance-summary-title { font-weight: 700; font-size: 13px; margin-bottom: 8px; color: #94a3b8; }
+  .finance-grid { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .finance-metric-label { font-size: 10px; color: #94a3b8; }
+  .finance-metric-value { font-size: 16px; font-weight: 700; }
+  .forwarder-alert { margin: 0 16px 10px; padding: 10px 14px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .forwarder-alert.urgent { background: #fff7ed; border: 1px solid #fb923c; }
+  .forwarder-alert.normal { background: #f8fafc; border: 1px solid #e2e8f0; }
+  .kanban-board { display: flex; overflow-x: auto; gap: 0; padding: 0 8px 60px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+  .kanban-board::-webkit-scrollbar { height: 4px; } .kanban-board::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+  .kb-col { min-width: 260px; max-width: 280px; flex: 0 0 auto; scroll-snap-align: start; padding: 8px; }
+  .kb-col-inner { border-radius: 14px; padding: 12px 10px; min-height: 200px; }
+  .kb-col-header { margin-bottom: 10px; padding-bottom: 8px; }
+  .kb-col-header-row { display: flex; justify-content: space-between; align-items: center; }
+  .kb-col-title { display: flex; align-items: center; gap: 5px; }
+  .kb-col-count { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
+  .kb-empty { text-align: center; padding: 20px; font-size: 12px; color: #cbd5e1; }
+  .kb-card { padding: 10px 12px; margin-bottom: 8px; border-radius: 10px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); cursor: pointer; border-left: 3px solid transparent; transition: transform 0.1s; }
+  .kb-card:active { transform: scale(0.98); }
+  .kb-card.bundle { border-left-color: #f59e0b; }
+  .kb-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
+  .kb-card-title { font-weight: 600; font-size: 13px; color: #1e293b; line-height: 1.3; flex: 1; }
+  .kb-card-bundle-tag { font-size: 10px; background: #fef3c7; color: #92400e; padding: 1px 6px; border-radius: 8px; white-space: nowrap; font-weight: 600; }
+  .kb-card-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+  .kanban-list { padding: 8px 16px 60px; background: #f1f5f9; min-height: 100vh; }
+  .kb-list-group { margin-bottom: 16px; }
+  .kb-list-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; padding: 4px 0; }
+  .detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: none; align-items: flex-end; justify-content: center; }
+  .detail-overlay.open { display: flex; }
+  .detail-modal { background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 80vh; overflow-y: auto; padding: 20px 20px 30px; }
 </style>
 </head>
 <body>
@@ -108,6 +144,7 @@
     <div id="header-title">🛒 KA Asystent <span style="font-size:10px;color:#aaa;font-weight:400">v2.5 · Święty Józef</span></div>
     <div id="header-sub"></div>
   </div>
+  <button onclick="showScreen('kanban')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Widok Kanban">📊</button>
   <button onclick="toggleSettings()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Ustawienia API">⚙️</button>
   <button onclick="showScreen('sync')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Synchronizacja danych">🔄</button>
 </div>
@@ -119,19 +156,36 @@
     <button onclick="saveApiKey()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
   </div>
   <div style="font-size:11px;color:#aaa;margin-top:6px">Klucz API umożliwia analizę screenshotów i generowanie wiadomości. Klucz jest przechowywany tylko w tej sesji — po zamknięciu karty trzeba wpisać ponownie.</div>
-  <div style="margin-top:14px;border-top:1px solid #e8dfc9;padding-top:12px">
-    <div style="font-size:13px;font-weight:700;color:#888;margin-bottom:8px">☁️ GitHub Token (classic)</div>
-    <div style="display:flex;gap:8px;margin-bottom:6px">
-      <input type="password" id="github-token-input" placeholder="ghp_... (classic token)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-      <button onclick="saveGistConfig()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Połącz</button>
-    </div>
-    <input type="text" id="gist-id-input" placeholder="ID Gista (z URL gist.github.com/...)" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit;margin-bottom:6px">
-    <div id="gist-status" style="font-size:11px;color:#aaa;margin-top:2px"></div>
-    <div style="font-size:11px;color:#aaa;margin-top:4px">Jeden token classic (<code>ghp_</code>) z uprawnieniami <code>gist</code> + <code>workflow</code> wystarczy do wszystkiego. Token przechowywany tylko w tej sesji, ID Gista zapamiętane lokalnie.</div>
+  <div style="font-size:13px;font-weight:700;color:#888;margin-top:12px;margin-bottom:8px">☁️ Gist (Import patch z chmury)</div>
+  <div style="display:flex;gap:8px;margin-bottom:6px">
+    <input type="text" id="gist-id-input" placeholder="ID Gista (np. d77bb625...)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
+    <button onclick="saveGistSettings()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
   </div>
+  <input type="password" id="gist-token-input" placeholder="GitHub Token (ghp_... — potrzebny do usunięcia patcha)" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
+  <div style="font-size:11px;color:#aaa;margin-top:6px">GIST_ID to końcówka URL Gista. Token GitHub potrzebny do auto-usunięcia ka-patch.json po imporcie.</div>
+  <div style="font-size:13px;font-weight:700;color:#888;margin-top:14px;margin-bottom:8px">⚙️ Ustawienia aplikacji</div>
+  <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
+    <label style="font-size:12px;color:#888;white-space:nowrap;width:130px">Kurs EUR/PLN:</label>
+    <input type="number" id="setting-exchange" step="0.01" min="3" max="6" placeholder="4.30" style="flex:1;padding:6px 8px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
+    <label style="font-size:12px;color:#888;white-space:nowrap;width:130px">Forwarding (PLN):</label>
+    <input type="number" id="setting-forwarding" step="1" min="0" placeholder="22" style="flex:1;padding:6px 8px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
+    <label style="font-size:12px;color:#888;white-space:nowrap;width:130px">Alert Görlitz (szt):</label>
+    <input type="number" id="setting-threshold" step="1" min="1" placeholder="3" style="flex:1;padding:6px 8px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+    <label style="font-size:12px;color:#888;white-space:nowrap;width:130px">Platforma domyślna:</label>
+    <select id="setting-platform" style="flex:1;padding:6px 8px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
+      <option>OLX</option><option>FB Marketplace</option><option>Vinted</option><option>eBay</option><option>hurtowy</option>
+    </select>
+  </div>
+  <button onclick="saveAppSettings()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz ustawienia</button>
 </div>
 
-<div id="screen-home" class="screen active">
+<div id="screen-home" class="screen">
   <div class="upload-area">
     <label for="file-home">📸 Dodaj screenshot z Kleinanzeigen</label>
     <input type="file" id="file-home" accept="image/*" onchange="handleFile(event, null)">
@@ -144,17 +198,12 @@
     <select id="filter-status" onchange="setFilter(this.value)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:10px;font-size:13px;background:#fff;cursor:pointer;font-family:inherit;font-weight:600;color:#1a1a0a">
       <option value="all">📋 Wszystkie</option>
       <option value="active">🟢 Aktywne</option>
+      <option value="buying">💬 Zakupy</option>
+      <option value="logistics">📦 Logistyka</option>
+      <option value="warehouse">🔧 Magazyn</option>
+      <option value="selling">💰 Sprzedaż</option>
       <option value="closed">⛔ Zamknięte</option>
       <option value="watchlist">🔁 Do powrotu</option>
-    </select>
-    <select id="filter-ls" onchange="setLsFilter(this.value)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:10px;font-size:13px;background:#fff;cursor:pointer;font-family:inherit;font-weight:600;color:#1a1a0a">
-      <option value="">🚦 Status logist.</option>
-      <option value="oplacony">💳 Opłacony</option>
-      <option value="wyslane_de">📤 Wysłane DE</option>
-      <option value="wyslane_pl">📦 Wysłane PL</option>
-      <option value="dostarczone_de">🏠 Dostarczone DE</option>
-      <option value="dostarczone_pl">✅ Dostarczone PL</option>
-      <option value="sprzedany">💰 Sprzedany</option>
     </select>
     <select id="filter-sort" onchange="setSortPref(this.value)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:10px;font-size:13px;background:#fff;cursor:pointer;font-family:inherit;font-weight:600;color:#1a1a0a">
       <option value="updated">🕐 Ostatnio zmienione</option>
@@ -180,61 +229,29 @@
 <div id="screen-sync" class="screen">
   <div class="card">
     <div style="font-size:16px;font-weight:700;margin-bottom:4px">🔄 Synchronizacja danych</div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.5">Eksportuj dane do Claude → pobierz aktualizacje → importuj patch</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.5">Zdalne skanowanie → pobierz patch z Gist → importuj</div>
   </div>
 
-  <div class="card sync-section" id="remote-scan-card">
-    <h3>🚀 Zdalne skanowanie</h3>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Uruchamia scraper + Gemini na PC zdalnie przez Gist. PC musi mieć uruchomiony <code>node watch.js</code>.</p>
-    <div style="display:flex;gap:6px;margin-bottom:8px">
-      <button id="scan-mode-days-btn" onclick="setScanMode('days')" style="flex:1;padding:6px 10px;border:1px solid var(--ac);border-radius:8px;font-size:12px;font-weight:700;background:var(--ac);color:#fff;cursor:pointer;font-family:inherit">Dni wstecz</button>
-      <button id="scan-mode-dates-btn" onclick="setScanMode('dates')" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:700;background:#fff;color:var(--muted);cursor:pointer;font-family:inherit">Zakres dat</button>
+  <div class="card sync-section">
+    <h3>🚀 Zdalne skanowanie (przez Gist)</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Wysyła komendę do watch.js / GitHub Actions. Wymaga GIST_ID i GitHub Token w ustawieniach (⚙️).</p>
+    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+      <label style="font-size:13px;font-weight:600;white-space:nowrap">Dni:</label>
+      <input type="number" id="scan-days" value="3" min="1" max="60" style="width:70px;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;font-family:inherit;background:#fafaf7" oninput="toggleDateRangeInputs()">
+      <label style="display:flex;align-items:center;gap:4px;font-size:13px;color:#888;cursor:pointer">
+        <input type="checkbox" id="scan-no-images"> bez zdjęć
+      </label>
     </div>
-    <div id="scan-mode-days" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-      <select id="scan-days" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;font-family:inherit">
-        <option value="1">Ostatni 1 dzień</option>
-        <option value="2">Ostatnie 2 dni</option>
-        <option value="3" selected>Ostatnie 3 dni</option>
-        <option value="7">Ostatnie 7 dni</option>
-        <option value="14">Ostatnie 14 dni</option>
-        <option value="30">Ostatnie 30 dni</option>
-      </select>
-      <input type="number" id="scan-limit" min="1" max="99" placeholder="limit" title="Limit konwersacji (puste = wszystkie)" style="width:70px;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;text-align:center;font-family:inherit">
+    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+      <label style="font-size:12px;color:#888;white-space:nowrap;width:36px">Od:</label>
+      <input type="date" id="scan-date-from" style="flex:1;padding:7px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;font-family:inherit;background:#fafaf7" onchange="toggleDateRangeInputs()">
+      <label style="font-size:12px;color:#888;white-space:nowrap">Do:</label>
+      <input type="date" id="scan-date-to" style="flex:1;padding:7px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;font-family:inherit;background:#fafaf7" onchange="toggleDateRangeInputs()">
     </div>
-    <div id="scan-mode-dates" style="display:none;margin-bottom:8px">
-      <div style="display:flex;gap:8px;align-items:flex-end">
-        <div style="flex:1">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:3px">Od</div>
-          <input type="date" id="scan-date-from" style="width:100%;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;font-family:inherit">
-        </div>
-        <div style="flex:1">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:3px">Do</div>
-          <input type="date" id="scan-date-to" style="width:100%;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;font-family:inherit">
-        </div>
-        <input type="number" id="scan-limit-dates" min="1" max="99" placeholder="limit" title="Limit konwersacji (puste = wszystkie)" style="width:70px;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;text-align:center;font-family:inherit">
-      </div>
-    </div>
-    <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;cursor:pointer">
-      <input type="checkbox" id="scan-no-images" style="width:16px;height:16px;cursor:pointer">
-      Bez screenshotów (szybciej, mniejszy koszt Gemini)
-    </label>
-    <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;cursor:pointer">
-      <input type="checkbox" id="scan-force-rescan" style="width:16px;height:16px;cursor:pointer">
-      Force rescan — ignoruj poprzedni skan, oznacz wszystko jako nowe
-    </label>
-    <button class="btn" onclick="triggerScan()" id="trigger-scan-btn" style="width:100%;margin-bottom:10px">🚀 Uruchom skan</button>
-    <div id="scan-status-box" style="display:none;background:#1a1a2e;border-radius:10px;padding:12px;font-size:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <span id="scan-phase-label" style="font-weight:700;font-size:13px"></span>
-        <span style="display:flex;align-items:center;gap:8px">
-          <span id="scan-step-label" style="color:#aaa"></span>
-          <button id="scan-reset-btn" onclick="resetScanStatus()" style="display:none;padding:2px 8px;font-size:11px;background:#333;border:1px solid #555;border-radius:6px;color:#aaa;cursor:pointer">✖ Resetuj</button>
-        </span>
-      </div>
-      <div id="scan-log-lines" style="color:#aaa;line-height:1.6;font-size:11px;font-family:monospace"></div>
-      <div style="margin-top:8px;font-size:11px;color:#555" id="scan-updated-label"></div>
-    </div>
-    <div id="scan-last-scan" style="font-size:11px;color:#aaa;margin-top:6px"></div>
+    <div id="scan-mode-label" style="font-size:11px;color:#aaa;margin-bottom:8px">Tryb: ostatnie 3 dni</div>
+    <button class="btn" onclick="triggerRemoteScan()" style="width:100%;margin-bottom:6px">🚀 Uruchom skanowanie</button>
+    <button class="btn" onclick="refreshGistStatus()" style="width:100%;background:#555;font-size:13px;padding:10px">🔄 Odśwież status</button>
+    <div id="gist-status-box" style="margin-top:8px"></div>
   </div>
 
   <div class="card sync-section">
@@ -277,6 +294,13 @@
   </div>
 
   <div class="card sync-section">
+    <h3>☁️ Krok 4: Import patch z chmury (Gist)</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Pobiera ka-patch.json z Gist i automatycznie aplikuje. Po sukcesie usuwa plik z Gist.</p>
+    <button class="btn" onclick="importPatchFromGist()" style="width:100%">☁️ Importuj patch z Gist</button>
+    <div id="gist-import-report" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card sync-section">
     <h3>💾 Backup danych</h3>
     <div style="display:flex;gap:8px;margin-bottom:8px">
       <button class="btn" onclick="exportBackup()" style="flex:1;font-size:13px;padding:10px">📤 Eksportuj backup</button>
@@ -290,13 +314,6 @@
   </div>
 
   <div class="card sync-section">
-    <h3>☁️ Krok 4: Import patch z chmury (Gist)</h3>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Pobiera <code>ka-patch.json</code> z Gist i automatycznie aplikuje. Po sukcesie usuwa plik z Gist.</p>
-    <button class="btn" onclick="gistImportPatch()" style="width:100%">☁️ Importuj patch z Gist</button>
-    <div id="gist-patch-report"></div>
-  </div>
-
-  <div class="card sync-section">
     <h3>📊 Stan aplikacji</h3>
     <div id="sync-overview"></div>
   </div>
@@ -307,7 +324,7 @@
   "updates": [
     {
       "match": "conversationId tutaj",
-      "set": {"logisticStatus": "wyslane_de", "trackingNumber": "123...", "listingUrl": "https://..."},
+      "set": {"status": "shipped_de", "trackingNumber": "123...", "listingUrl": "https://..."},
       "addMessages": [{"sender":"seller", "originalText":"...", "translatedText":"..."}]
     }
   ],
@@ -324,12 +341,23 @@
   </div>
 </div>
 
+<div id="screen-kanban" class="screen">
+  <div id="kb-content"></div>
+</div>
+
+<div id="detail-overlay" class="detail-overlay" onclick="closeDetailModal()">
+  <div class="detail-modal" onclick="event.stopPropagation()" id="detail-modal-inner"></div>
+</div>
+
+<div id="bundle-split-overlay" class="detail-overlay" onclick="closeBundleSplit()">
+  <div class="detail-modal" style="max-height:90vh" onclick="event.stopPropagation()" id="bundle-split-inner"></div>
+</div>
+
 <script>
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-20250514';
 const AC = '#E88B00';
 let currentFilter = 'all';
-let currentLsFilter = '';
 let currentSort = localStorage.getItem('ka_sort_pref') || 'updated';
 let currentSearch = '';
 
@@ -348,15 +376,222 @@ function getTrackUrl(carrier, num) {
 const APP_VERSION = '2.8';
 const APP_CODENAME = 'Święty Józef';
 
-// Auto-detect logistic status from conversation analysis
-function autoLogisticStatus(analysis, existingStatus) {
-  if (existingStatus) return existingStatus; // don't overwrite manual setting
-  const txt = JSON.stringify(analysis).toLowerCase();
-  if (analysis.trackingNumber) return 'wyslane_de';
-  if (txt.includes('geld wurde überwiesen') || txt.includes('überwiesen') ||
-      txt.includes('artikel bezahlt') || txt.includes('bezahlung') ||
-      txt.includes('sicher bezahlen') || analysis.finalPrice) return 'oplacony';
-  return '';
+// Returns a suggested unified status based on screenshot analysis
+function autoStatusFromAnalysis(analysis, existingStatus) {
+  if (existingStatus && existingStatus !== 'negotiating') return existingStatus;
+  if (analysis.trackingNumber) return 'shipped_de';
+  if (analysis.finalPrice) return 'purchased';
+  return existingStatus || 'negotiating';
+}
+
+// ── Phase helper ─────────────────────────────────────────────────────────────
+function getPhase(status) {
+  if (['negotiating','purchased','closed'].includes(status)) return 'buying';
+  if (['shipped_de','at_forwarder','shipped_pl','received'].includes(status)) return 'logistics';
+  if (['inspecting','in_repair','in_stock'].includes(status)) return 'warehouse';
+  if (['listed','sold','completed'].includes(status)) return 'selling';
+  return 'buying';
+}
+
+// ── Settings ─────────────────────────────────────────────────────────────────
+function getSettings() {
+  try {
+    return Object.assign(
+      { exchangeRate: 4.30, forwardingPL: 22, alertThreshold: 3, defaultPlatform: 'OLX' },
+      JSON.parse(localStorage.getItem('ka_settings') || '{}')
+    );
+  } catch { return { exchangeRate: 4.30, forwardingPL: 22, alertThreshold: 3, defaultPlatform: 'OLX' }; }
+}
+function saveSettings(partial) {
+  localStorage.setItem('ka_settings', JSON.stringify(Object.assign(getSettings(), partial)));
+}
+function saveAppSettings() {
+  const rate = parseFloat(document.getElementById('setting-exchange').value);
+  const fwd  = parseFloat(document.getElementById('setting-forwarding').value);
+  const thr  = parseInt(document.getElementById('setting-threshold').value);
+  const plat = document.getElementById('setting-platform').value;
+  saveSettings({
+    exchangeRate:    isNaN(rate) ? 4.30 : rate,
+    forwardingPL:   isNaN(fwd)  ? 22   : fwd,
+    alertThreshold: isNaN(thr)  ? 3    : thr,
+    defaultPlatform: plat || 'OLX'
+  });
+  const btn = event.target;
+  btn.textContent = '✅ Zapisano';
+  setTimeout(() => { btn.textContent = 'Zapisz ustawienia'; }, 2000);
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, duration = 3000) {
+  let el = document.getElementById('ka-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'ka-toast';
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a0a;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, duration);
+}
+
+// ── Migration: logisticStatus → unified status ────────────────────────────────
+function migrateItem(item) {
+  const NEW_STATUSES = ['negotiating','purchased','closed','shipped_de','at_forwarder',
+    'shipped_pl','received','inspecting','in_repair','in_stock','listed','sold','completed'];
+  if (NEW_STATUSES.includes(item.status) && !item.logisticStatus) return item;
+
+  const old = item.status;
+  const oldLog = item.logisticStatus;
+  let newStatus = 'negotiating';
+
+  if      (oldLog === 'sprzedany')           newStatus = 'sold';
+  else if (oldLog === 'dostarczone_pl')      newStatus = 'received';
+  else if (oldLog === 'wyslane_pl')          newStatus = 'shipped_pl';
+  else if (oldLog === 'dostarczone_de')      newStatus = 'at_forwarder';
+  else if (oldLog === 'wyslane_de')          newStatus = 'shipped_de';
+  else if (oldLog === 'oplacony')            newStatus = 'purchased';
+  else if (old === 'received')               newStatus = 'received';
+  else if (old === 'shipped')                newStatus = 'shipped_de';
+  else if (old === 'purchased')              newStatus = 'purchased';
+  else if (old === 'closed')                 newStatus = 'closed';
+
+  item.status = newStatus;
+  if (old && old !== newStatus) item._legacyStatus = old;
+  if (oldLog) item._legacyLogisticStatus = oldLog;
+  delete item.logisticStatus;
+  return item;
+}
+
+function migrateAllItems() {
+  const needsMigration = items.some(i => i.logisticStatus !== undefined);
+  if (!needsMigration) return;
+  items = items.map(migrateItem);
+  saveItems();
+  toast('✅ Dane zaktualizowane do nowego formatu (v3.0)');
+}
+
+// ── preClassify mapping (scraper → unified status) ───────────────────────────
+function preClassifyToStatus(pc) {
+  if (!pc) return null;
+  const NEW_STATUSES = ['negotiating','purchased','closed','shipped_de','at_forwarder',
+    'shipped_pl','received','inspecting','in_repair','in_stock','listed','sold','completed'];
+  if (pc.suggestedStatus && NEW_STATUSES.includes(pc.suggestedStatus)) return pc.suggestedStatus;
+  const logMap = { oplacony:'purchased', wyslane_de:'shipped_de', wyslane_pl:'shipped_pl',
+    dostarczone_de:'at_forwarder', dostarczone_pl:'received', sprzedany:'sold' };
+  if (pc.suggestedLogistic && logMap[pc.suggestedLogistic]) return logMap[pc.suggestedLogistic];
+  const stMap = { shipped:'shipped_de', received:'received', purchased:'purchased',
+    closed:'closed', negotiating:'negotiating' };
+  if (pc.suggestedStatus && stMap[pc.suggestedStatus]) return stMap[pc.suggestedStatus];
+  return null;
+}
+
+// ── Item field helpers ────────────────────────────────────────────────────────
+function saveField(field, val) {
+  updateItem(currentId, { [field]: val });
+}
+function saveCost(key, rawVal) {
+  const cur = getItem(currentId); if (!cur) return;
+  const v = rawVal === '' ? null : parseFloat(rawVal);
+  const costs = Object.assign({}, cur.costs || {}, { [key]: isNaN(v) ? null : v });
+  updateItem(currentId, { costs });
+}
+
+// ── Grouped status select ─────────────────────────────────────────────────────
+function buildStatusSelect(currentVal) {
+  const groups = [
+    { label: '💬 Zakup',      statuses: ['negotiating','purchased','closed'] },
+    { label: '📦 Logistyka',  statuses: ['shipped_de','at_forwarder','shipped_pl','received'] },
+    { label: '🔧 Magazyn',    statuses: ['inspecting','in_repair','in_stock'] },
+    { label: '💰 Sprzedaż',  statuses: ['listed','sold','completed'] },
+  ];
+  const opts = groups.map(g => {
+    const options = g.statuses.map(v =>
+      `<option value="${v}"${currentVal===v?' selected':''}>${ST[v]?.e||''} ${ST[v]?.l||v}</option>`
+    ).join('');
+    return `<optgroup label="${g.label}">${options}</optgroup>`;
+  }).join('');
+  return `<select class="status-select" onchange="changeStatus(this.value)">${opts}</select>`;
+}
+
+// ── Conditional form sections ─────────────────────────────────────────────────
+function buildInspectionSection(item) {
+  const opts = [
+    {v:'',l:'— nie sprawdzono —'},{v:'pending',l:'⏳ Oczekuje'},{v:'ok',l:'✅ OK'},{v:'defective',l:'⚠️ Wadliwy'}
+  ].map(o=>`<option value="${o.v}"${(item.inspectionStatus||'')===o.v?' selected':''}>${o.l}</option>`).join('');
+  return `<div class="card">
+    <div class="lbl mb8">🔍 Inspekcja</div>
+    <select class="inp mb8" onchange="saveField('inspectionStatus',this.value)">${opts}</select>
+    <textarea class="inp" rows="2" placeholder="Notatki z inspekcji..." oninput="saveField('inspectionNotes',this.value)">${esc(item.inspectionNotes||'')}</textarea>
+  </div>`;
+}
+
+function buildRepairSection(item) {
+  return `<div class="card">
+    <div class="lbl mb8">🔧 Serwis</div>
+    <input class="inp mb8" type="text" placeholder="Nazwa serwisu" value="${esc(item.repairShop||'')}" oninput="saveField('repairShop',this.value)">
+    <input class="inp mb8" type="number" step="0.01" placeholder="Koszt serwisu (PLN)" value="${item.repairCost||''}" oninput="saveField('repairCost',this.value===''?null:parseFloat(this.value))">
+    <textarea class="inp mb8" rows="2" placeholder="Notatki serwisowe..." oninput="saveField('repairNotes',this.value)">${esc(item.repairNotes||'')}</textarea>
+    <div class="row">
+      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:4px">Wysłano do serwisu</div><input class="inp" type="date" value="${item.repairSentDate||''}" onchange="saveField('repairSentDate',this.value)"></div>
+      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:4px">Odebrano z serwisu</div><input class="inp" type="date" value="${item.repairReceivedDate||''}" onchange="saveField('repairReceivedDate',this.value)"></div>
+    </div>
+  </div>`;
+}
+
+function buildSaleSection(item) {
+  const settings = getSettings();
+  const platforms = ['OLX','FB Marketplace','Vinted','eBay','hurtowy'];
+  const platOpts = platforms.map(p=>`<option value="${p}"${(item.salePlatform||settings.defaultPlatform)===p?' selected':''}>${p}</option>`).join('');
+  return `<div class="card">
+    <div class="lbl mb8">💰 Sprzedaż</div>
+    ${['in_stock','listed'].includes(item.status) ? `<button class="btn" style="background:#334155;margin-bottom:10px;padding:9px;font-size:13px" onclick="copyGeminiDescTemplate('${item.id}')">📝 Kopiuj szablon opisu dla Gemini</button>` : ''}
+    <select class="inp mb8" onchange="saveField('salePlatform',this.value)">${platOpts}</select>
+    <input class="inp mb8" type="number" step="0.01" placeholder="Cena sprzedaży (PLN)" value="${item.salePrice||''}" oninput="saveField('salePrice',this.value===''?null:parseFloat(this.value))">
+    <input class="inp mb8" type="text" placeholder="URL ogłoszenia sprzedaży" value="${esc(item.saleUrl||'')}" oninput="saveField('saleUrl',this.value)">
+    <input class="inp mb8" type="text" placeholder="Imię kupującego" value="${esc(item.buyerName||'')}" oninput="saveField('buyerName',this.value)">
+    <input class="inp mb8" type="text" placeholder="Nr śledzenia (wysyłka do kupca)" value="${esc(item.saleTrackingNumber||'')}" oninput="saveField('saleTrackingNumber',this.value)">
+    <div style="font-size:11px;color:#888;margin-bottom:4px">Data sprzedaży</div>
+    <input class="inp" type="date" value="${item.saleDate||''}" onchange="saveField('saleDate',this.value)">
+  </div>`;
+}
+
+function buildCostsSection(item) {
+  const settings = getSettings();
+  const c = item.costs || {};
+  const rate = item.exchangeRate != null ? item.exchangeRate : settings.exchangeRate;
+  return `<div class="card">
+    <div class="lbl mb8">💸 Koszty</div>
+    <div class="row mb8">
+      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Zakup (EUR)</div><input class="inp" type="number" step="0.01" value="${c.purchase!=null?c.purchase:''}" placeholder="${item.finalPrice||''}" oninput="saveCost('purchase',this.value)"></div>
+      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Wysyłka DE (EUR)</div><input class="inp" type="number" step="0.01" value="${c.shippingDE!=null?c.shippingDE:''}" oninput="saveCost('shippingDE',this.value)"></div>
+    </div>
+    <div class="row mb8">
+      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Forwarding (PLN)</div><input class="inp" type="number" step="1" value="${c.forwardingPL!=null?c.forwardingPL:''}" placeholder="${settings.forwardingPL}" oninput="saveCost('forwardingPL',this.value)"></div>
+      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Serwis (PLN)</div><input class="inp" type="number" step="0.01" value="${c.repair!=null?c.repair:item.repairCost||''}" oninput="saveCost('repair',this.value)"></div>
+    </div>
+    <div class="row mb8">
+      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Prowizja platf. (PLN)</div><input class="inp" type="number" step="0.01" value="${c.saleFees!=null?c.saleFees:''}" oninput="saveCost('saleFees',this.value)"></div>
+      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Wysyłka do kupca (PLN)</div><input class="inp" type="number" step="0.01" value="${c.saleShipping!=null?c.saleShipping:''}" oninput="saveCost('saleShipping',this.value)"></div>
+    </div>
+    <div class="row">
+      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Inne koszty (PLN)</div><input class="inp" type="number" step="0.01" value="${c.other!=null?c.other:''}" oninput="saveCost('other',this.value)"></div>
+      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Kurs EUR/PLN</div><input class="inp" type="number" step="0.01" value="${rate}" oninput="saveField('exchangeRate',this.value===''?null:parseFloat(this.value))"></div>
+    </div>
+  </div>`;
+}
+
+function buildBundleSplitButton(item) {
+  // Show when: received or further, not already a child, not already split
+  if (!['received','inspecting','in_repair','in_stock','listed'].includes(item.status)) return '';
+  if (item.parentItemId) return ''; // it's a child
+  if (item.isBundle && item.status === 'completed') return ''; // already split
+  return `<div class="card" style="text-align:center">
+    <div class="lbl mb8">📦 Zestaw / Bundle</div>
+    <div style="font-size:12px;color:#888;margin-bottom:10px">Zawiera kilka elementów? Rozbij na osobne rekordy z proporcjonalną alokacją kosztów.</div>
+    <button class="btn" onclick="openBundleSplit('${item.id}')">📦 Rozbij zestaw</button>
+  </div>`;
 }
 
 // ── Pre-filled data from Kleinanzeigen scan ──────────────────────────────────
@@ -532,7 +767,15 @@ function toggleSettings() {
   if (p.style.display === 'block') {
     const inp = document.getElementById('apikey-input');
     if (inp) inp.value = getApiKey() || '';
-    loadGistConfig();
+    const gi = document.getElementById('gist-id-input');
+    if (gi) gi.value = getGistId();
+    const gt = document.getElementById('gist-token-input');
+    if (gt) gt.value = getGistToken();
+    const s = getSettings();
+    const exEl = document.getElementById('setting-exchange');   if (exEl) exEl.value = s.exchangeRate;
+    const fwEl = document.getElementById('setting-forwarding'); if (fwEl) fwEl.value = s.forwardingPL;
+    const thEl = document.getElementById('setting-threshold');  if (thEl) thEl.value = s.alertThreshold;
+    const plEl = document.getElementById('setting-platform');   if (plEl) plEl.value = s.defaultPlatform;
   }
 }
 // Migrate old key from localStorage (one-time cleanup)
@@ -557,15 +800,7 @@ function loadItems() {
   items = PREFILLED.map(i => ({ ...i }));
   saveItems();
 }
-let _gistSaveTimer = null;
-function gistSaveDebounced() {
-  clearTimeout(_gistSaveTimer);
-  _gistSaveTimer = setTimeout(gistSave, 5000);
-}
-function saveItems() {
-  localStorage.setItem('ka_items_v2', JSON.stringify(items));
-  gistSaveDebounced();
-}
+function saveItems() { localStorage.setItem('ka_items_v2', JSON.stringify(items)); }
 function getItem(id) { return items.find(i => i.id === id) || null; }
 function trackChange(item, field, newValue, source = 'manual') {
   if (!item.changelog) item.changelog = [];
@@ -582,7 +817,8 @@ function trackChange(item, field, newValue, source = 'manual') {
   if (item.changelog.length > 50) item.changelog = item.changelog.slice(-50);
 }
 
-const TRACKED_FIELDS = ['status', 'logisticStatus', 'finalPrice', 'trackingNumber', 'carrier', 'notes'];
+const TRACKED_FIELDS = ['status', 'finalPrice', 'trackingNumber', 'carrier', 'notes',
+  'inspectionStatus', 'repairCost', 'salePlatform', 'salePrice'];
 
 function updateItem(id, patch, source = 'manual') {
   items = items.map(i => {
@@ -602,28 +838,26 @@ function updateItem(id, patch, source = 'manual') {
 }
 
 const ST = {
-  negotiating: { l: 'Negocjacje', e: '🟡' },
-  purchased:   { l: 'Kupiono',    e: '🟢' },
-  shipped:     { l: 'W drodze',   e: '🚚' },
-  received:    { l: 'Odebrano',   e: '✅' },
-  closed:      { l: 'Zamknięte',  e: '⛔' },
+  negotiating:  { l: 'Negocjacje',   e: '💬', color: '#6366f1' },
+  purchased:    { l: 'Zapłacone',    e: '💳', color: '#0891b2' },
+  closed:       { l: 'Zamknięte',    e: '⛔', color: '#64748b' },
+  shipped_de:   { l: 'W drodze DE',  e: '📤', color: '#ca8a04' },
+  at_forwarder: { l: 'Görlitz',      e: '📦', color: '#ea580c' },
+  shipped_pl:   { l: 'W drodze PL',  e: '🚚', color: '#c026d3' },
+  received:     { l: 'Odebrane',     e: '✅', color: '#059669' },
+  inspecting:   { l: 'Sprawdzanie',  e: '🔍', color: '#0891b2' },
+  in_repair:    { l: 'Serwis',       e: '🔧', color: '#dc2626' },
+  in_stock:     { l: 'Do sprzedaży', e: '🏷️', color: '#16a34a' },
+  listed:       { l: 'Wystawione',   e: '📢', color: '#2563eb' },
+  sold:         { l: 'Sprzedane',    e: '💰', color: '#475569' },
+  completed:    { l: 'Zakończone',   e: '✔️', color: '#475569' },
 };
 
-const LS = [
-  { value: '', label: '— brak —' },
-  { value: 'oplacony',       label: '💳 Opłacony' },
-  { value: 'wyslane_de',     label: '📤 Wysłane DE' },
-  { value: 'wyslane_pl',     label: '📦 Wysłane PL' },
-  { value: 'dostarczone_de', label: '🏠 Dostarczone DE' },
-  { value: 'dostarczone_pl', label: '✅ Dostarczone PL' },
-  { value: 'sprzedany',      label: '💰 Sprzedany' },
-];
-
-function lsLabel(val) {
-  if (!val) return '';
-  const found = LS.find(l => l.value === val);
-  return found ? found.label : val;
-}
+// Legacy logistic status labels (for backwards compat in patch display)
+const LS_LEGACY = {
+  oplacony:'💳 Opłacony', wyslane_de:'📤 Wysłane DE', wyslane_pl:'📦 Wysłane PL',
+  dostarczone_de:'🏠 Dostarczone DE', dostarczone_pl:'✅ Dostarczone PL', sprzedany:'💰 Sprzedany'
+};
 
 function setSearch(val) {
   currentSearch = val;
@@ -637,7 +871,6 @@ function setFilter(f) {
 
 function resetFilters() {
   currentFilter = 'all';
-  currentLsFilter = '';
   currentSearch = '';
   const si = document.getElementById('search-input');
   if (si) si.value = '';
@@ -645,10 +878,7 @@ function resetFilters() {
   renderHome();
 }
 
-function setLsFilter(val) {
-  currentLsFilter = val;
-  renderHome();
-}
+// setLsFilter removed — logisticStatus replaced by unified status in v3.0
 
 function setSortPref(val) {
   currentSort = val;
@@ -681,21 +911,28 @@ function getAlertBadges(item) {
 
 function syncFilterSelects() {
   const fs = document.getElementById('filter-status');
-  const fl = document.getElementById('filter-ls');
   if (fs) fs.value = currentFilter;
-  if (fl) fl.value = currentLsFilter;
 }
 
 function showScreen(name) {
   currentScreen = name;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + name).classList.add('active');
+  const globalHeader = document.getElementById('header');
+  const settingsPanel = document.getElementById('settings-panel');
+  if (name === 'kanban') {
+    globalHeader.style.display = 'none';
+    settingsPanel.style.display = 'none';
+    renderKanban();
+    return;
+  }
+  globalHeader.style.display = '';
   const backBtn = document.getElementById('back-btn');
   const sub = document.getElementById('header-sub');
   const title = document.getElementById('header-title');
-  if (name === 'home') { backBtn.style.display = 'none'; title.innerHTML = '🛒 KA Asystent <span style="font-size:10px;color:#aaa;font-weight:400">v2.8 · Święty Józef</span>'; sub.style.display = 'none'; renderHome(); }
+  if (name === 'home') { backBtn.style.display = 'none'; title.innerHTML = '🛒 KA Asystent <span style="font-size:10px;color:#aaa;font-weight:400">v3.0 · Święty Józef</span>'; sub.style.display = 'none'; renderHome(); }
   else if (name === 'upload') { backBtn.style.display = 'block'; title.textContent = '📸 Analiza screenshota'; sub.style.display = 'none'; }
-  else if (name === 'sync') { backBtn.style.display = 'block'; title.textContent = '🔄 Synchronizacja'; sub.style.display = 'none'; renderSyncOverview(); initRemoteScan(); }
+  else if (name === 'sync') { backBtn.style.display = 'block'; title.textContent = '🔄 Synchronizacja'; sub.style.display = 'none'; renderSyncOverview(); }
   else if (name === 'item') {
     backBtn.style.display = 'block';
     const cur = getItem(currentId);
@@ -708,8 +945,8 @@ function showScreen(name) {
 
 function goBack() {
   if (currentScreen === 'upload' && fromId) goItem(fromId);
-  else if (currentScreen === 'sync') showScreen('home');
-  else showScreen('home');
+  else if (currentScreen === 'sync') showScreen('kanban');
+  else showScreen('kanban');
 }
 
 function goItem(id) { currentId = id; draftOut = ''; showScreen('item'); }
@@ -781,31 +1018,36 @@ function applyTo(itemId) {
   const msgs = (a.messages || []).map(m => ({ id: genId(), timestamp: new Date().toISOString(), sender: m.sender, originalText: m.originalText, translatedText: m.translatedText }));
   const url = a.trackingNumber ? getTrackUrl(a.carrier, a.trackingNumber) : null;
   const cur = getItem(itemId);
-  const autoLS = autoLogisticStatus(a, cur.logisticStatus);
-  updateItem(itemId, { trackingNumber: a.trackingNumber || cur.trackingNumber, carrier: a.carrier || cur.carrier, trackingUrl: url || cur.trackingUrl, finalPrice: a.finalPrice || cur.finalPrice, messages: [...(cur.messages || []), ...msgs], logisticStatus: autoLS });
+  const newStatus = autoStatusFromAnalysis(a, cur.status);
+  const patch = { trackingNumber: a.trackingNumber || cur.trackingNumber, carrier: a.carrier || cur.carrier, trackingUrl: url || cur.trackingUrl, finalPrice: a.finalPrice || cur.finalPrice, messages: [...(cur.messages || []), ...msgs] };
+  if (newStatus !== cur.status) patch.status = newStatus;
+  updateItem(itemId, patch);
   goItem(itemId);
 }
 
 async function createNewItem() {
   const a = currentAnalysis || {};
   const url = a.trackingNumber ? getTrackUrl(a.carrier, a.trackingNumber) : null;
-  const autoLS2 = autoLogisticStatus(a, '');
+  const autoSt = a.trackingNumber ? 'shipped_de' : (a.finalPrice ? 'purchased' : 'negotiating');
   // Try to enrich product name from model number
   if (a.listingId && getApiKey()) {
     const enriched = await enrichFromListing(a.listingId, a.itemTitle || 'Nowy przedmiot');
     if (enriched) a.itemTitle = enriched;
   }
-  const item = { id: genId(), title: a.itemTitle || 'Nowy przedmiot', description: a.itemDescription || '', askingPrice: a.price || null, finalPrice: a.finalPrice || null, status: 'negotiating', carrier: a.carrier || null, trackingNumber: a.trackingNumber || null, trackingUrl: url, thumbnail: currentImgPrev, watchlist: false, conversationUrl: null, listingUrl: null, notes: '', logisticStatus: autoLS2, messages: (a.messages || []).map(m => ({ id: genId(), timestamp: new Date().toISOString(), sender: m.sender, originalText: m.originalText, translatedText: m.translatedText })), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  const item = { id: genId(), title: a.itemTitle || 'Nowy przedmiot', description: a.itemDescription || '', askingPrice: a.price || null, finalPrice: a.finalPrice || null, status: autoSt, carrier: a.carrier || null, trackingNumber: a.trackingNumber || null, trackingUrl: url, thumbnail: currentImgPrev, watchlist: false, conversationUrl: null, listingUrl: null, notes: '', messages: (a.messages || []).map(m => ({ id: genId(), timestamp: new Date().toISOString(), sender: m.sender, originalText: m.originalText, translatedText: m.translatedText })), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   items.unshift(item); saveItems(); goItem(item.id);
 }
 
 function renderHome() {
   const list = document.getElementById('items-list');
   let filtered = items;
-  if (currentFilter === 'active') filtered = items.filter(i => !i.watchlist && i.status !== 'received' && i.status !== 'closed');
-  if (currentFilter === 'closed') filtered = items.filter(i => i.status === 'closed');
-  if (currentFilter === 'watchlist') filtered = items.filter(i => i.watchlist);
-  if (currentLsFilter) filtered = filtered.filter(i => (i.logisticStatus || '') === currentLsFilter);
+  if      (currentFilter === 'active')    filtered = items.filter(i => !i.watchlist && !['closed','completed'].includes(i.status));
+  else if (currentFilter === 'buying')    filtered = items.filter(i => ['negotiating','purchased'].includes(i.status));
+  else if (currentFilter === 'logistics') filtered = items.filter(i => ['shipped_de','at_forwarder','shipped_pl','received'].includes(i.status));
+  else if (currentFilter === 'warehouse') filtered = items.filter(i => ['inspecting','in_repair','in_stock'].includes(i.status));
+  else if (currentFilter === 'selling')   filtered = items.filter(i => ['listed','sold','completed'].includes(i.status));
+  else if (currentFilter === 'closed')    filtered = items.filter(i => i.status === 'closed');
+  else if (currentFilter === 'watchlist') filtered = items.filter(i => i.watchlist);
   if (currentSearch) {
     const q = currentSearch.toLowerCase();
     filtered = filtered.filter(i =>
@@ -819,7 +1061,7 @@ function renderHome() {
   const sortSel = document.getElementById('filter-sort');
   if (sortSel) sortSel.value = currentSort;
   if (filtered.length === 0) {
-    const hasFilters = currentFilter !== 'all' || currentLsFilter !== '' || currentSearch !== '';
+    const hasFilters = currentFilter !== 'all' || currentSearch !== '';
     list.innerHTML = `<div class="empty" style="padding:32px 24px">
       <div style="font-size:42px;margin-bottom:10px">${hasFilters ? '🔍' : '📦'}</div>
       <div style="font-size:15px;font-weight:700;color:#777">${hasFilters ? 'Brak wyników' : 'Brak przedmiotów'}</div>
@@ -833,22 +1075,25 @@ function renderHome() {
   if (countEl) countEl.textContent = filtered.length + ' poz.';
 
   list.innerHTML = filtered.map(item => {
-    const statusBadge = item.watchlist ? `<span class="badge blue">\ud83d\udd01 Wróć</span>` : item.status === 'closed' ? `<span class="badge" style="background:#eee;color:#999">\u26d4 Zamknięte</span>` : item.status === 'purchased' ? `<span class="badge green">\u2705 Kupiono</span>` : item.status === 'shipped' ? `<span class="badge orange">\ud83d\ude9a W drodze</span>` : item.status === 'received' ? `<span class="badge green">\u2705 Odebrano</span>` : `<span class="badge yellow">\ud83d\udfe1 Negocjacje</span>`;
+    const st = ST[item.status] || ST.negotiating;
+    const statusBadge = item.watchlist
+      ? `<span class="badge blue">🔁 Wróć</span>`
+      : `<span class="badge" style="background:${st.color}22;color:${st.color};border:1px solid ${st.color}44">${st.e} ${st.l}</span>`;
     const closedStyle = item.status === 'closed' ? 'opacity:0.5;' : '';
-    const lsBadge = item.logisticStatus ? `<span class="badge blue">${lsLabel(item.logisticStatus)}</span>` : '';
     const alertBadges = getAlertBadges(item);
-    const priceStr = item.finalPrice ? `\ud83d\udcb0 ${item.finalPrice} EUR` : item.askingPrice ? `Cena wywoławcza: ${item.askingPrice} EUR` : 'Cena nieznana';
-    const trackStr = item.trackingNumber ? `<div class="item-track">\ud83d\ude9a ${item.carrier}: ${item.trackingNumber}</div>` : '';
+    const priceStr = item.finalPrice ? `💰 ${item.finalPrice} EUR` : item.askingPrice ? `Cena wywoławcza: ${item.askingPrice} EUR` : 'Cena nieznana';
+    const saleStr = item.salePrice ? ` → <strong>${item.salePrice} PLN</strong>` : '';
+    const trackStr = item.trackingNumber ? `<div class="item-track">🚚 ${item.carrier}: ${item.trackingNumber}</div>` : '';
     const notesStr = item.notes ? `<div style="font-size:11px;color:#888;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${esc(item.notes.substring(0, 60))}${item.notes.length > 60 ? '...' : ''}</div>` : '';
     return `<div class="item-row" onclick="goItem('${item.id}')" style="${closedStyle}">
-      <div class="item-thumb">${item.thumbnail ? `<img src="${item.thumbnail}" alt="">` : '\ud83d\udce6'}</div>
+      <div class="item-thumb">${item.thumbnail ? `<img src="${item.thumbnail}" alt="">` : '📦'}</div>
       <div class="item-info">
         <div class="item-title">${esc(item.title)}</div>
-        <div class="item-sub">${statusBadge} ${lsBadge} ${alertBadges} ${priceStr}</div>
+        <div class="item-sub">${statusBadge} ${alertBadges} ${priceStr}${saleStr}</div>
         ${trackStr}
         ${notesStr}
       </div>
-      <div class="item-arrow">\u203a</div>
+      <div class="item-arrow">›</div>
     </div>`;
   }).join('');
 }
@@ -870,26 +1115,37 @@ function renderUploadResult() {
 
 function renderItem() {
   const cur = getItem(currentId); if (!cur) return;
-  const statusOptions = Object.entries(ST).map(([v, { l }]) => `<option value="${v}" ${cur.status===v?'selected':''}>${l}</option>`).join('');
-  const trackHtml = cur.trackingNumber ? `<div class="track-box"><div class="track-num">${esc(cur.carrier)}: ${esc(cur.trackingNumber)}</div>${cur.trackingUrl?`<a class="track-link" href="${cur.trackingUrl}" target="_blank">🔍 Śledź paczkę →</a>`:''}</div>` : `<div style="font-size:13px;color:#bbb">Brak numeru śledzenia.</div>`;
+  const st = ST[cur.status] || ST.negotiating;
+  const trackHtml = cur.trackingNumber
+    ? `<div class="track-box"><div class="track-num">${esc(cur.carrier)}: ${esc(cur.trackingNumber)}</div>${cur.trackingUrl?`<a class="track-link" href="${cur.trackingUrl}" target="_blank">🔍 Śledź paczkę →</a>`:''}</div>`
+    : `<div style="font-size:13px;color:#bbb">Brak numeru śledzenia.</div>`;
   const convUrl = cur.conversationUrl ? `<a href="${cur.conversationUrl}" target="_blank" style="font-size:12px;color:${AC};font-weight:600;text-decoration:none">💬 Otwórz rozmowę na Kleinanzeigen →</a>` : '';
   const listingUrl = cur.listingUrl ? `<a href="${cur.listingUrl}" target="_blank" style="font-size:12px;color:${AC};font-weight:600;text-decoration:none">🏷️ Zobacz ogłoszenie →</a>` : '';
   const notesHtml = cur.notes ? `<div class="note-box">${linkify(cur.notes)}</div>` : '';
-  const msgsHtml = cur.messages && cur.messages.length > 0 ? `<div class="chat-list">${cur.messages.map(msg => { const displayText = msg.translatedText || msg.originalText || (msg.hasImage ? `📷 ${msg.imageNote || 'Zdjęcie'}` : ''); const origText = msg.originalText || (msg.hasImage ? '' : ''); const showOrig = origText && origText !== displayText; const tsRaw = msg.timestamp || msg.date || null; const tsLabel = tsRaw ? (() => { const d = new Date(tsRaw); return isNaN(d) ? tsRaw : d.toLocaleString('pl-PL', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); })() : ''; return `<div class="chat-row ${msg.sender==='buyer'?'me':'them'}"><div class="chat-who">${msg.sender==='seller'?'🇩🇪 Sprzedający':'Ty'}${tsLabel ? ` <span style="font-size:10px;color:#bbb">${tsLabel}</span>` : ''}</div><div class="bubble ${msg.sender==='buyer'?'me':'them'}">${esc(displayText)}${showOrig?`<div class="bubble-orig">🇩🇪 ${esc(origText)}</div>`:''}</div></div>`; }).join('')}</div>` : `<div style="text-align:center;padding:14px 0;color:#bbb;font-size:13px">Brak wiadomości. Dodaj screenshot z rozmowy.</div>`;
+  const msgsHtml = cur.messages && cur.messages.length > 0
+    ? `<div class="chat-list">${cur.messages.map(msg => `<div class="chat-row ${msg.sender==='buyer'?'me':'them'}"><div class="chat-who">${msg.sender==='seller'?'🇩🇪 Sprzedający':'Ty'}</div><div class="bubble ${msg.sender==='buyer'?'me':'them'}">${esc(msg.translatedText||msg.originalText)}${msg.originalText&&msg.originalText!==msg.translatedText?`<div class="bubble-orig">🇩🇪 ${esc(msg.originalText)}</div>`:''}</div></div>`).join('')}</div>`
+    : `<div style="text-align:center;padding:14px 0;color:#bbb;font-size:13px">Brak wiadomości. Dodaj screenshot z rozmowy.</div>`;
   const draftResultHtml = draftOut ? `<div class="draft-result" id="draft-result-box"><div class="lbl">GOTOWA WIADOMOŚĆ — skopiuj do Kleinanzeigen:</div><div class="draft-text" id="draft-text-out">${esc(draftOut)}</div><button class="copy-btn" onclick="copyDraft()">📋 Kopiuj</button></div>` : '';
+
+  // Conditional sections
+  const showInspection = ['received','inspecting','in_repair','in_stock','listed','sold','completed'].includes(cur.status);
+  const showRepair     = cur.status === 'in_repair';
+  const showSale       = ['in_stock','listed','sold','completed'].includes(cur.status);
+  const showCosts      = cur.status !== 'negotiating' || !!cur.finalPrice;
 
   document.getElementById('item-content').innerHTML = `
     <div class="card">
       <div class="section-header" style="margin-bottom:8px">
         <div style="font-weight:700;font-size:16px;flex:1;margin-right:8px">${esc(cur.title)}</div>
-        <select class="status-select" onchange="changeStatus(this.value)">${statusOptions}</select>
+        ${buildStatusSelect(cur.status)}
       </div>
       <div class="info-row">
         ${cur.askingPrice?`<div class="info-item">Wywoławcza: <strong>${cur.askingPrice} EUR</strong></div>`:''}
         ${cur.finalPrice?`<div class="info-item green">💰 Zapłacono: <strong>${cur.finalPrice} EUR</strong></div>`:''}
-        ${cur.logisticStatus?`<div class="info-item"><span class="badge blue">${lsLabel(cur.logisticStatus)}</span></div>`:''}
+        ${cur.salePrice?`<div class="info-item" style="color:#16a34a">🏷️ Sprzedano: <strong>${cur.salePrice} PLN</strong></div>`:''}
       </div>
-      ${cur.description?`<div style="font-size:12px;color:#888;margin-top:6px;line-height:1.5">${esc(cur.description)}</div>`:''}
+      ${cur.parentItemId?`<div style="margin-top:6px;font-size:11px;color:#a78bfa">↳ Child z zestawu</div>`:''}
+      ${cur.isBundle?`<div style="margin-top:6px"><span class="badge orange">📦 Zestaw (${(cur.childItemIds||[]).length} elementów)</span></div>`:''}
       ${cur.watchlist?`<div style="margin-top:8px"><span class="badge blue">🔁 Lista obserwowanych</span></div>`:''}
     </div>
 
@@ -897,12 +1153,12 @@ function renderItem() {
 
     ${convUrl || listingUrl ? `<div class="card" style="padding:10px 14px;display:flex;flex-direction:column;gap:8px">${convUrl}${listingUrl}</div>` : ''}
 
-    <div class="card">
-      <div class="section-header" style="margin-bottom:8px">
-        <div class="lbl">🚦 Status logistyczny</div>
-      </div>
-      ${buildLsSelect(cur.logisticStatus)}
-    </div>
+    ${showInspection ? buildInspectionSection(cur) : ''}
+    ${showRepair     ? buildRepairSection(cur)     : ''}
+    ${showSale       ? buildSaleSection(cur)       : ''}
+    ${showCosts      ? buildCostsSection(cur)      : ''}
+    ${buildProfitSection(cur)}
+    ${buildBundleSplitButton(cur)}
 
     <div class="card">
       <div class="section-header">
@@ -933,9 +1189,9 @@ function renderItem() {
     </div>
 
     <div class="card">
-      <div class="lbl">💰 Cena zakupu</div>
+      <div class="lbl">💰 Cena zakupu (EUR)</div>
       <div class="row">
-        <input class="inp" id="fp-input" type="number" placeholder="Kwota w EUR" value="${cur.finalPrice||''}">
+        <input class="inp" id="fp-input" type="number" step="0.01" placeholder="Kwota w EUR" value="${cur.finalPrice||''}">
         <button style="padding:10px 18px;background:${AC};color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;font-family:inherit;flex-shrink:0" onclick="savePrice()">Zapisz</button>
       </div>
     </div>
@@ -958,19 +1214,20 @@ function renderItem() {
   `;
 }
 
-function changeStatus(val) { updateItem(currentId, { status: val }); document.getElementById('header-sub').textContent = ST[val]?.e + ' ' + ST[val]?.l; }
+function changeStatus(val) {
+  updateItem(currentId, { status: val });
+  const st = ST[val] || {};
+  const sub = document.getElementById('header-sub');
+  if (sub) sub.textContent = (st.e || '') + ' ' + (st.l || '');
+  renderItem(); // re-render to show/hide conditional sections
+}
 function toggleTrackEdit() {
   const v = document.getElementById('track-view'); const e = document.getElementById('track-edit');
   const cur = getItem(currentId);
   if (e.style.display === 'none') { e.style.display = 'block'; v.style.display = 'none'; }
   else { e.style.display = 'none'; v.style.display = 'block'; }
 }
-function saveLogisticStatus(val) { updateItem(currentId, { logisticStatus: val }); }
-
-function buildLsSelect(currentVal) {
-  const opts = LS.map(l => `<option value="${l.value}" ${(currentVal||'') === l.value ? 'selected' : ''}>${l.label}</option>`).join('');
-  return `<select onchange="saveLogisticStatus(this.value)" style="width:100%;font-size:14px;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;background:#fafaf7;cursor:pointer;font-family:inherit">${opts}</select>`;
-}
+// saveLogisticStatus / buildLsSelect removed — use unified status in v3.0
 
 function saveTracking() {
   const num = document.getElementById('track-num').value.trim();
@@ -981,7 +1238,7 @@ function saveTracking() {
 }
 function savePrice() { const v = parseFloat(document.getElementById('fp-input').value); if (isNaN(v)) return; updateItem(currentId, { finalPrice: v, status: 'purchased' }); renderItem(); }
 function toggleWatchlist() { const cur = getItem(currentId); if (!cur) return; updateItem(currentId, { watchlist: !cur.watchlist }); renderItem(); }
-function deleteItem() { if (!confirm('Usunąć ten przedmiot?')) return; items = items.filter(i => i.id !== currentId); saveItems(); showScreen('home'); }
+function deleteItem() { if (!confirm('Usunąć ten przedmiot?')) return; items = items.filter(i => i.id !== currentId); saveItems(); showScreen('kanban'); }
 
 async function generateDraft() {
   const txt = document.getElementById('draft-input')?.value?.trim(); if (!txt) return;
@@ -1052,10 +1309,9 @@ function importBackup(e) {
 function diagSortDates() {
   // Show items in DISPLAY order (after sort+filter), same as renderHome
   let filtered = [...items];
-  if (currentFilter === 'active') filtered = filtered.filter(i => !i.watchlist && i.status !== 'received' && i.status !== 'closed');
-  if (currentFilter === 'closed') filtered = filtered.filter(i => i.status === 'closed');
-  if (currentFilter === 'watchlist') filtered = filtered.filter(i => i.watchlist);
-  if (currentLsFilter) filtered = filtered.filter(i => (i.logisticStatus || '') === currentLsFilter);
+  if (currentFilter === 'active') filtered = filtered.filter(i => !i.watchlist && !['closed','completed'].includes(i.status));
+  else if (currentFilter === 'closed') filtered = filtered.filter(i => i.status === 'closed');
+  else if (currentFilter === 'watchlist') filtered = filtered.filter(i => i.watchlist);
   filtered = sortItems(filtered, currentSort);
 
   const rows = filtered.map((item, idx) => {
@@ -1112,7 +1368,6 @@ function exportData() {
       title: item.title,
       description: item.description || '',
       status: item.status,
-      logisticStatus: item.logisticStatus || '',
       askingPrice: item.askingPrice,
       finalPrice: item.finalPrice,
       carrier: item.carrier,
@@ -1161,24 +1416,18 @@ function exportData() {
 function renderSyncOverview() {
   const el = document.getElementById('sync-overview');
   if (!el) return;
-  const byStatus = {};
-  items.forEach(i => { const k = i.logisticStatus || 'brak'; byStatus[k] = (byStatus[k]||0)+1; });
-  const byTx = {};
-  items.forEach(i => { byTx[i.status] = (byTx[i.status]||0)+1; });
+  const byPhase = { buying: 0, logistics: 0, warehouse: 0, selling: 0 };
+  items.forEach(i => { const p = getPhase(i.status); if (p in byPhase) byPhase[p]++; });
   const withTracking = items.filter(i => i.trackingNumber).length;
   const watchlist = items.filter(i => i.watchlist).length;
+  const phaseLabels = { buying:'💬 Zakupy', logistics:'📦 Logistyka', warehouse:'🔧 Magazyn', selling:'💰 Sprzedaż' };
   el.innerHTML = `<div class="sync-stats">
     <div class="sync-stat"><span class="num">${items.length}</span>pozycji</div>
     <div class="sync-stat"><span class="num">${withTracking}</span>z numerem śledzenia</div>
     <div class="sync-stat"><span class="num">${watchlist}</span>do obserwowania</div>
   </div>
   <div style="font-size:12px;color:var(--muted);margin-top:8px">
-    <div style="margin-bottom:4px;font-weight:600">Status transakcji:</div>
-    ${Object.entries(byTx).map(([k,v]) => `${ST[k]?.e||''} ${ST[k]?.l||k}: ${v}`).join(' · ')}
-  </div>
-  <div style="font-size:12px;color:var(--muted);margin-top:6px">
-    <div style="margin-bottom:4px;font-weight:600">Status logistyczny:</div>
-    ${Object.entries(byStatus).map(([k,v]) => `${lsLabel(k)||'— brak —'}: ${v}`).join(' · ')}
+    ${Object.entries(byPhase).filter(([,v])=>v>0).map(([k,v])=>`${phaseLabels[k]}: <strong>${v}</strong>`).join(' · ')}
   </div>
   <div style="font-size:11px;color:#bbb;margin-top:10px">Ostatnia aktualizacja: ${items.length > 0 ? new Date(Math.max(...items.map(i => new Date(i.updatedAt||0).getTime()))).toLocaleString('pl-PL') : '—'}</div>`;
 }
@@ -1233,6 +1482,8 @@ function importScanDirect(ev) {
         const trackUrl = pc.detectedTracking && pc.detectedCarrier ? getTrackUrl(pc.detectedCarrier, pc.detectedTracking) : null;
         const ts = conv.lastMessageDate || getLastMsgDate(mappedMsgs) || conv.lastActivity || new Date().toISOString();
 
+        const unifiedStatus = preClassifyToStatus(pc) || 'negotiating';
+
         if (conv.changeStatus === 'updated' && existing) {
           // Add only new messages to existing record
           const existingTexts = new Set((existing.messages||[]).map(m => m.originalText));
@@ -1252,8 +1503,7 @@ function importScanDirect(ev) {
             id: genId(),
             title,
             description: l?.description || '',
-            status: pc.suggestedStatus || 'negotiating',
-            logisticStatus: pc.suggestedLogistic || '',
+            status: unifiedStatus,
             askingPrice: l?.price || null,
             finalPrice: null,
             carrier: pc.detectedCarrier || null,
@@ -1350,6 +1600,17 @@ function getLastMsgDate(msgs) {
   return dates.length > 0 ? new Date(Math.max(...dates)).toISOString() : null;
 }
 
+// Backwards compat: convert logisticStatus in old patches → unified status
+function normalizeSetPatch(set) {
+  if (!set || !('logisticStatus' in set)) return set;
+  const s = Object.assign({}, set);
+  const logMap = { oplacony:'purchased', wyslane_de:'shipped_de', wyslane_pl:'shipped_pl',
+    dostarczone_de:'at_forwarder', dostarczone_pl:'received', sprzedany:'sold' };
+  if (!s.status && logMap[s.logisticStatus]) s.status = logMap[s.logisticStatus];
+  delete s.logisticStatus;
+  return s;
+}
+
 function executePatch(patch, dryRun, strictMode = false) {
   const report = { updated: [], created: [], errors: [], details: [] };
 
@@ -1371,7 +1632,6 @@ function executePatch(patch, dryRun, strictMode = false) {
         title: s.title || 'Nowy przedmiot',
         description: s.description || '',
         status: s.status || 'negotiating',
-        logisticStatus: s.logisticStatus || '',
         askingPrice: s.askingPrice || null,
         finalPrice: s.finalPrice || null,
         carrier: s.carrier || null,
@@ -1392,7 +1652,8 @@ function executePatch(patch, dryRun, strictMode = false) {
     }
     const changes = [];
     if (upd.set && typeof upd.set === 'object') {
-      Object.entries(upd.set).forEach(([key, val]) => {
+      const normalizedSet = normalizeSetPatch(upd.set);
+      Object.entries(normalizedSet).forEach(([key, val]) => {
         // Track change for patch source
         if (!dryRun && TRACKED_FIELDS.includes(key)) trackChange(item, key, val, 'patch');
         if (val !== undefined && val !== null && item[key] !== val) {
@@ -1416,9 +1677,7 @@ function executePatch(patch, dryRun, strictMode = false) {
         sender: m.sender || 'seller',
         originalText: m.originalText || '',
         translatedText: m.translatedText || m.originalText || '',
-        timestamp: m.timestamp || (parseMsgDate(m) ? new Date(parseMsgDate(m)).toISOString() : new Date().toISOString()),
-        ...(m.hasImage ? { hasImage: true } : {}),
-        ...(m.imageNote ? { imageNote: m.imageNote } : {})
+        timestamp: m.timestamp || (parseMsgDate(m) ? new Date(parseMsgDate(m)).toISOString() : new Date().toISOString())
       }));
       // Deduplicate: skip messages with identical originalText already in item
       const existingTexts = new Set((item.messages||[]).map(m => m.originalText));
@@ -1430,7 +1689,7 @@ function executePatch(patch, dryRun, strictMode = false) {
     }
     if (changes.length > 0) {
       if (!dryRun) {
-        item.updatedAt = upd.lastMessageDate || getLastMsgDate(item.messages) || new Date().toISOString();
+        item.updatedAt = getLastMsgDate(item.messages) || new Date().toISOString();
       }
       report.updated.push({ title: item.title, changes });
       report.details.push(`✏️ <strong>${esc(item.title)}</strong>: ${changes.join(', ')}`);
@@ -1444,7 +1703,7 @@ function executePatch(patch, dryRun, strictMode = false) {
       const existing = items.find(i => i.conversationUrl && i.conversationUrl === newItem.conversationUrl);
       if (existing) {
         // Force overwrite: replace all fields with patch data (null clears old values)
-        const mergeFields = ['title', 'status', 'logisticStatus', 'askingPrice', 'finalPrice', 'carrier', 'trackingNumber', 'listingUrl', 'notes', 'watchlist'];
+        const mergeFields = ['title', 'status', 'askingPrice', 'finalPrice', 'carrier', 'trackingNumber', 'listingUrl', 'notes', 'watchlist'];
         const changes = [];
         mergeFields.forEach(key => {
           if (!(key in newItem)) return; // skip fields not present in patch
@@ -1466,9 +1725,7 @@ function executePatch(patch, dryRun, strictMode = false) {
           const newMsgs = newItem.messages.map(m => ({
             id: genId(), sender: m.sender || 'seller',
             originalText: m.originalText || '', translatedText: m.translatedText || m.originalText || '',
-            timestamp: m.timestamp || (parseMsgDate(m) ? new Date(parseMsgDate(m)).toISOString() : new Date().toISOString()),
-            ...(m.hasImage ? { hasImage: true } : {}),
-            ...(m.imageNote ? { imageNote: m.imageNote } : {})
+            timestamp: m.timestamp || (parseMsgDate(m) ? new Date(parseMsgDate(m)).toISOString() : new Date().toISOString())
           }));
           const existingCount = (existing.messages||[]).length;
           if (newMsgs.length !== existingCount || newMsgs.some((m, i) => m.originalText !== (existing.messages[i]||{}).originalText)) {
@@ -1477,7 +1734,7 @@ function executePatch(patch, dryRun, strictMode = false) {
           }
         }
         if (changes.length > 0) {
-          if (!dryRun) existing.updatedAt = newItem.lastMessageDate || getLastMsgDate(existing.messages) || new Date().toISOString();
+          if (!dryRun) existing.updatedAt = getLastMsgDate(existing.messages) || new Date().toISOString();
           report.updated.push({ title: existing.title, changes });
           report.details.push(`🔄 <strong>${esc(existing.title)}</strong> (merge): ${changes.join(', ')}`);
         }
@@ -1495,29 +1752,27 @@ function executePatch(patch, dryRun, strictMode = false) {
       sender: m.sender || 'seller',
       originalText: m.originalText || '',
       translatedText: m.translatedText || m.originalText || '',
-      timestamp: m.timestamp || (parseMsgDate(m) ? new Date(parseMsgDate(m)).toISOString() : new Date().toISOString()),
-      ...(m.hasImage ? { hasImage: true } : {}),
-      ...(m.imageNote ? { imageNote: m.imageNote } : {})
+      timestamp: m.timestamp || (parseMsgDate(m) ? new Date(parseMsgDate(m)).toISOString() : new Date().toISOString())
     }));
+    const normNewSet = normalizeSetPatch(newItem);
     const item = {
       id: genId(),
-      title: newItem.title || 'Nowy przedmiot',
-      description: newItem.description || '',
-      status: newItem.status || 'negotiating',
-      logisticStatus: newItem.logisticStatus || '',
-      askingPrice: newItem.askingPrice || null,
-      finalPrice: newItem.finalPrice || null,
-      carrier: newItem.carrier || null,
-      trackingNumber: newItem.trackingNumber || null,
+      title: normNewSet.title || 'Nowy przedmiot',
+      description: normNewSet.description || '',
+      status: normNewSet.status || 'negotiating',
+      askingPrice: normNewSet.askingPrice || null,
+      finalPrice: normNewSet.finalPrice || null,
+      carrier: normNewSet.carrier || null,
+      trackingNumber: normNewSet.trackingNumber || null,
       trackingUrl: trackUrl,
-      conversationUrl: newItem.conversationUrl || null,
-      listingUrl: newItem.listingUrl || null,
-      notes: newItem.notes || '',
-      watchlist: newItem.watchlist || false,
+      conversationUrl: normNewSet.conversationUrl || null,
+      listingUrl: normNewSet.listingUrl || null,
+      notes: normNewSet.notes || '',
+      watchlist: normNewSet.watchlist || false,
       thumbnail: null,
       messages: mappedMsgs,
-      createdAt: newItem.createdAt || newItem.lastMessageDate || newItem.lastActivity || new Date().toISOString(),
-      updatedAt: newItem.lastMessageDate || getLastMsgDate(mappedMsgs) || newItem.lastActivity || new Date().toISOString()
+      createdAt: normNewSet.createdAt || normNewSet.lastMessageDate || normNewSet.lastActivity || new Date().toISOString(),
+      updatedAt: normNewSet.lastMessageDate || getLastMsgDate(mappedMsgs) || normNewSet.lastActivity || new Date().toISOString()
     };
     if (!dryRun) items.unshift(item);
     report.created.push({ title: item.title });
@@ -1600,412 +1855,688 @@ function applyPatch() {
   }
 }
 
-// ── End Sync ─────────────────────────────────────────────────────────────────
-
-// ── Gist Sync ────────────────────────────────────────────────────────────────
-
-let _githubToken = null;
-
-function showToast(msg, type = 'ok') {
-  let t = document.getElementById('ka-toast');
-  if (!t) {
-    t = document.createElement('div');
-    t.id = 'ka-toast';
-    t.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;pointer-events:none;transition:opacity .3s;max-width:90vw;text-align:center;font-family:inherit';
-    document.body.appendChild(t);
+function toggleDateRangeInputs() {
+  const days     = parseInt(document.getElementById('scan-days').value) || 3;
+  const dateFrom = (document.getElementById('scan-date-from').value || '').trim();
+  const dateTo   = (document.getElementById('scan-date-to').value || '').trim();
+  const label    = document.getElementById('scan-mode-label');
+  if (!label) return;
+  if (dateFrom && dateTo) {
+    label.textContent = `Tryb: zakres dat ${dateFrom} → ${dateTo}`;
+    label.style.color = '#E88B00';
+  } else if (dateFrom || dateTo) {
+    label.textContent = 'Tryb: zakres dat — podaj obie daty';
+    label.style.color = '#cc8800';
+  } else {
+    label.textContent = `Tryb: ostatnie ${days} dni`;
+    label.style.color = '#aaa';
   }
-  const colors = { ok: '#2ecc71', error: '#e74c3c', warn: '#E88B00', info: '#555' };
-  t.style.background = colors[type] || colors.info;
-  t.style.color = '#fff';
-  t.style.opacity = '1';
-  t.textContent = msg;
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 3000);
 }
 
-function getGistConfig() {
-  const token = _githubToken;
-  const gistId = localStorage.getItem('ka_gist_id');
-  if (!token || !gistId) return null;
-  return { token, gistId };
-}
+// ── Gist Remote Scan ──────────────────────────────────────────────────────────
 
-function saveGistConfig() {
-  const token = document.getElementById('github-token-input')?.value?.trim();
-  const gistId = document.getElementById('gist-id-input')?.value?.trim();
-  const statusEl = document.getElementById('gist-status');
-  if (!token || !gistId) {
-    if (statusEl) statusEl.textContent = '⚠️ Wpisz token i ID Gista';
+async function triggerRemoteScan() {
+  const gistId = getGistId();
+  const token = getGistToken();
+  if (!gistId || !token) {
+    alert('Brak GIST_ID lub GitHub Token — podaj je w ustawieniach (⚙️).');
     return;
   }
-  _githubToken = token;
-  _actionsToken = token; // classic token obsługuje i Gist i Actions
-  localStorage.setItem('ka_gist_id', gistId);
-  if (statusEl) statusEl.textContent = '☁️ Połączono — synchronizuję...';
-  document.getElementById('github-token-input').value = '';
-  gistLoad().then(() => {
-    if (statusEl) statusEl.textContent = '☁️ Połączono i zsynchronizowano';
-    renderSyncOverview();
-  }).catch(() => {
-    if (statusEl) statusEl.textContent = '⚠️ Połączono, ale sync się nie powiódł';
-  });
-}
-
-async function gistSave() {
-  const cfg = getGistConfig();
-  if (!cfg) return;
-  const data = {
-    version: 'ka_items_v2',
-    savedAt: new Date().toISOString(),
-    items
-  };
+  const days = parseInt(document.getElementById('scan-days').value) || 3;
+  const noImages = document.getElementById('scan-no-images').checked;
+  const dateFrom = (document.getElementById('scan-date-from').value || '').trim();
+  const dateTo   = (document.getElementById('scan-date-to').value || '').trim();
+  const box = document.getElementById('gist-status-box');
+  box.innerHTML = '<div class="sync-report">⏳ Wysyłanie komendy...</div>';
   try {
-    const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+    const command = { noImages };
+    if (dateFrom && dateTo) { command.dateFrom = dateFrom; command.dateTo = dateTo; }
+    else { command.days = days; }
+    const resp = await fetch(`https://api.github.com/gists/${gistId}`, {
       method: 'PATCH',
-      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
-      body: JSON.stringify({ files: { 'ka-data.json': { content: JSON.stringify(data, null, 2) } } })
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
+      body: JSON.stringify({ files: { 'ka-command.json': { content: JSON.stringify(command) } } })
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    localStorage.setItem('ka_last_gist_save', data.savedAt);
-    showToast('☁️ Zapisano', 'ok');
+    if (!resp.ok) throw new Error(`GitHub API: HTTP ${resp.status}`);
+    const modeDesc = (dateFrom && dateTo) ? `${dateFrom} → ${dateTo}` : `last ${days} days`;
+    box.innerHTML = `<div class="sync-report">✅ Komenda wysłana: ${modeDesc}${noImages ? ', bez zdjęć' : ''}. Odśwież status za chwilę.</div>`;
   } catch (err) {
-    showToast('⚠️ Zapis offline', 'warn');
-    throw err;
+    box.innerHTML = `<div class="sync-report error">❌ Błąd: ${esc(err.message)}</div>`;
   }
 }
 
-async function gistLoad() {
-  const cfg = getGistConfig();
-  if (!cfg) return;
+async function refreshGistStatus() {
+  const gistId = getGistId();
+  if (!gistId) {
+    alert('Brak GIST_ID — podaj go w ustawieniach (⚙️).');
+    return;
+  }
+  const box = document.getElementById('gist-status-box');
+  box.innerHTML = '<div class="sync-report">⏳ Pobieranie statusu...</div>';
   try {
-    const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
-      headers: { Authorization: `Bearer ${cfg.token}`, 'User-Agent': 'KA-Asystent' }
-    });
-    if (!res.ok) return;
-    const gist = await res.json();
-    const file = gist.files && gist.files['ka-data.json'];
-    if (!file) return;
-    const remote = JSON.parse(file.content);
-    if (!remote.items) return;
-    const localSave = localStorage.getItem('ka_last_gist_save');
-    const remoteSavedAt = remote.savedAt || '';
-    if (!localSave || remoteSavedAt > localSave) {
-      items = remote.items;
-      saveItems();
-      showToast('☁️ Dane załadowane z chmury', 'info');
-      renderHome();
-    } else if (localSave > remoteSavedAt) {
-      if (confirm('Lokalne dane są nowsze niż w Gist. Nadpisać chmurę?')) {
-        await gistSave();
-      }
-    }
-  } catch {}
-}
-
-async function gistImportPatch() {
-  const cfg = getGistConfig();
-  if (!cfg) { showToast('⚠️ Skonfiguruj Gist w ustawieniach', 'warn'); return; }
-  const reportEl = document.getElementById('gist-patch-report');
-  if (reportEl) reportEl.innerHTML = '<div style="color:#aaa;font-size:13px">Pobieranie...</div>';
-  try {
-    const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
-      headers: { Authorization: `Bearer ${cfg.token}`, 'User-Agent': 'KA-Asystent' }
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const gist = await res.json();
-    const file = gist.files && gist.files['ka-patch.json'];
-    if (!file) {
-      if (reportEl) reportEl.innerHTML = '<div style="color:#aaa;font-size:13px">Brak ka-patch.json w Gist — nic do zaimportowania.</div>';
+    const token = getGistToken();
+    const headers = { 'User-Agent': 'KA-Asystent' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const resp = await fetch(`https://api.github.com/gists/${gistId}`, { headers });
+    if (!resp.ok) throw new Error(`GitHub API: HTTP ${resp.status}`);
+    const gist = await resp.json();
+    const statusFile = gist.files && gist.files['ka-status.json'];
+    if (!statusFile || !statusFile.content) {
+      box.innerHTML = '<div class="sync-report">⚠️ Brak ka-status.json w Gist.</div>';
       return;
     }
-    const patch = JSON.parse(file.content);
-    const report = executePatch(patch, false, false);
+    const s = JSON.parse(statusFile.content);
+    const phaseIcon = { idle: '💤', scraping: '🔍', analyzing: '🤖', done: '✅', error: '❌' }[s.phase] || '❓';
+    const lastScan = s.lastScanAt ? new Date(s.lastScanAt).toLocaleString('pl-PL') : 'brak';
+    const updated = s.updatedAt ? new Date(s.updatedAt).toLocaleString('pl-PL') : '?';
+    const logHtml = (s.log || []).slice(-5).map(l => `<div style="font-size:11px;color:#888">${esc(l)}</div>`).join('');
+    const errHtml = s.error ? `<div style="color:#c00;font-size:12px;margin-top:4px">❌ ${esc(s.error)}</div>` : '';
+    const patchAvail = gist.files && gist.files['ka-patch.json'] ? `<div style="color:#1a7a1a;font-size:12px;margin-top:4px">📄 Patch dostępny w Gist — użyj Krok 4 żeby zaimportować.</div>` : '';
+    box.innerHTML = `<div class="sync-report">
+      <div style="font-weight:700;margin-bottom:6px">${phaseIcon} Faza: <strong>${s.phase}</strong>${s.step ? ` [${s.step}]` : ''}</div>
+      <div style="font-size:12px;color:#888;margin-bottom:4px">Ostatni skan: ${lastScan}</div>
+      <div style="font-size:12px;color:#888;margin-bottom:4px">Zaktualizowano: ${updated}</div>
+      ${logHtml}${errHtml}${patchAvail}
+    </div>`;
+  } catch (err) {
+    box.innerHTML = `<div class="sync-report error">❌ Błąd: ${esc(err.message)}</div>`;
+  }
+}
+
+// ── Gist Import ───────────────────────────────────────────────────────────────
+
+function getGistId() { return localStorage.getItem('ka_gist_id') || ''; }
+function getGistToken() { return localStorage.getItem('ka_gist_token') || ''; }
+
+function saveGistSettings() {
+  const id = (document.getElementById('gist-id-input').value || '').trim();
+  const token = (document.getElementById('gist-token-input').value || '').trim();
+  if (id) localStorage.setItem('ka_gist_id', id);
+  if (token) localStorage.setItem('ka_gist_token', token);
+  alert('Ustawienia Gist zapisane.');
+}
+
+async function importPatchFromGist() {
+  const gistId = getGistId();
+  if (!gistId) {
+    alert('Brak GIST_ID — podaj go w ustawieniach (⚙️).');
+    return;
+  }
+  const reportEl = document.getElementById('gist-import-report');
+  reportEl.innerHTML = '<div class="sync-report">⏳ Pobieranie patcha z Gist...</div>';
+  try {
+    const token = getGistToken();
+    const headers = { 'User-Agent': 'KA-Asystent' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const resp = await fetch(`https://api.github.com/gists/${gistId}`, { headers });
+    if (!resp.ok) throw new Error(`GitHub API: HTTP ${resp.status}`);
+
+    const gist = await resp.json();
+    const patchFile = gist.files && gist.files['ka-patch.json'];
+    if (!patchFile || !patchFile.content) {
+      reportEl.innerHTML = '<div class="sync-report">⚠️ Brak ka-patch.json w Gist. Może nie ma nowego patcha?</div>';
+      return;
+    }
+
+    const result = parsePatch(patchFile.content);
+    if (!result.ok) {
+      reportEl.innerHTML = `<div class="sync-report error">❌ Błąd parsowania patcha: ${esc(result.error)}</div>`;
+      return;
+    }
+
+    const updates = (result.patch.updates || []).length;
+    const newItems = (result.patch.newItems || []).length;
+    if (!confirm(`Importuj patch z Gist?\n\n${updates} aktualizacji\n${newItems} nowych pozycji`)) {
+      reportEl.innerHTML = '';
+      return;
+    }
+
+    const strictMode = document.getElementById('strict-mode-cb')?.checked || false;
+    const report = executePatch(result.patch, false, strictMode);
     renderPatchReport(report, false);
     renderSyncOverview();
-    if (reportEl) {
-      const u = report.updated.length, c = report.created.length, e = (report.errors||[]).length;
-      reportEl.innerHTML = `<div class="sync-report" style="margin-top:8px">✅ Zaaplikowano patch z Gist: ${u} zaktualizowanych, ${c} nowych${e ? `, ${e} błędów` : ''}</div>`;
+
+    // Delete ka-patch.json from Gist after successful import
+    if (token && (report.updated.length > 0 || report.created.length > 0)) {
+      try {
+        await fetch(`https://api.github.com/gists/${gistId}`, {
+          method: 'PATCH',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ files: { 'ka-patch.json': null } })
+        });
+        reportEl.innerHTML = '<div class="sync-report">✅ Patch zaimportowany i usunięty z Gist.</div>';
+      } catch (_) {
+        reportEl.innerHTML = '<div class="sync-report">⚠️ Patch zaimportowany, ale nie udało się usunąć z Gist.</div>';
+      }
+    } else if (!token) {
+      reportEl.innerHTML = '<div class="sync-report">✅ Patch zaimportowany. (Dodaj token GitHub w ⚙️ żeby auto-usuwać patch z Gist.)</div>';
     }
-    // Usuń ka-patch.json z Gist
-    await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
-      body: JSON.stringify({ files: { 'ka-patch.json': null } })
-    });
-    showToast('✅ Patch zaaplikowany', 'ok');
   } catch (err) {
-    if (reportEl) reportEl.innerHTML = `<div class="sync-report error">❌ Błąd: ${esc(err.message)}</div>`;
-    showToast('❌ Błąd importu', 'error');
+    reportEl.innerHTML = `<div class="sync-report error">❌ Błąd: ${esc(err.message)}</div>`;
   }
 }
 
-function loadGistConfig() {
-  const gistId = localStorage.getItem('ka_gist_id');
-  const statusEl = document.getElementById('gist-status');
-  if (gistId && statusEl) {
-    statusEl.textContent = `ID Gista zapamiętane: ${gistId.slice(0,8)}... — podaj token żeby połączyć`;
-  }
-  const idInput = document.getElementById('gist-id-input');
-  if (idInput && gistId) idInput.value = gistId;
+// ── End Sync ─────────────────────────────────────────────────────────────────
 
-  const actStatusEl = document.getElementById('actions-token-status');
-  if (actStatusEl) {
-    actStatusEl.textContent = _actionsToken ? '✅ Token zapisany (sesja)' : 'Brak tokena — wpisz żeby uruchamiać workflow z aplikacji';
-  }
+// ── FAZA B: Kanban / Deal Tracker ─────────────────────────────────────────────
+
+const COLUMNS = [
+  { id: 'negotiating',  label: 'Negocjacje',   emoji: '💬', color: '#6366f1', bg: '#eef2ff' },
+  { id: 'purchased',    label: 'Zapłacone',    emoji: '💳', color: '#0891b2', bg: '#ecfeff' },
+  { id: 'shipped_de',   label: 'W drodze DE',  emoji: '📤', color: '#ca8a04', bg: '#fefce8' },
+  { id: 'at_forwarder', label: 'Görlitz',      emoji: '📦', color: '#ea580c', bg: '#fff7ed' },
+  { id: 'shipped_pl',   label: 'W drodze PL',  emoji: '🚚', color: '#c026d3', bg: '#fdf4ff' },
+  { id: 'received',     label: 'Odebrane',     emoji: '✅', color: '#059669', bg: '#ecfdf5' },
+  { id: 'in_repair',    label: 'Serwis',       emoji: '🔧', color: '#dc2626', bg: '#fef2f2' },
+  { id: 'in_stock',     label: 'Do sprzedaży', emoji: '🏷️', color: '#16a34a', bg: '#f0fdf4' },
+  { id: 'listed',       label: 'Wystawione',   emoji: '📢', color: '#2563eb', bg: '#eff6ff' },
+  { id: 'sold',         label: 'Sprzedane',    emoji: '💰', color: '#475569', bg: '#f8fafc' },
+];
+
+let currentKanbanView = localStorage.getItem('ka_kanban_view') || 'kanban';
+let kanbanModalItemId = null;
+
+function setKanbanView(v) {
+  currentKanbanView = v;
+  localStorage.setItem('ka_kanban_view', v);
+  renderKanban();
 }
 
-// ── Remote Scan ───────────────────────────────────────────────────────────────
-
-let _scanPollTimer = null;
-let _actionsToken  = null;
-
-const GH_OWNER    = 'dud3k';
-const GH_REPO     = 'ka-scraper';
-const GH_WORKFLOW = 'scrape.yml';
-const GH_BRANCH   = 'master';
-
-function saveActionsToken() {
-  const token = document.getElementById('actions-token-input')?.value?.trim();
-  const statusEl = document.getElementById('actions-token-status');
-  if (!token) { if (statusEl) statusEl.textContent = '⚠️ Wpisz token'; return; }
-  _actionsToken = token;
-  document.getElementById('actions-token-input').value = '';
-  if (statusEl) statusEl.textContent = '✅ Token zapisany (sesja)';
-  showToast('✅ Token Actions zapisany', 'ok');
+function buildKanbanCard(item) {
+  const sellerNote = item.seller && item.seller !== '—' ? `<div style="font-size:11px;color:#94a3b8;margin-top:3px">${esc(item.seller)}</div>` : '';
+  const parentNote = item.parentItemId ? `<div style="font-size:10px;color:#a78bfa;margin-top:3px">↳ z zestawu</div>` : '';
+  const notesNote = item.notes ? `<div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.3">${esc(item.notes.substring(0,50))}${item.notes.length > 50 ? '…' : ''}</div>` : '';
+  const price = item.finalPrice ? `<span style="font-size:12px;font-weight:700;color:#475569">${item.finalPrice} €</span>` : '<span></span>';
+  const carrier = item.carrier ? `<span style="font-size:10px;background:#f1f5f9;color:#64748b;padding:1px 5px;border-radius:6px">${esc(item.carrier)}</span>` : '';
+  const salePlatform = item.salePlatform ? `<span style="font-size:10px;background:#dbeafe;color:#1d4ed8;padding:1px 5px;border-radius:6px">${esc(item.salePlatform)}${item.salePrice ? ' ' + item.salePrice + ' zł' : ''}</span>` : '';
+  const repairNote = item.repairNotes ? `<div style="font-size:10px;color:#ef4444;margin-top:4px">🔧 ${esc(item.repairNotes.substring(0,40))}</div>` : '';
+  const bundleCount = (item.childItemIds || []).length;
+  return `<div class="kb-card${item.isBundle ? ' bundle' : ''}" onclick="openDetailModal('${item.id}')">
+    <div class="kb-card-top">
+      <div class="kb-card-title">${esc(item.title)}</div>
+      ${item.isBundle ? `<span class="kb-card-bundle-tag">📦${bundleCount > 0 ? '×' + bundleCount : ''}</span>` : ''}
+    </div>
+    ${sellerNote}${parentNote}${notesNote}
+    <div class="kb-card-bottom">${price}${carrier}${salePlatform}</div>
+    ${repairNote}
+  </div>`;
 }
 
-async function checkRunningWorkflow() {
-  if (!_actionsToken) return null;
-  try {
-    const res = await fetch(
-      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/runs?per_page=1`,
-      { headers: { Authorization: `Bearer ${_actionsToken}`, 'User-Agent': 'KA-Asystent' } }
-    );
-    if (!res.ok) return null;
-    const data = await res.json();
-    const run = data.workflow_runs?.[0];
-    if (!run) return null;
-    return { status: run.status, conclusion: run.conclusion, url: run.html_url, updatedAt: run.updated_at };
-  } catch { return null; }
+function buildFinanceSummary() {
+  const settings = getSettings();
+  const rate = settings.exchangeRate || 4.30;
+  const activeStatuses = ['purchased','shipped_de','at_forwarder','shipped_pl','received','in_repair','in_stock','listed'];
+  const spent = items.filter(i => i.finalPrice && activeStatuses.includes(i.status))
+    .reduce((s, i) => s + (i.finalPrice || 0), 0);
+  const earned = items.filter(i => ['sold','completed'].includes(i.status)).reduce((s, i) => s + (i.salePrice || 0), 0);
+  const inPipeline = items.filter(i => !['sold','negotiating','closed','completed'].includes(i.status)).length;
+  const profitItems = items.filter(i => ['sold','completed'].includes(i.status));
+  const totalProfit = profitItems.reduce((s, i) => {
+    const p = calculateProfit(i, settings);
+    return p !== null ? s + p : s;
+  }, 0);
+  const now = new Date();
+  const monthName = now.toLocaleString('pl-PL', { month: 'long', year: 'numeric' });
+  return `<div class="finance-summary">
+    <div class="finance-summary-title">📊 ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}</div>
+    <div class="finance-grid">
+      <div><div class="finance-metric-label">Wydano</div><div class="finance-metric-value" style="color:#f87171">~${Math.round(spent * rate)} zł</div></div>
+      <div><div class="finance-metric-label">Sprzedano</div><div class="finance-metric-value" style="color:#4ade80">${Math.round(earned)} zł</div></div>
+      <div><div class="finance-metric-label">Zysk</div><div class="finance-metric-value" style="color:${totalProfit >= 0 ? '#4ade80' : '#f87171'}">${totalProfit >= 0 ? '+' : ''}${Math.round(totalProfit)} zł</div></div>
+      <div><div class="finance-metric-label">Pipeline</div><div class="finance-metric-value">${inPipeline}</div></div>
+    </div>
+  </div>`;
 }
 
-let _scanMode = 'days';
-function setScanMode(mode) {
-  _scanMode = mode;
-  document.getElementById('scan-mode-days').style.display  = mode === 'days'  ? 'flex'  : 'none';
-  document.getElementById('scan-mode-dates').style.display = mode === 'dates' ? 'block' : 'none';
-  const daysBtn  = document.getElementById('scan-mode-days-btn');
-  const datesBtn = document.getElementById('scan-mode-dates-btn');
-  if (daysBtn)  { daysBtn.style.background  = mode === 'days'  ? 'var(--ac)' : '#fff'; daysBtn.style.color  = mode === 'days'  ? '#fff' : 'var(--muted)'; daysBtn.style.borderColor  = mode === 'days'  ? 'var(--ac)' : 'var(--border)'; }
-  if (datesBtn) { datesBtn.style.background = mode === 'dates' ? 'var(--ac)' : '#fff'; datesBtn.style.color = mode === 'dates' ? '#fff' : 'var(--muted)'; datesBtn.style.borderColor = mode === 'dates' ? 'var(--ac)' : 'var(--border)'; }
+function buildForwarderAlert() {
+  const settings = getSettings();
+  const threshold = settings.alertThreshold || 3;
+  const fwdCost = settings.forwardingPL || 22;
+  const count = items.filter(i => i.status === 'at_forwarder').length;
+  if (count < 2) return '';
+  const urgent = count >= threshold;
+  return `<div class="forwarder-alert ${urgent ? 'urgent' : 'normal'}">
+    <div>
+      <div style="font-weight:700;font-size:13px;color:${urgent ? '#ea580c' : '#475569'}">${urgent ? '🔔' : '📦'} ${count} paczek u pośrednika</div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:2px">Szac. forwarding: ~${count * fwdCost} PLN</div>
+    </div>
+    ${urgent ? `<div style="background:#ea580c;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px">Zadzwoń!</div>` : ''}
+  </div>`;
 }
 
-async function triggerScan() {
-  if (!_actionsToken) {
-    showToast('⚠️ Wpisz token GitHub Actions w ustawieniach (⚙️)', 'warn');
-    return;
-  }
+function renderKanban() {
+  const wrap = document.getElementById('kb-content');
+  if (!wrap) return;
 
-  const noImages    = document.getElementById('scan-no-images')?.checked || false;
-  const forceRescan = document.getElementById('scan-force-rescan')?.checked || false;
+  const headerHtml = `<div class="kb-header">
+    <div class="kb-header-row">
+      <div>
+        <div class="kb-title">📸 KA Deal Tracker</div>
+        <div class="kb-sub">${items.length} pozycji w pipeline</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="kb-toggle">
+          <button class="kb-toggle-btn${currentKanbanView === 'kanban' ? ' active' : ''}" onclick="setKanbanView('kanban')">Kanban</button>
+          <button class="kb-toggle-btn${currentKanbanView === 'list' ? ' active' : ''}" onclick="setKanbanView('list')">Lista</button>
+        </div>
+        <button onclick="showScreen('home')" style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px" title="Stara lista / Sync">📋</button>
+        <button onclick="showKanbanSettings()" style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px" title="Ustawienia">⚙️</button>
+      </div>
+    </div>
+  </div>`;
 
-  let inputs;
-  if (_scanMode === 'dates') {
-    const dateFrom = document.getElementById('scan-date-from')?.value || '';
-    const dateTo   = document.getElementById('scan-date-to')?.value   || '';
-    if (!dateFrom || !dateTo) { showToast('⚠️ Podaj obie daty', 'warn'); return; }
-    if (dateTo < dateFrom)    { showToast('⚠️ Data DO musi być >= OD', 'warn'); return; }
-    const limitRaw = document.getElementById('scan-limit-dates')?.value?.trim();
-    const limit    = limitRaw ? parseInt(limitRaw, 10) : 0;
-    if (limitRaw && (isNaN(limit) || limit < 1)) { showToast('⚠️ Limit musi być liczbą >= 1', 'warn'); return; }
-    inputs = { days: '3', date_from: dateFrom, date_to: dateTo, limit: String(limit || 0), no_images: noImages, force_rescan: forceRescan };
+  let mainContent;
+  if (currentKanbanView === 'kanban') {
+    const cols = COLUMNS.map(col => {
+      const colItems = items.filter(i => i.status === col.id);
+      const totalValue = colItems.reduce((s, i) => s + (i.finalPrice || 0), 0);
+      return `<div class="kb-col">
+        <div class="kb-col-inner" style="background:${col.bg}">
+          <div class="kb-col-header" style="border-bottom:2px solid ${col.color}22">
+            <div class="kb-col-header-row">
+              <div class="kb-col-title">
+                <span style="font-size:16px">${col.emoji}</span>
+                <span style="font-weight:700;font-size:13px;color:${col.color}">${col.label}</span>
+              </div>
+              <div class="kb-col-count" style="background:${col.color}">${colItems.length}</div>
+            </div>
+            ${totalValue > 0 ? `<div style="font-size:10px;color:#94a3b8;margin-top:3px">~${totalValue} €</div>` : ''}
+          </div>
+          ${colItems.map(buildKanbanCard).join('') || '<div class="kb-empty">Pusto</div>'}
+        </div>
+      </div>`;
+    }).join('');
+    mainContent = `<div class="kanban-board">${cols}</div>`;
   } else {
-    const days     = parseInt(document.getElementById('scan-days')?.value || '3', 10);
-    const limitRaw = document.getElementById('scan-limit')?.value?.trim();
-    const limit    = limitRaw ? parseInt(limitRaw, 10) : 0;
-    if (limitRaw && (isNaN(limit) || limit < 1)) { showToast('⚠️ Limit musi być liczbą >= 1', 'warn'); return; }
-    inputs = { days: String(days), date_from: '', date_to: '', limit: String(limit || 0), no_images: noImages, force_rescan: forceRescan };
+    const groups = COLUMNS.map(col => {
+      const colItems = items.filter(i => i.status === col.id);
+      if (!colItems.length) return '';
+      return `<div class="kb-list-group">
+        <div class="kb-list-header">
+          <span style="font-size:14px">${col.emoji}</span>
+          <span style="font-weight:700;font-size:13px;color:${col.color}">${col.label}</span>
+          <span style="background:${col.color};color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px">${colItems.length}</span>
+        </div>
+        ${colItems.map(buildKanbanCard).join('')}
+      </div>`;
+    }).join('');
+    mainContent = `<div class="kanban-list">${groups || '<div style="text-align:center;padding:40px;color:#94a3b8">Brak pozycji</div>'}</div>`;
   }
 
+  wrap.innerHTML = headerHtml + buildFinanceSummary() + buildForwarderAlert() + mainContent;
+}
+
+function showKanbanSettings() {
+  // Navigate to home screen and open settings panel
+  showScreen('home');
+  setTimeout(() => {
+    const p = document.getElementById('settings-panel');
+    if (p) p.style.display = 'block';
+    const gi = document.getElementById('gist-id-input');
+    if (gi) gi.value = getGistId();
+    const gt = document.getElementById('gist-token-input');
+    if (gt) gt.value = getGistToken();
+    const s = getSettings();
+    const exEl = document.getElementById('setting-exchange');   if (exEl) exEl.value = s.exchangeRate;
+    const fwEl = document.getElementById('setting-forwarding'); if (fwEl) fwEl.value = s.forwardingPL;
+    const thEl = document.getElementById('setting-threshold');  if (thEl) thEl.value = s.alertThreshold;
+    const plEl = document.getElementById('setting-platform');   if (plEl) plEl.value = s.defaultPlatform;
+  }, 0);
+}
+
+function openDetailModal(itemId) {
+  kanbanModalItemId = itemId;
+  renderDetailModal();
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+function closeDetailModal() {
+  document.getElementById('detail-overlay').classList.remove('open');
+  kanbanModalItemId = null;
+}
+
+function changeStatusFromModal(itemId, newStatus) {
+  updateItem(itemId, { status: newStatus });
+  closeDetailModal();
+  renderKanban();
+}
+
+function openItemFromModal(itemId) {
+  closeDetailModal();
+  goItem(itemId);
+}
+
+function renderDetailModal() {
+  const item = getItem(kanbanModalItemId);
+  if (!item) return;
+  const col = COLUMNS.find(c => c.id === item.status) || COLUMNS[0];
+  const colIdx = COLUMNS.findIndex(c => c.id === item.status);
+  const prevCol = colIdx > 0 ? COLUMNS[colIdx - 1] : null;
+  const nextCol = colIdx < COLUMNS.length - 1 ? COLUMNS[colIdx + 1] : null;
+  const settings = getSettings();
+  const rate = item.exchangeRate || settings.exchangeRate || 4.30;
+
+  const cells = [];
+  if (item.finalPrice) cells.push(`<div style="background:#f8fafc;padding:8px 12px;border-radius:8px">
+    <div style="font-size:10px;color:#94a3b8">Cena zakupu</div>
+    <div style="font-size:15px;font-weight:700">${item.finalPrice} €</div>
+    <div style="font-size:10px;color:#94a3b8">~${Math.round(item.finalPrice * rate)} PLN</div>
+  </div>`);
+  if (item.salePrice) cells.push(`<div style="background:#f0fdf4;padding:8px 12px;border-radius:8px">
+    <div style="font-size:10px;color:#94a3b8">Cena sprzedaży</div>
+    <div style="font-size:15px;font-weight:700;color:#16a34a">${item.salePrice} zł</div>
+    ${item.salePlatform ? `<div style="font-size:10px;color:#94a3b8">${esc(item.salePlatform)}</div>` : ''}
+  </div>`);
+  if (item.carrier) cells.push(`<div style="background:#f8fafc;padding:8px 12px;border-radius:8px">
+    <div style="font-size:10px;color:#94a3b8">Przewoźnik</div>
+    <div style="font-size:15px;font-weight:700">${esc(item.carrier)}</div>
+    ${item.trackingNumber ? `<div style="font-size:10px;color:#94a3b8">${esc(item.trackingNumber.substring(0,14))}</div>` : ''}
+  </div>`);
+
+  // Profit in modal
+  const profit = calculateProfit(item, settings);
+  const profitHtml = profit !== null ? `<div style="padding:8px 12px;border-radius:8px;background:${profit >= 0 ? '#f0fdf4' : '#fef2f2'};margin-bottom:12px;text-align:center">
+    <div style="font-size:16px;font-weight:800;color:${profit >= 0 ? '#16a34a' : '#dc2626'}">${profit >= 0 ? '+' : ''}${profit} PLN</div>
+    <div style="font-size:10px;color:#94a3b8">zysk szacunkowy</div>
+  </div>` : '';
+
+  const prevBtn = prevCol ? `<button onclick="changeStatusFromModal('${item.id}','${prevCol.id}')" style="flex:1;padding:10px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;font-family:inherit">← ${prevCol.emoji} ${prevCol.label}</button>` : '';
+  const nextBtn = nextCol ? `<button onclick="changeStatusFromModal('${item.id}','${nextCol.id}')" style="flex:1;padding:10px;border-radius:10px;border:none;background:${nextCol.color};font-size:12px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit">${nextCol.emoji} ${nextCol.label} →</button>` : '';
+
+  document.getElementById('detail-modal-inner').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:${col.color};background:${col.bg};padding:3px 10px;border-radius:8px">${col.emoji} ${col.label}</div>
+      <div onclick="closeDetailModal()" style="cursor:pointer;font-size:20px;color:#94a3b8;line-height:1">✕</div>
+    </div>
+    <div style="font-size:18px;font-weight:800;color:#1e293b;margin-bottom:4px">${esc(item.title)}</div>
+    ${item.seller && item.seller !== '—' ? `<div style="font-size:13px;color:#64748b;margin-bottom:12px">Sprzedawca: ${esc(item.seller)}</div>` : '<div style="margin-bottom:8px"></div>'}
+    ${item.isBundle ? `<div style="background:#fef3c7;padding:8px 12px;border-radius:8px;margin-bottom:12px;font-size:12px">📦 Zestaw — po odbiorze rozbij na części</div>` : ''}
+    ${item.notes ? `<div style="background:#fffbe6;border:1px solid #f0d060;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#5a4800;line-height:1.5">${esc(item.notes)}</div>` : ''}
+    ${cells.length ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">${cells.join('')}</div>` : ''}
+    ${item.repairNotes ? `<div style="background:#fef2f2;padding:8px 12px;border-radius:8px;margin-bottom:16px;font-size:12px;color:#dc2626">🔧 ${esc(item.repairNotes)}</div>` : ''}
+    ${profitHtml}
+    <div style="display:flex;gap:8px">${prevBtn}${nextBtn}</div>
+    <button onclick="openItemFromModal('${item.id}')" style="width:100%;padding:10px;border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;font-family:inherit;margin-top:8px">✏️ Otwórz szczegóły</button>
+  `;
+}
+
+// ── FAZA C: Bundle Splitting ───────────────────────────────────────────────────
+
+let _bundleItems = [];
+let _bundleSplitItemId = null;
+
+function openBundleSplit(itemId) {
+  _bundleSplitItemId = itemId;
+  _bundleItems = [];
+  renderBundleSplitPanel();
+  document.getElementById('bundle-split-overlay').classList.add('open');
+}
+
+function closeBundleSplit() {
+  document.getElementById('bundle-split-overlay').classList.remove('open');
+  _bundleSplitItemId = null;
+  _bundleItems = [];
+}
+
+function parseGeminiBundle(jsonText) {
+  const clean = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+  const parsed = JSON.parse(clean);
+  if (!parsed.items || !Array.isArray(parsed.items)) throw new Error('Brak tablicy "items" w odpowiedzi Gemini');
+  for (const it of parsed.items) {
+    if (!it.name) throw new Error(`Element bez nazwy: ${JSON.stringify(it)}`);
+    if (typeof it.estimatedValueEUR !== 'number') it.estimatedValueEUR = 0;
+  }
+  return parsed.items;
+}
+
+function parseBundleJson() {
+  const txt = (document.getElementById('bundle-json-input').value || '').trim();
+  const errEl = document.getElementById('bundle-parse-error');
   try {
-    const btn = document.getElementById('trigger-scan-btn');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Sprawdzanie...'; }
-
-    // Sprawdź czy nie ma już trwającego runu
-    const lastRun = await checkRunningWorkflow();
-    if (lastRun && (lastRun.status === 'in_progress' || lastRun.status === 'queued')) {
-      showToast('⚠️ Skan już trwa na GitHubie — poczekaj na zakończenie', 'warn');
-      if (btn) { btn.disabled = false; btn.textContent = '🚀 Uruchom skan'; }
-      // Pokaż status aktualnego runu
-      const statusBox = document.getElementById('scan-status-box');
-      if (statusBox) statusBox.style.display = 'block';
-      const phaseEl = document.getElementById('scan-phase-label');
-      if (phaseEl) { phaseEl.textContent = lastRun.status === 'queued' ? '⏳ Oczekuje na runner...' : '🕷️ Trwa na GitHubie...'; phaseEl.style.color = '#E88B00'; }
-      startScanPolling();
-      return;
-    }
-
-    if (btn) btn.textContent = '⏳ Wysyłanie...';
-
-    const res = await fetch(
-      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/dispatches`,
-      {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${_actionsToken}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
-        body: JSON.stringify({ ref: GH_BRANCH, inputs })
-      }
-    );
-
-    if (res.status === 204) {
-      showToast('🚀 Workflow uruchomiony na GitHubie!', 'ok');
-      // Zacznij odpytywać status za ~30s (job potrzebuje chwili na start)
-      setTimeout(startScanPolling, 30000);
-      const statusBox = document.getElementById('scan-status-box');
-      if (statusBox) statusBox.style.display = 'block';
-      const phaseEl = document.getElementById('scan-phase-label');
-      if (phaseEl) { phaseEl.textContent = '⏳ Oczekiwanie na start (~30s)...'; phaseEl.style.color = '#E88B00'; }
-      if (btn) btn.textContent = '⏳ Trwa skanowanie...';
-    } else {
-      const txt = await res.text();
-      throw new Error(`HTTP ${res.status}: ${txt.slice(0, 200)}`);
-    }
-  } catch (err) {
-    showToast('❌ Błąd: ' + err.message, 'error');
-    const btn = document.getElementById('trigger-scan-btn');
-    if (btn) { btn.disabled = false; btn.textContent = '🚀 Uruchom skan'; }
+    const parsed = parseGeminiBundle(txt);
+    _bundleItems = parsed.map(p => ({
+      name: p.name || '',
+      type: p.type || 'other',
+      condition: p.condition || 'unknown',
+      estimatedValueEUR: typeof p.estimatedValueEUR === 'number' ? p.estimatedValueEUR : 0,
+      notes: p.notes || ''
+    }));
+    if (errEl) errEl.innerHTML = '';
+    renderBundleSplitPanel();
+    toast(`✅ Sparsowano ${_bundleItems.length} elementów`);
+  } catch(e) {
+    if (errEl) errEl.innerHTML = `<div style="color:#c00;font-size:12px;margin:6px 0">❌ ${esc(e.message)}</div>`;
   }
 }
 
-function startScanPolling() {
-  clearInterval(_scanPollTimer);
-  document.getElementById('scan-status-box').style.display = 'block';
-  pollScanStatus();
-  _scanPollTimer = setInterval(pollScanStatus, 10000);
+function addBundleItemManual() {
+  _bundleItems.push({ name: '', type: 'other', condition: 'good', estimatedValueEUR: 0, notes: '' });
+  renderBundleSplitPanel();
 }
 
-async function pollScanStatus() {
-  const cfg = getGistConfig();
-  if (!cfg) return;
-  try {
-    const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
-      headers: { Authorization: `Bearer ${cfg.token}`, 'User-Agent': 'KA-Asystent' }
-    });
-    if (!res.ok) return;
-    const gist = await res.json();
-    const file = gist.files && gist.files['ka-status.json'];
-    if (!file) return;
-    let status = JSON.parse(file.content);
-
-    renderScanStatus(status);
-
-    // Zatrzymaj polling gdy idle lub done/error i minęło 60s od updatedAt
-    if (status.phase === 'idle') {
-      clearInterval(_scanPollTimer);
-      _scanPollTimer = null;
-    } else if ((status.phase === 'done' || status.phase === 'error')) {
-      const secAgo = (Date.now() - new Date(status.updatedAt).getTime()) / 1000;
-      if (secAgo > 60) { clearInterval(_scanPollTimer); _scanPollTimer = null; }
-    }
-  } catch {}
+function removeBundleItem(idx) {
+  _bundleItems.splice(idx, 1);
+  renderBundleSplitPanel();
 }
 
-function renderScanStatus(status) {
-  const phaseLabels = {
-    idle:      '💤 Gotowy',
-    scraping:  '🕷️ Scrapowanie...',
-    analyzing: '🤖 Analiza Gemini...',
-    done:      '✅ Gotowe!',
-    error:     '❌ Błąd'
-  };
-  const phaseColors = { idle: '#888', scraping: '#E88B00', analyzing: '#3498db', done: '#2ecc71', error: '#e74c3c' };
-
-  const phaseEl   = document.getElementById('scan-phase-label');
-  const stepEl    = document.getElementById('scan-step-label');
-  const logEl     = document.getElementById('scan-log-lines');
-  const updatedEl = document.getElementById('scan-updated-label');
-  const lastEl    = document.getElementById('scan-last-scan');
-  const btn       = document.getElementById('trigger-scan-btn');
-
-  if (phaseEl) {
-    phaseEl.textContent = phaseLabels[status.phase] || status.phase;
-    phaseEl.style.color = phaseColors[status.phase] || '#fff';
-  }
-  if (stepEl)    stepEl.textContent    = status.step ? `[${status.step}]` : '';
-  if (logEl)     logEl.innerHTML       = (status.log || []).slice(-6).map(l => esc(l)).join('<br>');
-  if (updatedEl && status.updatedAt) {
-    updatedEl.textContent = 'Aktualizacja: ' + new Date(status.updatedAt).toLocaleTimeString('pl-PL');
-  }
-  if (lastEl && status.lastScanAt) {
-    lastEl.textContent = 'Ostatni skan: ' + new Date(status.lastScanAt).toLocaleString('pl-PL');
-  }
-
-  const running = status.phase === 'scraping' || status.phase === 'analyzing';
-  if (btn) {
-    btn.disabled    = running;
-    btn.textContent = running ? '⏳ Trwa skanowanie...' : '🚀 Uruchom skan';
-  }
-  const resetBtn = document.getElementById('scan-reset-btn');
-  if (resetBtn) resetBtn.style.display = running ? 'inline-block' : 'none';
-
-  // Po done — pokaż przycisk importu patcha
-  if (status.phase === 'done') {
-    showToast('✅ Skan gotowy — importuj patch (Krok 4)', 'ok');
-  }
+function updateBundleItemField(idx, field, val) {
+  if (field === 'estimatedValueEUR') val = parseFloat(val) || 0;
+  _bundleItems[idx][field] = val;
+  const el = document.getElementById('bundle-alloc-preview');
+  if (el) el.innerHTML = buildBundleAllocHtml(getItem(_bundleSplitItemId));
 }
 
-async function resetScanStatus() {
-  const cfg = getGistConfig();
-  if (!cfg) return;
-  if (!confirm('Zresetować status skanowania do "idle"? Zrób to tylko jeśli skan został przerwany i nigdy nie wróci.')) return;
-  try {
-    const now = new Date().toISOString();
-    await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
-      body: JSON.stringify({ files: { 'ka-status.json': { content: JSON.stringify({ phase: 'idle', updatedAt: now }) } } })
-    });
-    showToast('✅ Status zresetowany', 'ok');
-    await pollScanStatus();
-  } catch (e) {
-    showToast('❌ Błąd resetu: ' + e.message, 'error');
-  }
+function buildBundleAllocHtml(item) {
+  if (!item) return '';
+  const totalEst = _bundleItems.reduce((s, i) => s + (i.estimatedValueEUR || 0), 0);
+  const purchase = item.finalPrice || item.costs?.purchase || 0;
+  return _bundleItems.map(bi => {
+    const share = totalEst > 0 ? (bi.estimatedValueEUR || 0) / totalEst : 1 / _bundleItems.length;
+    const alloc = (purchase * share).toFixed(0);
+    return `<div style="display:flex;justify-content:space-between;font-size:12px;color:#555;padding:2px 0">
+      <span>${esc((bi.name||'?').substring(0,30))}</span><strong>${alloc} €</strong>
+    </div>`;
+  }).join('') + `<div style="font-size:11px;color:#888;border-top:1px solid #e8dfc9;margin-top:5px;padding-top:4px;display:flex;justify-content:space-between">
+    <span>Σ szac. ${totalEst} € / zakup ${purchase} €</span>
+  </div>`;
 }
 
-function initRemoteScan() {
-  const cfg = getGistConfig();
-  if (!cfg) return;
-  // Pobierz aktualny status przy wejściu w ekran sync
-  pollScanStatus().then(() => {
-    const statusBox = document.getElementById('scan-status-box');
-    if (statusBox && statusBox.style.display === 'none') {
-      // Pokaż box tylko jeśli coś jest do pokazania
-      const phaseEl = document.getElementById('scan-phase-label');
-      if (phaseEl && phaseEl.textContent && !phaseEl.textContent.includes('Czeka')) {
-        statusBox.style.display = 'block';
-      }
-    }
+function renderBundleSplitPanel() {
+  const item = getItem(_bundleSplitItemId);
+  if (!item) return;
+  const el = document.getElementById('bundle-split-inner');
+  if (!el) return;
+  const canSplit = _bundleItems.length >= 2 && _bundleItems.every(i => i.name.trim());
+  const itemsHtml = _bundleItems.map((bi, idx) => `
+    <div style="padding:8px 10px;background:#f8fafc;border-radius:8px;margin-bottom:8px;border:1px solid #e8dfc9">
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <input class="inp" style="flex:1;font-size:13px;padding:6px 8px" value="${esc(bi.name)}" placeholder="Pełna nazwa modelu" oninput="updateBundleItemField(${idx},'name',this.value)">
+        <button onclick="removeBundleItem(${idx})" style="background:none;border:none;cursor:pointer;color:#cc4444;font-size:18px;padding:0 4px;flex-shrink:0">✕</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <select style="flex:1;min-width:80px;padding:5px 6px;border:1px solid #e8dfc9;border-radius:6px;font-size:12px;font-family:inherit" onchange="updateBundleItemField(${idx},'type',this.value)">
+          ${['body','lens','flash','accessory','bag','battery','charger','tripod','filter','other'].map(t=>`<option value="${t}"${bi.type===t?' selected':''}>${t}</option>`).join('')}
+        </select>
+        <select style="flex:1;min-width:70px;padding:5px 6px;border:1px solid #e8dfc9;border-radius:6px;font-size:12px;font-family:inherit" onchange="updateBundleItemField(${idx},'condition',this.value)">
+          ${['mint','good','fair','poor','unknown'].map(c=>`<option value="${c}"${bi.condition===c?' selected':''}>${c}</option>`).join('')}
+        </select>
+        <div style="display:flex;align-items:center;gap:3px">
+          <input type="number" style="width:65px;padding:5px 6px;border:1px solid #e8dfc9;border-radius:6px;font-size:12px;font-family:inherit;text-align:right" value="${bi.estimatedValueEUR||0}" oninput="updateBundleItemField(${idx},'estimatedValueEUR',this.value)" step="5" min="0">
+          <span style="font-size:11px;color:#888">€</span>
+        </div>
+      </div>
+    </div>`).join('');
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:700">📦 Rozbij zestaw</div>
+      <div onclick="closeBundleSplit()" style="cursor:pointer;font-size:20px;color:#94a3b8;line-height:1">✕</div>
+    </div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:2px">${esc(item.title)}</div>
+    <div style="font-size:12px;color:#888;margin-bottom:14px">Cena zakupu: <strong>${item.finalPrice||'?'} EUR</strong></div>
+
+    <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:6px">📋 Wklej JSON z Gemini</div>
+      <textarea id="bundle-json-input" style="width:100%;min-height:65px;padding:8px;border:1px solid #e8dfc9;border-radius:6px;font-size:11px;font-family:'SF Mono',monospace;background:#fff;outline:none;resize:vertical;line-height:1.4;box-sizing:border-box" placeholder='{"items":[{"name":"Canon EOS 5D","type":"body","condition":"good","estimatedValueEUR":200}]}'></textarea>
+      <button class="btn" style="margin-top:6px;padding:8px;font-size:13px;width:100%" onclick="parseBundleJson()">📋 Parsuj JSON</button>
+      <div id="bundle-parse-error"></div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;color:#555">Elementy (${_bundleItems.length})</div>
+      <button onclick="addBundleItemManual()" style="padding:5px 12px;background:none;border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ac)">+ Dodaj</button>
+    </div>
+    ${_bundleItems.length === 0 ? `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px">Wklej JSON z Gemini lub dodaj ręcznie</div>` : itemsHtml}
+    ${_bundleItems.length >= 2 ? `<div style="background:#f0fff0;border:1px solid #b0e0b0;border-radius:8px;padding:10px 12px;margin-bottom:12px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">📊 Alokacja kosztów</div><div id="bundle-alloc-preview">${buildBundleAllocHtml(item)}</div></div>` : ''}
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button onclick="closeBundleSplit()" class="btn" style="flex:1;background:#888">Anuluj</button>
+      ${canSplit ? `<button onclick="confirmBundleSplit()" class="btn" style="flex:2">✅ Rozbij (${_bundleItems.length} elem.)</button>` : ''}
+    </div>
+  `;
+}
+
+function splitBundle(parentItem, childSpecs, settings) {
+  const totalEst = childSpecs.reduce((s, c) => s + (c.estimatedValueEUR || 0), 0);
+  const purchase = parentItem.finalPrice || parentItem.costs?.purchase || 0;
+  const shippingDE = parentItem.costs?.shippingDE || 0;
+  const fwdPLN = parentItem.costs?.forwardingPL != null ? parentItem.costs.forwardingPL : (settings.forwardingPL || 22);
+  const rate = parentItem.exchangeRate || settings.exchangeRate || 4.30;
+  const n = childSpecs.length;
+  return childSpecs.map(spec => {
+    const share = totalEst > 0 ? (spec.estimatedValueEUR || 0) / totalEst : 1 / n;
+    const allocPurchase = Math.round(purchase * share * 100) / 100;
+    return {
+      id: genId(),
+      title: spec.name,
+      description: spec.notes || '',
+      status: spec.condition === 'poor' ? 'in_repair' : 'in_stock',
+      inspectionStatus: spec.condition === 'poor' ? 'defective' : (spec.condition === 'unknown' ? 'pending' : 'ok'),
+      inspectionNotes: spec.notes || '',
+      parentItemId: parentItem.id,
+      isBundle: false, childItemIds: [],
+      conversationUrl: parentItem.conversationUrl || null,
+      listingUrl: parentItem.listingUrl || null,
+      seller: parentItem.seller || null,
+      finalPrice: allocPurchase,
+      askingPrice: null, carrier: null, trackingNumber: null, trackingUrl: null,
+      notes: '', watchlist: false, thumbnail: null, messages: [],
+      costs: {
+        purchase: allocPurchase,
+        shippingDE: Math.round(shippingDE / n * 100) / 100,
+        forwardingPL: Math.round(fwdPLN / n * 100) / 100,
+      },
+      exchangeRate: rate,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
   });
 }
 
-// ── End Remote Scan ───────────────────────────────────────────────────────────
+function confirmBundleSplit() {
+  const parent = getItem(_bundleSplitItemId);
+  if (!parent || _bundleItems.length < 2) return;
+  if (!_bundleItems.every(i => i.name.trim())) { toast('⚠️ Wszystkie elementy muszą mieć nazwę'); return; }
+  if (!confirm(`Rozbić "${parent.title}" na ${_bundleItems.length} elementów?\nOperacja jest nieodwracalna — parent otrzyma status "Zakończone".`)) return;
+  const settings = getSettings();
+  const children = splitBundle(parent, _bundleItems, settings);
+  // Mark parent as bundle+completed
+  const parentPatch = { isBundle: true, childItemIds: children.map(c => c.id), bundleContents: _bundleItems.map(i => i.name), status: 'completed' };
+  trackChange(parent, 'status', 'completed', 'manual');
+  Object.assign(parent, parentPatch);
+  parent.updatedAt = new Date().toISOString();
+  // Prepend children
+  children.forEach(child => items.unshift(child));
+  saveItems();
+  closeBundleSplit();
+  toast(`✅ Rozbito na ${children.length} elementów`);
+  showScreen('kanban');
+}
+
+// ── FAZA D: Financial tracking ──────────────────────────────────────────────
+
+function calculateProfit(item, settings) {
+  const rate = item.exchangeRate || settings.exchangeRate || 4.30;
+  const c = item.costs || {};
+  const fwdDefault = settings.forwardingPL || 22;
+  const costsPLN =
+    ((c.purchase != null ? c.purchase : (item.finalPrice || 0)) + (c.shippingDE || 0)) * rate +
+    (c.forwardingPL != null ? c.forwardingPL : fwdDefault) +
+    (c.repair != null ? c.repair : (item.repairCost || 0)) +
+    (c.saleFees || 0) +
+    (c.saleShipping || 0) +
+    (c.other || 0);
+  const revenuePLN = item.revenue || item.salePrice || 0;
+  if (!revenuePLN) return null;
+  return Math.round(revenuePLN - costsPLN);
+}
+
+function buildProfitSection(item) {
+  const settings = getSettings();
+  const rate = item.exchangeRate || settings.exchangeRate || 4.30;
+  const c = item.costs || {};
+  const fwdDefault = settings.forwardingPL || 22;
+  const purchase  = c.purchase  != null ? c.purchase  : (item.finalPrice || 0);
+  const shippingDE = c.shippingDE || 0;
+  const fwdPLN    = c.forwardingPL != null ? c.forwardingPL : fwdDefault;
+  const repair    = c.repair != null ? c.repair : (item.repairCost || 0);
+  const saleFees  = c.saleFees || 0;
+  const saleShip  = c.saleShipping || 0;
+  const other     = c.other || 0;
+  const costsPLN  = (purchase + shippingDE) * rate + fwdPLN + repair + saleFees + saleShip + other;
+  const revenue   = item.revenue || item.salePrice || 0;
+  if (!revenue && !purchase) return '';
+  const profit = revenue ? Math.round(revenue - costsPLN) : null;
+  const pct = (revenue && costsPLN > 0) ? Math.round((profit / costsPLN) * 100) : null;
+  const row = (label, val) => val ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:#555;padding:2px 0"><span>${label}</span><span>${val} PLN</span></div>` : '';
+  return `<div class="card">
+    <div class="lbl mb8">💹 Kalkulacja finansowa</div>
+    ${row(`Zakup: ${purchase} € × ${rate}`, purchase ? Math.round(purchase * rate) : null)}
+    ${row(`Wysyłka DE: ${shippingDE} € × ${rate}`, shippingDE ? Math.round(shippingDE * rate) : null)}
+    ${row('Forwarding', fwdPLN||null)}
+    ${row('Serwis', repair||null)}
+    ${row('Prowizja platformy', saleFees||null)}
+    ${row('Wysyłka do kupca', saleShip||null)}
+    ${row('Inne', other||null)}
+    <div style="border-top:1px solid #eee;margin:8px 0;padding-top:6px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;color:#888"><span>Koszt łącznie</span><strong>${Math.round(costsPLN)} PLN</strong></div>
+      ${revenue ? `<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;color:#16a34a"><span>Przychód (${esc(item.salePlatform||'?')})</span><strong>${revenue} PLN</strong></div>` : ''}
+    </div>
+    ${profit !== null ? `<div style="padding:10px 12px;border-radius:8px;background:${profit >= 0 ? '#f0fdf4' : '#fef2f2'};text-align:center;margin-top:4px">
+      <div style="font-size:20px;font-weight:800;color:${profit >= 0 ? '#16a34a' : '#dc2626'}">${profit >= 0 ? '+' : ''}${profit} PLN</div>
+      ${pct !== null ? `<div style="font-size:11px;color:#888">${pct >= 0 ? '+' : ''}${pct}% zysku na koszcie</div>` : ''}
+    </div>` : `<div style="font-size:12px;color:#bbb;text-align:center;padding:6px">Dodaj cenę sprzedaży żeby zobaczyć zysk</div>`}
+  </div>`;
+}
+
+// ── FAZA E: Szablon opisu do Gemini ────────────────────────────────────────────
+
+function copyGeminiDescTemplate(itemId) {
+  const item = getItem(itemId);
+  if (!item) return;
+  const text = `Wygeneruj opis ogłoszenia sprzedaży po polsku dla:
+Model: ${item.title}
+Stan: ${item.inspectionStatus || 'nieznany'}${item.inspectionNotes ? '\nNotatki z inspekcji: ' + item.inspectionNotes : ''}
+${item.repairNotes ? 'Serwis: ' + item.repairNotes : ''}
+
+Zasady:
+- Tytuł (max 50 znaków)
+- Opis (150-300 słów, rzetelny — nie ukrywaj wad)
+- Sugerowana cena PLN (rynek OLX/Allegro używany)`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => toast('📋 Szablon skopiowany — wklej do Gemini'));
+  } else {
+    const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    toast('📋 Szablon skopiowany — wklej do Gemini');
+  }
+}
+
+// ── End FAZA B ────────────────────────────────────────────────────────────────
 
 migrateApiKey();
 loadItems();
-gistLoad();
-renderHome();
-(function() {
-  const today = new Date();
-  const from  = new Date(today); from.setDate(from.getDate() - 14);
-  const fmt   = d => d.toISOString().slice(0, 10);
-  const fromEl = document.getElementById('scan-date-from');
-  const toEl   = document.getElementById('scan-date-to');
-  if (fromEl) fromEl.value = fmt(from);
-  if (toEl)   toEl.value   = fmt(today);
-})();
-</script>
-<script>
-  if ('serviceWorker' in navigator)
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+migrateAllItems();
+showScreen('kanban');
 </script>
 </body>
 </html>
