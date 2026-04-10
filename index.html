@@ -145,6 +145,7 @@
     <div id="header-sub"></div>
   </div>
   <button onclick="showScreen('kanban')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Widok Kanban">📊</button>
+  <button id="sync-icon-btn" onclick="loadFromGist()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Synchronizacja — kliknij aby odświeżyć">☁️</button>
   <button onclick="toggleSettings()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Ustawienia API">⚙️</button>
   <button onclick="showScreen('sync')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Synchronizacja danych">🔄</button>
 </div>
@@ -828,7 +829,10 @@ function loadItems() {
   items = PREFILLED.map(i => ({ ...i }));
   saveItems();
 }
-function saveItems() { localStorage.setItem('ka_items_v2', JSON.stringify(items)); }
+function saveItems() {
+  localStorage.setItem('ka_items_v2', JSON.stringify(items));
+  scheduleSave();
+}
 function getItem(id) { return items.find(i => i.id === id) || null; }
 function trackChange(item, field, newValue, source = 'manual') {
   if (!item.changelog) item.changelog = [];
@@ -1888,6 +1892,11 @@ function applyPatch() {
 let _scanPollTimer = null;
 let _scanMode = 'days';
 
+// ── GistSync globals ──────────────────────────────────────────────────────────
+let _saveTimeout  = null;
+let _lastSyncHash = null;
+const GIST_DATA_FILE = 'ka-data.json';
+
 const GH_OWNER    = 'dud3k';
 const GH_REPO     = 'ka-scraper';
 const GH_WORKFLOW = 'scrape.yml';
@@ -2039,7 +2048,11 @@ function renderScanStatus(status) {
   const running = status.phase === 'scraping' || status.phase === 'analyzing';
   if (btn) { btn.disabled = running; btn.textContent = running ? '⏳ Trwa skanowanie...' : '🚀 Uruchom skan'; }
   if (resetBtn) resetBtn.style.display = running ? 'inline-block' : 'none';
-  if (status.phase === 'done') toast('✅ Skan gotowy — importuj patch (Krok 3)');
+  if (status.phase === 'done') {
+    clearInterval(_scanPollTimer); _scanPollTimer = null;
+    toast('✅ Skan gotowy — importuję patch...');
+    importPatchFromGist();
+  }
 }
 
 async function resetScanStatus() {
@@ -2056,6 +2069,100 @@ async function resetScanStatus() {
     renderScanStatus({ phase: 'idle', step: null, log: [], error: null });
     toast('✅ Status zresetowany');
   } catch (err) { toast('❌ ' + err.message); }
+}
+
+// ── GistSync — dwukierunkowy sync App ↔ Gist ─────────────────────────────────
+
+function setSyncIcon(state) {
+  const btn = document.getElementById('sync-icon-btn');
+  if (!btn) return;
+  const icons = { ok: '☁️', saving: '🔄', error: '⚠️', offline: '⚠️', unconfigured: '☁️' };
+  const titles = {
+    ok:            'Sync OK — kliknij aby odświeżyć',
+    saving:        'Zapisywanie...',
+    error:         'Błąd synchronizacji — kliknij aby spróbować ponownie',
+    offline:       'Offline — dane lokalne',
+    unconfigured:  'Brak konfiguracji Gist — skonfiguruj w ⚙️'
+  };
+  btn.textContent = icons[state] || '☁️';
+  btn.title       = titles[state] || '';
+  btn.style.opacity = (state === 'unconfigured') ? '0.4' : '1';
+}
+
+async function saveToGist(itemsToSave) {
+  const gistId = getGistId();
+  const token  = getGistToken();
+  if (!gistId || !token) { setSyncIcon('unconfigured'); return false; }
+  setSyncIcon('saving');
+  const payload = { lastSavedAt: new Date().toISOString(), items: itemsToSave };
+  try {
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
+      body: JSON.stringify({ files: { [GIST_DATA_FILE]: { content: JSON.stringify(payload) } } })
+    });
+    if (res.status === 401) { toast('⚠️ Token wygasł — wpisz nowy w ⚙️'); setSyncIcon('error'); return false; }
+    if (res.status === 404) { toast('⚠️ Gist nie znaleziony — sprawdź Gist ID'); setSyncIcon('error'); return false; }
+    if (!res.ok) { toast(`⚠️ Błąd zapisu Gist: ${res.status}`); setSyncIcon('error'); return false; }
+    localStorage.setItem('ka_items_meta', JSON.stringify({ lastSavedAt: payload.lastSavedAt }));
+    setSyncIcon('ok');
+    toast('☁️ Zapisano', 2000);
+    return true;
+  } catch {
+    setSyncIcon('offline');
+    toast('⚠️ Offline — dane lokalne');
+    return false;
+  }
+}
+
+function scheduleSave() {
+  if (!getGistId() || !getGistToken()) return;
+  const hash = items.length + '_' + (items[0]?.updatedAt || '') + '_' + (items[0]?.id || '');
+  if (hash === _lastSyncHash) return;
+  clearTimeout(_saveTimeout);
+  _saveTimeout = setTimeout(async () => {
+    const ok = await saveToGist(items);
+    if (ok) _lastSyncHash = hash;
+  }, 3000);
+}
+
+async function loadFromGist() {
+  const gistId = getGistId();
+  const token  = getGistToken();
+  if (!gistId || !token) { setSyncIcon('unconfigured'); return; }
+  setSyncIcon('saving');
+  try {
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'KA-Asystent' }
+    });
+    if (!res.ok) { setSyncIcon('error'); return; }
+    const gist = await res.json();
+    const file = gist.files?.[GIST_DATA_FILE];
+    if (!file?.content) {
+      // ka-data.json nie istnieje w Gist — wypchnij lokalne dane
+      await saveToGist(items);
+      return;
+    }
+    const remote = JSON.parse(file.content);
+    const localMeta    = JSON.parse(localStorage.getItem('ka_items_meta') || '{}');
+    const localSavedAt  = localMeta.lastSavedAt || null;
+    const remoteSavedAt = remote.lastSavedAt || null;
+    if (!localSavedAt || (remoteSavedAt && remoteSavedAt > localSavedAt)) {
+      items = remote.items || [];
+      localStorage.setItem('ka_items_v2', JSON.stringify(items));
+      localStorage.setItem('ka_items_meta', JSON.stringify({ lastSavedAt: remoteSavedAt }));
+      migrateAllItems();
+      renderKanban();
+      toast('✅ Dane załadowane z chmury');
+    } else {
+      // lokalne dane nowsze lub równe — wypchnij do Gist
+      await saveToGist(items);
+    }
+    setSyncIcon('ok');
+  } catch {
+    setSyncIcon('offline');
+    toast('⚠️ Offline — dane lokalne');
+  }
 }
 
 // ── Gist Import ───────────────────────────────────────────────────────────────
@@ -2652,6 +2759,7 @@ migrateApiKey();
 loadItems();
 migrateAllItems();
 showScreen('kanban');
+loadFromGist(); // async — w tle, nie blokuje UI
 </script>
 </body>
 </html>
