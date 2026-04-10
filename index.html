@@ -145,7 +145,10 @@
     <div id="header-sub"></div>
   </div>
   <button onclick="showScreen('kanban')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Widok Kanban">📊</button>
-  <button id="sync-icon-btn" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Klik: pobierz z Gist | Długi klik (0.6s): wypchnij lokalne do Gist">☁️</button>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
+    <button id="sync-icon-btn" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:2px 8px 0" title="Klik: pobierz z Gist | Długi klik (0.6s): wypchnij lokalne do Gist">☁️</button>
+    <span id="sync-ts" style="font-size:9px;color:#bbb;line-height:1;padding-bottom:2px"></span>
+  </div>
   <button onclick="toggleSettings()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Ustawienia API">⚙️</button>
   <button onclick="showScreen('sync')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Synchronizacja danych">🔄</button>
 </div>
@@ -2105,12 +2108,23 @@ function initSyncBtn() {
   btn.addEventListener('mouseleave', () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } });
 }
 
+function updateSyncTs(isoStr) {
+  const el = document.getElementById('sync-ts');
+  if (!el) return;
+  if (!isoStr) { el.textContent = ''; return; }
+  const d = new Date(isoStr);
+  const hhmm = d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  const ddmm = d.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' });
+  el.textContent = `${hhmm} ${ddmm}`;
+  el.title = `Ostatni sync: ${d.toLocaleString('pl-PL')}`;
+}
+
 function setSyncIcon(state) {
   const btn = document.getElementById('sync-icon-btn');
   if (!btn) return;
   const icons = { ok: '☁️', saving: '🔄', error: '⚠️', offline: '⚠️', unconfigured: '☁️' };
   const titles = {
-    ok:            'Sync OK — kliknij aby odświeżyć',
+    ok:            'Sync OK — kliknij aby odświeżyć | długi klik: wypchnij lokalne',
     saving:        'Zapisywanie...',
     error:         'Błąd synchronizacji — kliknij aby spróbować ponownie',
     offline:       'Offline — dane lokalne',
@@ -2138,6 +2152,7 @@ async function saveToGist(itemsToSave) {
     if (!res.ok) { toast(`⚠️ Błąd zapisu Gist: ${res.status}`); setSyncIcon('error'); return false; }
     localStorage.setItem('ka_items_meta', JSON.stringify({ lastSavedAt: payload.lastSavedAt }));
     setSyncIcon('ok');
+    updateSyncTs(payload.lastSavedAt);
     toast('☁️ Zapisano', 2000);
     return true;
   } catch {
@@ -2158,44 +2173,76 @@ function scheduleSave() {
   }, 3000);
 }
 
-async function loadFromGist() {
+let _lastGistUpdatedAt = null; // Gist-level updated_at — do wykrywania zmian bez parsowania JSON
+
+async function loadFromGist(silent = false) {
   const gistId = getGistId();
   const token  = getGistToken();
   if (!gistId || !token) { setSyncIcon('unconfigured'); return; }
-  setSyncIcon('saving');
+  if (!silent) setSyncIcon('saving');
   try {
     const res = await fetch(`https://api.github.com/gists/${gistId}`, {
       headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'KA-Asystent' }
     });
-    if (!res.ok) { setSyncIcon('error'); return; }
+    if (!res.ok) { if (!silent) setSyncIcon('error'); return; }
     const gist = await res.json();
+
+    // Zapisz Gist-level updated_at (używane przez auto-poll do szybkiego sprawdzenia czy coś się zmieniło)
+    _lastGistUpdatedAt = gist.updated_at;
+
     const file = gist.files?.[GIST_DATA_FILE];
     if (!file?.content) {
-      // ka-data.json nie istnieje w Gist — wypchnij lokalne dane
+      // ka-data.json nie istnieje w Gist — wypchnij lokalne dane (inicjalizacja)
       await saveToGist(items);
       return;
     }
     const remote = JSON.parse(file.content);
-    const localMeta    = JSON.parse(localStorage.getItem('ka_items_meta') || '{}');
+    const localMeta     = JSON.parse(localStorage.getItem('ka_items_meta') || '{}');
     const localSavedAt  = localMeta.lastSavedAt || null;
     const remoteSavedAt = remote.lastSavedAt || null;
     if (!localSavedAt || (remoteSavedAt && remoteSavedAt > localSavedAt)) {
       items = remote.items || [];
       localStorage.setItem('ka_items_v2', JSON.stringify(items));
       localStorage.setItem('ka_items_meta', JSON.stringify({ lastSavedAt: remoteSavedAt }));
-      _lastSyncHash = null; // reset hash so next edit is detected as change
+      _lastSyncHash = null;
       migrateAllItems();
       renderKanban();
-      toast('✅ Dane załadowane z chmury');
+      updateSyncTs(remoteSavedAt);
+      if (!silent) toast('✅ Dane załadowane z chmury');
+      else         toast('🔄 Dane zaktualizowane z chmury');
+    } else {
+      // Dane lokalne aktualne — pokaż timestamp z meta
+      updateSyncTs(localSavedAt);
     }
-    // else: lokalne dane nowsze lub równe — NIE pushuj automatycznie
-    // Push następuje TYLKO przez scheduleSave() przy edycji.
-    // Auto-push tu powodowałby nadpisanie Gist danymi z innego urządzenia.
     setSyncIcon('ok');
   } catch {
     setSyncIcon('offline');
-    toast('⚠️ Offline — dane lokalne');
+    if (!silent) toast('⚠️ Offline — dane lokalne');
   }
+}
+
+// Auto-poll: sprawdza Gist co 60s, pobiera dane tylko gdy updated_at się zmieniło
+let _autoPollTimer = null;
+async function autoPollGist() {
+  const gistId = getGistId();
+  const token  = getGistToken();
+  if (!gistId || !token) return;
+  try {
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'KA-Asystent' }
+    });
+    if (!res.ok) return;
+    const gist = await res.json();
+    if (gist.updated_at && gist.updated_at !== _lastGistUpdatedAt) {
+      // Gist się zmienił — załaduj w tle (silent=true, bez toastu "zapisano" ale z "zaktualizowano")
+      await loadFromGist(true);
+    }
+  } catch { /* brak internetu — ignoruj, spróbuje za 60s */ }
+}
+
+function startAutoPoll() {
+  if (_autoPollTimer) return;
+  _autoPollTimer = setInterval(autoPollGist, 60000); // co 60 sekund
 }
 
 // ── Gist Import ───────────────────────────────────────────────────────────────
@@ -2841,7 +2888,10 @@ loadItems();
 migrateAllItems();
 showScreen('kanban');
 initSyncBtn();
+// Pokaż timestamp z poprzedniej sesji od razu przy starcie
+updateSyncTs(JSON.parse(localStorage.getItem('ka_items_meta') || '{}').lastSavedAt || null);
 loadFromGist(); // async — w tle, nie blokuje UI
+startAutoPoll(); // auto-poll co 60s — wykrywa zmiany z innych urządzeń
 </script>
 </body>
 </html>
