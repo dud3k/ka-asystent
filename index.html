@@ -1907,7 +1907,7 @@ function saveActionsToken() {
   _actionsToken = token;
   document.getElementById('actions-token-input').value = '';
   if (statusEl) statusEl.textContent = '✅ Token zapisany (sesja)';
-  showToast('✅ Token Actions zapisany', 'ok');
+  toast('✅ Token Actions zapisany');
 }
 
 function setScanMode(mode) {
@@ -1937,7 +1937,7 @@ async function checkRunningWorkflow() {
 
 async function triggerScan() {
   if (!_actionsToken) {
-    showToast('⚠️ Wpisz token GitHub Actions w ustawieniach (⚙️)', 'warn');
+    toast('⚠️ Wpisz token GitHub Actions w ustawieniach (⚙️)');
     return;
   }
 
@@ -1948,17 +1948,17 @@ async function triggerScan() {
   if (_scanMode === 'dates') {
     const dateFrom = document.getElementById('scan-date-from')?.value || '';
     const dateTo   = document.getElementById('scan-date-to')?.value   || '';
-    if (!dateFrom || !dateTo) { showToast('⚠️ Podaj obie daty', 'warn'); return; }
-    if (dateTo < dateFrom)    { showToast('⚠️ Data DO musi być >= OD', 'warn'); return; }
+    if (!dateFrom || !dateTo) { toast('⚠️ Podaj obie daty'); return; }
+    if (dateTo < dateFrom)    { toast('⚠️ Data DO musi być >= OD'); return; }
     const limitRaw = document.getElementById('scan-limit-dates')?.value?.trim();
     const limit    = limitRaw ? parseInt(limitRaw, 10) : 0;
-    if (limitRaw && (isNaN(limit) || limit < 1)) { showToast('⚠️ Limit musi być liczbą >= 1', 'warn'); return; }
+    if (limitRaw && (isNaN(limit) || limit < 1)) { toast('⚠️ Limit musi być liczbą >= 1'); return; }
     inputs = { days: '3', date_from: dateFrom, date_to: dateTo, limit: String(limit || 0), no_images: noImages, force_rescan: forceRescan };
   } else {
     const days     = parseInt(document.getElementById('scan-days')?.value || '3', 10);
     const limitRaw = document.getElementById('scan-limit')?.value?.trim();
     const limit    = limitRaw ? parseInt(limitRaw, 10) : 0;
-    if (limitRaw && (isNaN(limit) || limit < 1)) { showToast('⚠️ Limit musi być liczbą >= 1', 'warn'); return; }
+    if (limitRaw && (isNaN(limit) || limit < 1)) { toast('⚠️ Limit musi być liczbą >= 1'); return; }
     inputs = { days: String(days), date_from: '', date_to: '', limit: String(limit || 0), no_images: noImages, force_rescan: forceRescan };
   }
 
@@ -1968,7 +1968,7 @@ async function triggerScan() {
 
     const lastRun = await checkRunningWorkflow();
     if (lastRun && (lastRun.status === 'in_progress' || lastRun.status === 'queued')) {
-      showToast('⚠️ Skan już trwa na GitHubie — poczekaj na zakończenie', 'warn');
+      toast('⚠️ Skan już trwa na GitHubie — poczekaj na zakończenie');
       if (btn) { btn.disabled = false; btn.textContent = '🚀 Uruchom skan'; }
       document.getElementById('scan-status-box').style.display = 'block';
       const phaseEl = document.getElementById('scan-phase-label');
@@ -1989,7 +1989,7 @@ async function triggerScan() {
     );
 
     if (res.status === 204) {
-      showToast('🚀 Workflow uruchomiony na GitHubie!', 'ok');
+      toast('🚀 Workflow uruchomiony na GitHubie!');
       setTimeout(startScanPolling, 30000);
       document.getElementById('scan-status-box').style.display = 'block';
       const phaseEl = document.getElementById('scan-phase-label');
@@ -2000,7 +2000,7 @@ async function triggerScan() {
       throw new Error(`HTTP ${res.status}: ${txt.slice(0, 200)}`);
     }
   } catch (err) {
-    showToast('❌ Błąd: ' + err.message, 'error');
+    toast('❌ Błąd: ' + err.message);
     const btn = document.getElementById('trigger-scan-btn');
     if (btn) { btn.disabled = false; btn.textContent = '🚀 Uruchom skan'; }
   }
@@ -2054,13 +2054,13 @@ function renderScanStatus(status) {
   const running = status.phase === 'scraping' || status.phase === 'analyzing';
   if (btn) { btn.disabled = running; btn.textContent = running ? '⏳ Trwa skanowanie...' : '🚀 Uruchom skan'; }
   if (resetBtn) resetBtn.style.display = running ? 'inline-block' : 'none';
-  if (status.phase === 'done') showToast('✅ Skan gotowy — importuj patch (Krok 3)', 'ok');
+  if (status.phase === 'done') toast('✅ Skan gotowy — importuj patch (Krok 3)');
 }
 
 async function resetScanStatus() {
   const gistId = getGistId();
   const token  = getGistToken();
-  if (!gistId || !token) { showToast('⚠️ Brak GIST_ID lub tokenu', 'warn'); return; }
+  if (!gistId || !token) { toast('⚠️ Brak GIST_ID lub tokenu'); return; }
   clearInterval(_scanPollTimer); _scanPollTimer = null;
   try {
     await fetch(`https://api.github.com/gists/${gistId}`, {
@@ -2069,8 +2069,8 @@ async function resetScanStatus() {
       body: JSON.stringify({ files: { 'ka-status.json': { content: JSON.stringify({ phase: 'idle', step: null, updatedAt: new Date().toISOString(), log: [], error: null }) } } })
     });
     renderScanStatus({ phase: 'idle', step: null, log: [], error: null });
-    showToast('✅ Status zresetowany', 'ok');
-  } catch (err) { showToast('❌ ' + err.message, 'error'); }
+    toast('✅ Status zresetowany');
+  } catch (err) { toast('❌ ' + err.message); }
 }
 
 // ── Gist Import ───────────────────────────────────────────────────────────────
