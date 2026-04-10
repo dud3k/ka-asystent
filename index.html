@@ -156,13 +156,19 @@
     <button onclick="saveApiKey()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
   </div>
   <div style="font-size:11px;color:#aaa;margin-top:6px">Klucz API umożliwia analizę screenshotów i generowanie wiadomości. Klucz jest przechowywany tylko w tej sesji — po zamknięciu karty trzeba wpisać ponownie.</div>
-  <div style="font-size:13px;font-weight:700;color:#888;margin-top:12px;margin-bottom:8px">☁️ Gist (Import patch z chmury)</div>
+  <div style="font-size:13px;font-weight:700;color:#888;margin-top:12px;margin-bottom:8px">🚀 GitHub Actions (zdalne skanowanie)</div>
+  <div style="display:flex;gap:8px;margin-bottom:6px">
+    <input type="password" id="actions-token-input" placeholder="GitHub Token (ghp_... — do uruchamiania workflow)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
+    <button onclick="saveActionsToken()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
+  </div>
+  <div id="actions-token-status" style="font-size:11px;color:#aaa;margin-bottom:8px">Brak tokena — wpisz żeby uruchamiać workflow z aplikacji</div>
+  <div style="font-size:13px;font-weight:700;color:#888;margin-top:4px;margin-bottom:8px">☁️ Gist (Import patch z chmury)</div>
   <div style="display:flex;gap:8px;margin-bottom:6px">
     <input type="text" id="gist-id-input" placeholder="ID Gista (np. d77bb625...)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
     <button onclick="saveGistSettings()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
   </div>
-  <input type="password" id="gist-token-input" placeholder="GitHub Token (ghp_... — potrzebny do usunięcia patcha)" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-  <div style="font-size:11px;color:#aaa;margin-top:6px">GIST_ID to końcówka URL Gista. Token GitHub potrzebny do auto-usunięcia ka-patch.json po imporcie.</div>
+  <input type="password" id="gist-token-input" placeholder="GitHub Token (ghp_... — potrzebny do statusu i usunięcia patcha)" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
+  <div style="font-size:11px;color:#aaa;margin-top:6px">GIST_ID to końcówka URL Gista. Token GitHub potrzebny do odczytu statusu i auto-usunięcia ka-patch.json po imporcie.</div>
   <div style="font-size:13px;font-weight:700;color:#888;margin-top:14px;margin-bottom:8px">⚙️ Ustawienia aplikacji</div>
   <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
     <label style="font-size:12px;color:#888;white-space:nowrap;width:130px">Kurs EUR/PLN:</label>
@@ -232,26 +238,54 @@
     <div style="font-size:12px;color:var(--muted);line-height:1.5">Zdalne skanowanie → pobierz patch z Gist → importuj</div>
   </div>
 
-  <div class="card sync-section">
-    <h3>🚀 Zdalne skanowanie (przez Gist)</h3>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Wysyła komendę do watch.js / GitHub Actions. Wymaga GIST_ID i GitHub Token w ustawieniach (⚙️).</p>
-    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-      <label style="font-size:13px;font-weight:600;white-space:nowrap">Dni:</label>
-      <input type="number" id="scan-days" value="3" min="1" max="60" style="width:70px;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;font-family:inherit;background:#fafaf7" oninput="toggleDateRangeInputs()">
-      <label style="display:flex;align-items:center;gap:4px;font-size:13px;color:#888;cursor:pointer">
-        <input type="checkbox" id="scan-no-images"> bez zdjęć
-      </label>
+  <div class="card sync-section" id="remote-scan-card">
+    <h3>🚀 Zdalne skanowanie</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Uruchamia scraper + Gemini na GitHub Actions. Wymaga GitHub Token w ustawieniach (⚙️).</p>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button id="scan-mode-days-btn" onclick="setScanMode('days')" style="flex:1;padding:7px;font-size:12px;border:1px solid var(--ac);border-radius:8px;background:var(--ac);color:#fff;cursor:pointer;font-family:inherit">Dni wstecz</button>
+      <button id="scan-mode-dates-btn" onclick="setScanMode('dates')" style="flex:1;padding:7px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--muted);cursor:pointer;font-family:inherit">Zakres dat</button>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-      <label style="font-size:12px;color:#888;white-space:nowrap;width:36px">Od:</label>
-      <input type="date" id="scan-date-from" style="flex:1;padding:7px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;font-family:inherit;background:#fafaf7" onchange="toggleDateRangeInputs()">
-      <label style="font-size:12px;color:#888;white-space:nowrap">Do:</label>
-      <input type="date" id="scan-date-to" style="flex:1;padding:7px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;font-family:inherit;background:#fafaf7" onchange="toggleDateRangeInputs()">
+    <div id="scan-mode-days" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+      <select id="scan-days" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;font-family:inherit">
+        <option value="1">Ostatni 1 dzień</option>
+        <option value="2">Ostatnie 2 dni</option>
+        <option value="3" selected>Ostatnie 3 dni</option>
+        <option value="7">Ostatnie 7 dni</option>
+        <option value="14">Ostatnie 14 dni</option>
+        <option value="30">Ostatnie 30 dni</option>
+      </select>
+      <input type="number" id="scan-limit" min="1" max="99" placeholder="limit" title="Limit konwersacji Gemini (puste = wszystkie)" style="width:70px;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;text-align:center;font-family:inherit">
     </div>
-    <div id="scan-mode-label" style="font-size:11px;color:#aaa;margin-bottom:8px">Tryb: ostatnie 3 dni</div>
-    <button class="btn" onclick="triggerRemoteScan()" style="width:100%;margin-bottom:6px">🚀 Uruchom skanowanie</button>
-    <button class="btn" onclick="refreshGistStatus()" style="width:100%;background:#555;font-size:13px;padding:10px">🔄 Odśwież status</button>
-    <div id="gist-status-box" style="margin-top:8px"></div>
+    <div id="scan-mode-dates" style="display:none;margin-bottom:8px">
+      <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+        <label style="font-size:12px;color:#888;white-space:nowrap;width:24px">Od:</label>
+        <input type="date" id="scan-date-from" style="flex:1;padding:7px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;font-family:inherit;background:#fafaf7">
+        <label style="font-size:12px;color:#888;white-space:nowrap">Do:</label>
+        <input type="date" id="scan-date-to" style="flex:1;padding:7px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;font-family:inherit;background:#fafaf7">
+      </div>
+      <input type="number" id="scan-limit-dates" min="1" max="99" placeholder="limit konwersacji Gemini (puste = wszystkie)" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;font-family:inherit">
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="scan-no-images" style="width:16px;height:16px;cursor:pointer">
+      Bez screenshotów (szybciej, mniejszy koszt Gemini)
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="scan-force-rescan" style="width:16px;height:16px;cursor:pointer">
+      Force rescan — ignoruj poprzedni skan, oznacz wszystko jako nowe
+    </label>
+    <button class="btn" onclick="triggerScan()" id="trigger-scan-btn" style="width:100%;margin-bottom:10px">🚀 Uruchom skan</button>
+    <div id="scan-status-box" style="display:none;background:#1a1a2e;border-radius:10px;padding:12px;font-size:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span id="scan-phase-label" style="font-weight:700;font-size:13px"></span>
+        <span style="display:flex;align-items:center;gap:8px">
+          <span id="scan-step-label" style="color:#aaa"></span>
+          <button id="scan-reset-btn" onclick="resetScanStatus()" style="display:none;padding:2px 8px;font-size:11px;background:#333;border:1px solid #555;border-radius:6px;color:#aaa;cursor:pointer">✖ Resetuj</button>
+        </span>
+      </div>
+      <div id="scan-log-lines" style="color:#aaa;line-height:1.6;font-size:11px;font-family:monospace"></div>
+      <div style="margin-top:8px;font-size:11px;color:#555" id="scan-updated-label"></div>
+    </div>
+    <div id="scan-last-scan" style="font-size:11px;color:#aaa;margin-top:6px"></div>
   </div>
 
   <div class="card sync-section">
@@ -1855,92 +1889,188 @@ function applyPatch() {
   }
 }
 
-function toggleDateRangeInputs() {
-  const days     = parseInt(document.getElementById('scan-days').value) || 3;
-  const dateFrom = (document.getElementById('scan-date-from').value || '').trim();
-  const dateTo   = (document.getElementById('scan-date-to').value || '').trim();
-  const label    = document.getElementById('scan-mode-label');
-  if (!label) return;
-  if (dateFrom && dateTo) {
-    label.textContent = `Tryb: zakres dat ${dateFrom} → ${dateTo}`;
-    label.style.color = '#E88B00';
-  } else if (dateFrom || dateTo) {
-    label.textContent = 'Tryb: zakres dat — podaj obie daty';
-    label.style.color = '#cc8800';
+// ── GitHub Actions Remote Scan ────────────────────────────────────────────────
+
+let _actionsToken = null;
+let _scanPollTimer = null;
+let _scanMode = 'days';
+
+const GH_OWNER    = 'dud3k';
+const GH_REPO     = 'ka-scraper';
+const GH_WORKFLOW = 'scrape.yml';
+const GH_BRANCH   = 'master';
+
+function saveActionsToken() {
+  const token = document.getElementById('actions-token-input')?.value?.trim();
+  const statusEl = document.getElementById('actions-token-status');
+  if (!token) { if (statusEl) statusEl.textContent = '⚠️ Wpisz token'; return; }
+  _actionsToken = token;
+  document.getElementById('actions-token-input').value = '';
+  if (statusEl) statusEl.textContent = '✅ Token zapisany (sesja)';
+  showToast('✅ Token Actions zapisany', 'ok');
+}
+
+function setScanMode(mode) {
+  _scanMode = mode;
+  document.getElementById('scan-mode-days').style.display  = mode === 'days'  ? 'flex'  : 'none';
+  document.getElementById('scan-mode-dates').style.display = mode === 'dates' ? 'block' : 'none';
+  const daysBtn  = document.getElementById('scan-mode-days-btn');
+  const datesBtn = document.getElementById('scan-mode-dates-btn');
+  if (daysBtn)  { daysBtn.style.background  = mode === 'days'  ? 'var(--ac)' : '#fff'; daysBtn.style.color  = mode === 'days'  ? '#fff' : 'var(--muted)'; daysBtn.style.borderColor  = mode === 'days'  ? 'var(--ac)' : 'var(--border)'; }
+  if (datesBtn) { datesBtn.style.background = mode === 'dates' ? 'var(--ac)' : '#fff'; datesBtn.style.color = mode === 'dates' ? '#fff' : 'var(--muted)'; datesBtn.style.borderColor = mode === 'dates' ? 'var(--ac)' : 'var(--border)'; }
+}
+
+async function checkRunningWorkflow() {
+  if (!_actionsToken) return null;
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/runs?per_page=1`,
+      { headers: { Authorization: `Bearer ${_actionsToken}`, 'User-Agent': 'KA-Asystent' } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const run = data.workflow_runs?.[0];
+    if (!run) return null;
+    return { status: run.status, conclusion: run.conclusion, url: run.html_url, updatedAt: run.updated_at };
+  } catch { return null; }
+}
+
+async function triggerScan() {
+  if (!_actionsToken) {
+    showToast('⚠️ Wpisz token GitHub Actions w ustawieniach (⚙️)', 'warn');
+    return;
+  }
+
+  const noImages    = document.getElementById('scan-no-images')?.checked || false;
+  const forceRescan = document.getElementById('scan-force-rescan')?.checked || false;
+
+  let inputs;
+  if (_scanMode === 'dates') {
+    const dateFrom = document.getElementById('scan-date-from')?.value || '';
+    const dateTo   = document.getElementById('scan-date-to')?.value   || '';
+    if (!dateFrom || !dateTo) { showToast('⚠️ Podaj obie daty', 'warn'); return; }
+    if (dateTo < dateFrom)    { showToast('⚠️ Data DO musi być >= OD', 'warn'); return; }
+    const limitRaw = document.getElementById('scan-limit-dates')?.value?.trim();
+    const limit    = limitRaw ? parseInt(limitRaw, 10) : 0;
+    if (limitRaw && (isNaN(limit) || limit < 1)) { showToast('⚠️ Limit musi być liczbą >= 1', 'warn'); return; }
+    inputs = { days: '3', date_from: dateFrom, date_to: dateTo, limit: String(limit || 0), no_images: noImages, force_rescan: forceRescan };
   } else {
-    label.textContent = `Tryb: ostatnie ${days} dni`;
-    label.style.color = '#aaa';
+    const days     = parseInt(document.getElementById('scan-days')?.value || '3', 10);
+    const limitRaw = document.getElementById('scan-limit')?.value?.trim();
+    const limit    = limitRaw ? parseInt(limitRaw, 10) : 0;
+    if (limitRaw && (isNaN(limit) || limit < 1)) { showToast('⚠️ Limit musi być liczbą >= 1', 'warn'); return; }
+    inputs = { days: String(days), date_from: '', date_to: '', limit: String(limit || 0), no_images: noImages, force_rescan: forceRescan };
   }
-}
 
-// ── Gist Remote Scan ──────────────────────────────────────────────────────────
-
-async function triggerRemoteScan() {
-  const gistId = getGistId();
-  const token = getGistToken();
-  if (!gistId || !token) {
-    alert('Brak GIST_ID lub GitHub Token — podaj je w ustawieniach (⚙️).');
-    return;
-  }
-  const days = parseInt(document.getElementById('scan-days').value) || 3;
-  const noImages = document.getElementById('scan-no-images').checked;
-  const dateFrom = (document.getElementById('scan-date-from').value || '').trim();
-  const dateTo   = (document.getElementById('scan-date-to').value || '').trim();
-  const box = document.getElementById('gist-status-box');
-  box.innerHTML = '<div class="sync-report">⏳ Wysyłanie komendy...</div>';
   try {
-    const command = { noImages };
-    if (dateFrom && dateTo) { command.dateFrom = dateFrom; command.dateTo = dateTo; }
-    else { command.days = days; }
-    const resp = await fetch(`https://api.github.com/gists/${gistId}`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
-      body: JSON.stringify({ files: { 'ka-command.json': { content: JSON.stringify(command) } } })
-    });
-    if (!resp.ok) throw new Error(`GitHub API: HTTP ${resp.status}`);
-    const modeDesc = (dateFrom && dateTo) ? `${dateFrom} → ${dateTo}` : `last ${days} days`;
-    box.innerHTML = `<div class="sync-report">✅ Komenda wysłana: ${modeDesc}${noImages ? ', bez zdjęć' : ''}. Odśwież status za chwilę.</div>`;
-  } catch (err) {
-    box.innerHTML = `<div class="sync-report error">❌ Błąd: ${esc(err.message)}</div>`;
-  }
-}
+    const btn = document.getElementById('trigger-scan-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Sprawdzanie...'; }
 
-async function refreshGistStatus() {
-  const gistId = getGistId();
-  if (!gistId) {
-    alert('Brak GIST_ID — podaj go w ustawieniach (⚙️).');
-    return;
-  }
-  const box = document.getElementById('gist-status-box');
-  box.innerHTML = '<div class="sync-report">⏳ Pobieranie statusu...</div>';
-  try {
-    const token = getGistToken();
-    const headers = { 'User-Agent': 'KA-Asystent' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    const resp = await fetch(`https://api.github.com/gists/${gistId}`, { headers });
-    if (!resp.ok) throw new Error(`GitHub API: HTTP ${resp.status}`);
-    const gist = await resp.json();
-    const statusFile = gist.files && gist.files['ka-status.json'];
-    if (!statusFile || !statusFile.content) {
-      box.innerHTML = '<div class="sync-report">⚠️ Brak ka-status.json w Gist.</div>';
+    const lastRun = await checkRunningWorkflow();
+    if (lastRun && (lastRun.status === 'in_progress' || lastRun.status === 'queued')) {
+      showToast('⚠️ Skan już trwa na GitHubie — poczekaj na zakończenie', 'warn');
+      if (btn) { btn.disabled = false; btn.textContent = '🚀 Uruchom skan'; }
+      document.getElementById('scan-status-box').style.display = 'block';
+      const phaseEl = document.getElementById('scan-phase-label');
+      if (phaseEl) { phaseEl.textContent = lastRun.status === 'queued' ? '⏳ Oczekuje na runner...' : '🕷️ Trwa na GitHubie...'; phaseEl.style.color = '#E88B00'; }
+      startScanPolling();
       return;
     }
-    const s = JSON.parse(statusFile.content);
-    const phaseIcon = { idle: '💤', scraping: '🔍', analyzing: '🤖', done: '✅', error: '❌' }[s.phase] || '❓';
-    const lastScan = s.lastScanAt ? new Date(s.lastScanAt).toLocaleString('pl-PL') : 'brak';
-    const updated = s.updatedAt ? new Date(s.updatedAt).toLocaleString('pl-PL') : '?';
-    const logHtml = (s.log || []).slice(-5).map(l => `<div style="font-size:11px;color:#888">${esc(l)}</div>`).join('');
-    const errHtml = s.error ? `<div style="color:#c00;font-size:12px;margin-top:4px">❌ ${esc(s.error)}</div>` : '';
-    const patchAvail = gist.files && gist.files['ka-patch.json'] ? `<div style="color:#1a7a1a;font-size:12px;margin-top:4px">📄 Patch dostępny w Gist — użyj Krok 4 żeby zaimportować.</div>` : '';
-    box.innerHTML = `<div class="sync-report">
-      <div style="font-weight:700;margin-bottom:6px">${phaseIcon} Faza: <strong>${s.phase}</strong>${s.step ? ` [${s.step}]` : ''}</div>
-      <div style="font-size:12px;color:#888;margin-bottom:4px">Ostatni skan: ${lastScan}</div>
-      <div style="font-size:12px;color:#888;margin-bottom:4px">Zaktualizowano: ${updated}</div>
-      ${logHtml}${errHtml}${patchAvail}
-    </div>`;
+
+    if (btn) btn.textContent = '⏳ Wysyłanie...';
+
+    const res = await fetch(
+      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/dispatches`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${_actionsToken}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
+        body: JSON.stringify({ ref: GH_BRANCH, inputs })
+      }
+    );
+
+    if (res.status === 204) {
+      showToast('🚀 Workflow uruchomiony na GitHubie!', 'ok');
+      setTimeout(startScanPolling, 30000);
+      document.getElementById('scan-status-box').style.display = 'block';
+      const phaseEl = document.getElementById('scan-phase-label');
+      if (phaseEl) { phaseEl.textContent = '⏳ Oczekiwanie na start (~30s)...'; phaseEl.style.color = '#E88B00'; }
+      if (btn) btn.textContent = '⏳ Trwa skanowanie...';
+    } else {
+      const txt = await res.text();
+      throw new Error(`HTTP ${res.status}: ${txt.slice(0, 200)}`);
+    }
   } catch (err) {
-    box.innerHTML = `<div class="sync-report error">❌ Błąd: ${esc(err.message)}</div>`;
+    showToast('❌ Błąd: ' + err.message, 'error');
+    const btn = document.getElementById('trigger-scan-btn');
+    if (btn) { btn.disabled = false; btn.textContent = '🚀 Uruchom skan'; }
   }
+}
+
+function startScanPolling() {
+  clearInterval(_scanPollTimer);
+  document.getElementById('scan-status-box').style.display = 'block';
+  pollScanStatus();
+  _scanPollTimer = setInterval(pollScanStatus, 10000);
+}
+
+async function pollScanStatus() {
+  const gistId = getGistId();
+  const token  = getGistToken();
+  if (!gistId) return;
+  try {
+    const headers = { 'User-Agent': 'KA-Asystent' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, { headers });
+    if (!res.ok) return;
+    const gist = await res.json();
+    const file = gist.files && gist.files['ka-status.json'];
+    if (!file) return;
+    const status = JSON.parse(file.content);
+    renderScanStatus(status);
+    if (status.phase === 'idle') {
+      clearInterval(_scanPollTimer); _scanPollTimer = null;
+    } else if (status.phase === 'done' || status.phase === 'error') {
+      const secAgo = (Date.now() - new Date(status.updatedAt).getTime()) / 1000;
+      if (secAgo > 60) { clearInterval(_scanPollTimer); _scanPollTimer = null; }
+    }
+  } catch {}
+}
+
+function renderScanStatus(status) {
+  const phaseLabels = { idle: '💤 Gotowy', scraping: '🕷️ Scrapowanie...', analyzing: '🤖 Analiza Gemini...', done: '✅ Gotowe!', error: '❌ Błąd' };
+  const phaseColors = { idle: '#888', scraping: '#E88B00', analyzing: '#3498db', done: '#2ecc71', error: '#e74c3c' };
+  const phaseEl   = document.getElementById('scan-phase-label');
+  const stepEl    = document.getElementById('scan-step-label');
+  const logEl     = document.getElementById('scan-log-lines');
+  const updatedEl = document.getElementById('scan-updated-label');
+  const lastEl    = document.getElementById('scan-last-scan');
+  const btn       = document.getElementById('trigger-scan-btn');
+  const resetBtn  = document.getElementById('scan-reset-btn');
+  if (phaseEl)   { phaseEl.textContent = phaseLabels[status.phase] || status.phase; phaseEl.style.color = phaseColors[status.phase] || '#fff'; }
+  if (stepEl)    stepEl.textContent    = status.step ? `[${status.step}]` : '';
+  if (logEl)     logEl.innerHTML       = (status.log || []).slice(-6).map(l => esc(l)).join('<br>');
+  if (updatedEl && status.updatedAt)   updatedEl.textContent = 'Aktualizacja: ' + new Date(status.updatedAt).toLocaleTimeString('pl-PL');
+  if (lastEl && status.lastScanAt)     lastEl.textContent = 'Ostatni skan: ' + new Date(status.lastScanAt).toLocaleString('pl-PL');
+  const running = status.phase === 'scraping' || status.phase === 'analyzing';
+  if (btn) { btn.disabled = running; btn.textContent = running ? '⏳ Trwa skanowanie...' : '🚀 Uruchom skan'; }
+  if (resetBtn) resetBtn.style.display = running ? 'inline-block' : 'none';
+  if (status.phase === 'done') showToast('✅ Skan gotowy — importuj patch (Krok 3)', 'ok');
+}
+
+async function resetScanStatus() {
+  const gistId = getGistId();
+  const token  = getGistToken();
+  if (!gistId || !token) { showToast('⚠️ Brak GIST_ID lub tokenu', 'warn'); return; }
+  clearInterval(_scanPollTimer); _scanPollTimer = null;
+  try {
+    await fetch(`https://api.github.com/gists/${gistId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
+      body: JSON.stringify({ files: { 'ka-status.json': { content: JSON.stringify({ phase: 'idle', step: null, updatedAt: new Date().toISOString(), log: [], error: null }) } } })
+    });
+    renderScanStatus({ phase: 'idle', step: null, log: [], error: null });
+    showToast('✅ Status zresetowany', 'ok');
+  } catch (err) { showToast('❌ ' + err.message, 'error'); }
 }
 
 // ── Gist Import ───────────────────────────────────────────────────────────────
