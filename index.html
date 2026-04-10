@@ -1711,9 +1711,16 @@ function executePatch(patch, dryRun, strictMode = false) {
         translatedText: m.translatedText || m.originalText || '',
         timestamp: m.timestamp || (parseMsgDate(m) ? new Date(parseMsgDate(m)).toISOString() : new Date().toISOString())
       }));
-      // Deduplicate: skip messages with identical originalText already in item
-      const existingTexts = new Set((item.messages||[]).map(m => m.originalText));
-      const uniqueNew = newMsgs.filter(m => !existingTexts.has(m.originalText));
+      // Deduplicate: skip messages already in item
+      // For text messages: match by originalText
+      // For image messages (empty text): match by timestamp to avoid blocking all images
+      const existingTexts = new Set((item.messages||[]).map(m => m.originalText).filter(t => t !== ''));
+      const existingTs    = new Set((item.messages||[]).map(m => m.timestamp).filter(Boolean));
+      const uniqueNew = newMsgs.filter(m => {
+        if (m.originalText !== '') return !existingTexts.has(m.originalText);
+        // Image message — deduplicate by timestamp if available, otherwise allow
+        return !m.timestamp || !existingTs.has(m.timestamp);
+      });
       if (uniqueNew.length > 0) {
         changes.push(`+${uniqueNew.length} nowych wiadomości`);
         if (!dryRun) item.messages = [...(item.messages||[]), ...uniqueNew];
@@ -2051,7 +2058,7 @@ function renderScanStatus(status) {
   if (status.phase === 'done') {
     clearInterval(_scanPollTimer); _scanPollTimer = null;
     toast('✅ Skan gotowy — importuję patch...');
-    importPatchFromGist();
+    importPatchFromGist(true); // autoImport=true: no confirm dialog
   }
 }
 
@@ -2178,14 +2185,14 @@ function saveGistSettings() {
   alert('Ustawienia Gist zapisane.');
 }
 
-async function importPatchFromGist() {
+async function importPatchFromGist(autoImport = false) {
   const gistId = getGistId();
   if (!gistId) {
-    alert('Brak GIST_ID — podaj go w ustawieniach (⚙️).');
+    if (!autoImport) alert('Brak GIST_ID — podaj go w ustawieniach (⚙️).');
     return;
   }
   const reportEl = document.getElementById('gist-import-report');
-  reportEl.innerHTML = '<div class="sync-report">⏳ Pobieranie patcha z Gist...</div>';
+  if (reportEl) reportEl.innerHTML = '<div class="sync-report">⏳ Pobieranie patcha z Gist...</div>';
   try {
     const token = getGistToken();
     const headers = { 'User-Agent': 'KA-Asystent' };
@@ -2197,27 +2204,30 @@ async function importPatchFromGist() {
     const gist = await resp.json();
     const patchFile = gist.files && gist.files['ka-patch.json'];
     if (!patchFile || !patchFile.content) {
-      reportEl.innerHTML = '<div class="sync-report">⚠️ Brak ka-patch.json w Gist. Może nie ma nowego patcha?</div>';
+      if (reportEl) reportEl.innerHTML = '<div class="sync-report">⚠️ Brak ka-patch.json w Gist. Może nie ma nowego patcha?</div>';
       return;
     }
 
     const result = parsePatch(patchFile.content);
     if (!result.ok) {
-      reportEl.innerHTML = `<div class="sync-report error">❌ Błąd parsowania patcha: ${esc(result.error)}</div>`;
+      if (reportEl) reportEl.innerHTML = `<div class="sync-report error">❌ Błąd parsowania patcha: ${esc(result.error)}</div>`;
       return;
     }
 
     const updates = (result.patch.updates || []).length;
     const newItems = (result.patch.newItems || []).length;
-    if (!confirm(`Importuj patch z Gist?\n\n${updates} aktualizacji\n${newItems} nowych pozycji`)) {
-      reportEl.innerHTML = '';
+    if (!autoImport && !confirm(`Importuj patch z Gist?\n\n${updates} aktualizacji\n${newItems} nowych pozycji`)) {
+      if (reportEl) reportEl.innerHTML = '';
       return;
     }
 
     const strictMode = document.getElementById('strict-mode-cb')?.checked || false;
     const report = executePatch(result.patch, false, strictMode);
-    renderPatchReport(report, false);
+    if (!autoImport) renderPatchReport(report, false);
     renderSyncOverview();
+
+    const msg = `${report.updated.length} zaktualizowanych, ${report.created.length} nowych`;
+    if (autoImport) toast(`✅ Patch zaimportowany automatycznie (${msg})`);
 
     // Delete ka-patch.json from Gist after successful import
     if (token && (report.updated.length > 0 || report.created.length > 0)) {
@@ -2227,15 +2237,16 @@ async function importPatchFromGist() {
           headers: { ...headers, 'Content-Type': 'application/json' },
           body: JSON.stringify({ files: { 'ka-patch.json': null } })
         });
-        reportEl.innerHTML = '<div class="sync-report">✅ Patch zaimportowany i usunięty z Gist.</div>';
+        if (reportEl) reportEl.innerHTML = '<div class="sync-report">✅ Patch zaimportowany i usunięty z Gist.</div>';
       } catch (_) {
-        reportEl.innerHTML = '<div class="sync-report">⚠️ Patch zaimportowany, ale nie udało się usunąć z Gist.</div>';
+        if (reportEl) reportEl.innerHTML = '<div class="sync-report">⚠️ Patch zaimportowany, ale nie udało się usunąć z Gist.</div>';
       }
     } else if (!token) {
-      reportEl.innerHTML = '<div class="sync-report">✅ Patch zaimportowany. (Dodaj token GitHub w ⚙️ żeby auto-usuwać patch z Gist.)</div>';
+      if (reportEl) reportEl.innerHTML = '<div class="sync-report">✅ Patch zaimportowany. (Dodaj token GitHub w ⚙️ żeby auto-usuwać patch z Gist.)</div>';
     }
   } catch (err) {
-    reportEl.innerHTML = `<div class="sync-report error">❌ Błąd: ${esc(err.message)}</div>`;
+    if (reportEl) reportEl.innerHTML = `<div class="sync-report error">❌ Błąd: ${esc(err.message)}</div>`;
+    else toast(`❌ Auto-import nieudany: ${err.message}`);
   }
 }
 
