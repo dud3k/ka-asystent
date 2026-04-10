@@ -145,7 +145,7 @@
     <div id="header-sub"></div>
   </div>
   <button onclick="showScreen('kanban')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Widok Kanban">📊</button>
-  <button id="sync-icon-btn" onclick="loadFromGist()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Synchronizacja — kliknij aby odświeżyć">☁️</button>
+  <button id="sync-icon-btn" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Klik: pobierz z Gist | Długi klik (0.6s): wypchnij lokalne do Gist">☁️</button>
   <button onclick="toggleSettings()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Ustawienia API">⚙️</button>
   <button onclick="showScreen('sync')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Synchronizacja danych">🔄</button>
 </div>
@@ -2080,6 +2080,29 @@ async function resetScanStatus() {
 
 // ── GistSync — dwukierunkowy sync App ↔ Gist ─────────────────────────────────
 
+async function forcePushToGist() {
+  _lastSyncHash = null; // reset hash so saveToGist doesn't skip
+  const ok = await saveToGist(items);
+  if (ok) toast('⬆️ Lokalne dane wypchnięte do Gist');
+}
+
+function initSyncBtn() {
+  const btn = document.getElementById('sync-icon-btn');
+  if (!btn) return;
+  let pressTimer = null;
+  const startPress = () => {
+    pressTimer = setTimeout(() => { pressTimer = null; forcePushToGist(); }, 600);
+  };
+  const endPress = () => {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; loadFromGist(); }
+  };
+  btn.addEventListener('mousedown', startPress);
+  btn.addEventListener('touchstart', startPress, { passive: true });
+  btn.addEventListener('mouseup', endPress);
+  btn.addEventListener('touchend', endPress);
+  btn.addEventListener('mouseleave', () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } });
+}
+
 function setSyncIcon(state) {
   const btn = document.getElementById('sync-icon-btn');
   if (!btn) return;
@@ -2158,13 +2181,14 @@ async function loadFromGist() {
       items = remote.items || [];
       localStorage.setItem('ka_items_v2', JSON.stringify(items));
       localStorage.setItem('ka_items_meta', JSON.stringify({ lastSavedAt: remoteSavedAt }));
+      _lastSyncHash = null; // reset hash so next edit is detected as change
       migrateAllItems();
       renderKanban();
       toast('✅ Dane załadowane z chmury');
-    } else {
-      // lokalne dane nowsze lub równe — wypchnij do Gist
-      await saveToGist(items);
     }
+    // else: lokalne dane nowsze lub równe — NIE pushuj automatycznie
+    // Push następuje TYLKO przez scheduleSave() przy edycji.
+    // Auto-push tu powodowałby nadpisanie Gist danymi z innego urządzenia.
     setSyncIcon('ok');
   } catch {
     setSyncIcon('offline');
@@ -2770,6 +2794,7 @@ migrateApiKey();
 loadItems();
 migrateAllItems();
 showScreen('kanban');
+initSyncBtn();
 loadFromGist(); // async — w tle, nie blokuje UI
 </script>
 </body>
