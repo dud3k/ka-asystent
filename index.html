@@ -156,19 +156,13 @@
     <button onclick="saveApiKey()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
   </div>
   <div style="font-size:11px;color:#aaa;margin-top:6px">Klucz API umożliwia analizę screenshotów i generowanie wiadomości. Klucz jest przechowywany tylko w tej sesji — po zamknięciu karty trzeba wpisać ponownie.</div>
-  <div style="font-size:13px;font-weight:700;color:#888;margin-top:12px;margin-bottom:8px">🚀 GitHub Actions (zdalne skanowanie)</div>
-  <div style="display:flex;gap:8px;margin-bottom:6px">
-    <input type="password" id="actions-token-input" placeholder="GitHub Token (ghp_... — do uruchamiania workflow)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-    <button onclick="saveActionsToken()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
-  </div>
-  <div id="actions-token-status" style="font-size:11px;color:#aaa;margin-bottom:8px">Brak tokena — wpisz żeby uruchamiać workflow z aplikacji</div>
-  <div style="font-size:13px;font-weight:700;color:#888;margin-top:4px;margin-bottom:8px">☁️ Gist (Import patch z chmury)</div>
+  <div style="font-size:13px;font-weight:700;color:#888;margin-top:12px;margin-bottom:8px">☁️ Gist + GitHub (synchronizacja)</div>
   <div style="display:flex;gap:8px;margin-bottom:6px">
     <input type="text" id="gist-id-input" placeholder="ID Gista (np. d77bb625...)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
     <button onclick="saveGistSettings()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
   </div>
-  <input type="password" id="gist-token-input" placeholder="GitHub Token (ghp_... — potrzebny do statusu i usunięcia patcha)" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-  <div style="font-size:11px;color:#aaa;margin-top:6px">GIST_ID to końcówka URL Gista. Token GitHub potrzebny do odczytu statusu i auto-usunięcia ka-patch.json po imporcie.</div>
+  <input type="password" id="gist-token-input" placeholder="GitHub Token (ghp_... — do skanowania, statusu i importu patcha)" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
+  <div style="font-size:11px;color:#aaa;margin-top:6px">GIST_ID to końcówka URL Gista. Ten sam token używany do uruchamiania skanowania (Actions), odczytu statusu i importu patcha.</div>
   <div style="font-size:13px;font-weight:700;color:#888;margin-top:14px;margin-bottom:8px">⚙️ Ustawienia aplikacji</div>
   <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
     <label style="font-size:12px;color:#888;white-space:nowrap;width:130px">Kurs EUR/PLN:</label>
@@ -1891,7 +1885,6 @@ function applyPatch() {
 
 // ── GitHub Actions Remote Scan ────────────────────────────────────────────────
 
-let _actionsToken = null;
 let _scanPollTimer = null;
 let _scanMode = 'days';
 
@@ -1899,16 +1892,6 @@ const GH_OWNER    = 'dud3k';
 const GH_REPO     = 'ka-scraper';
 const GH_WORKFLOW = 'scrape.yml';
 const GH_BRANCH   = 'master';
-
-function saveActionsToken() {
-  const token = document.getElementById('actions-token-input')?.value?.trim();
-  const statusEl = document.getElementById('actions-token-status');
-  if (!token) { if (statusEl) statusEl.textContent = '⚠️ Wpisz token'; return; }
-  _actionsToken = token;
-  document.getElementById('actions-token-input').value = '';
-  if (statusEl) statusEl.textContent = '✅ Token zapisany (sesja)';
-  toast('✅ Token Actions zapisany');
-}
 
 function setScanMode(mode) {
   _scanMode = mode;
@@ -1921,11 +1904,12 @@ function setScanMode(mode) {
 }
 
 async function checkRunningWorkflow() {
-  if (!_actionsToken) return null;
+  const token = getGistToken();
+  if (!token) return null;
   try {
     const res = await fetch(
       `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/actions/workflows/${GH_WORKFLOW}/runs?per_page=1`,
-      { headers: { Authorization: `Bearer ${_actionsToken}`, 'User-Agent': 'KA-Asystent' } }
+      { headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'KA-Asystent' } }
     );
     if (!res.ok) return null;
     const data = await res.json();
@@ -1936,8 +1920,9 @@ async function checkRunningWorkflow() {
 }
 
 async function triggerScan() {
+  const _actionsToken = getGistToken();
   if (!_actionsToken) {
-    toast('⚠️ Wpisz token GitHub Actions w ustawieniach (⚙️)');
+    toast('⚠️ Wpisz GitHub Token w ustawieniach (⚙️)');
     return;
   }
 
