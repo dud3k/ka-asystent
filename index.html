@@ -2260,6 +2260,26 @@ function scheduleSave() {
 
 let _lastGistUpdatedAt = null; // Gist-level updated_at — do wykrywania zmian bez parsowania JSON
 
+async function checkPendingPatch() {
+  const gistId = getGistId();
+  const token  = getGistToken();
+  if (!gistId || !token) return;
+  try {
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'KA-Asystent' }
+    });
+    if (!res.ok) return;
+    const gist = await res.json();
+    const patchFile = gist.files && gist.files['ka-patch.json'];
+    if (patchFile && patchFile.content) {
+      toast('📦 Znaleziono patch z ostatniego skanu — importuję...', 3000);
+      await importPatchFromGist(true);
+    }
+  } catch (_) {
+    // cicho — nie blokuj startu aplikacji
+  }
+}
+
 async function loadFromGist(silent = false) {
   const gistId = getGistId();
   const token  = getGistToken();
@@ -2998,7 +3018,9 @@ showScreen('kanban');
 initSyncBtn();
 // Pokaż timestamp z poprzedniej sesji od razu przy starcie
 updateSyncTs(JSON.parse(localStorage.getItem('ka_items_meta') || '{}').lastSavedAt || null);
-loadFromGist(); // async — w tle, nie blokuje UI
+loadFromGist().then(() => {
+  checkPendingPatch(); // sprawdz czy ka-patch.json czeka w Gist (np. cron nocny)
+});
 startAutoPoll(); // auto-poll co 60s — wykrywa zmiany z innych urządzeń
 </script>
 </body>
