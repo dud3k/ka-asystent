@@ -244,6 +244,7 @@
     <div style="display:flex;gap:6px;margin-bottom:10px">
       <button id="scan-mode-days-btn" onclick="setScanMode('days')" style="flex:1;padding:7px;font-size:12px;border:1px solid var(--ac);border-radius:8px;background:var(--ac);color:#fff;cursor:pointer;font-family:inherit">Dni wstecz</button>
       <button id="scan-mode-dates-btn" onclick="setScanMode('dates')" style="flex:1;padding:7px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--muted);cursor:pointer;font-family:inherit">Zakres dat</button>
+      <button id="scan-mode-convs-btn" onclick="setScanMode('convs')" style="flex:1;padding:7px;font-size:12px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--muted);cursor:pointer;font-family:inherit">Po ID</button>
     </div>
     <div id="scan-mode-days" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
       <select id="scan-days" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;font-family:inherit">
@@ -264,6 +265,10 @@
         <input type="date" id="scan-date-to" style="flex:1;padding:7px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;font-family:inherit;background:#fafaf7">
       </div>
       <input type="number" id="scan-limit-dates" min="1" max="99" placeholder="limit konwersacji Gemini (puste = wszystkie)" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;font-family:inherit">
+    </div>
+    <div id="scan-mode-convs" style="display:none;margin-bottom:8px">
+      <textarea id="scan-conversation-ids" rows="3" placeholder="Wklej ID konwersacji (każde w nowej linii lub oddzielone przecinkiem)" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;font-family:inherit;resize:vertical"></textarea>
+      <div style="font-size:11px;color:#aaa;margin-top:4px">Skopiuj ID z URL: ...?conversationId=<strong>TO_ID</strong></div>
     </div>
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;cursor:pointer">
       <input type="checkbox" id="scan-no-images" style="width:16px;height:16px;cursor:pointer">
@@ -1936,12 +1941,15 @@ const GH_BRANCH   = 'master';
 
 function setScanMode(mode) {
   _scanMode = mode;
-  document.getElementById('scan-mode-days').style.display  = mode === 'days'  ? 'flex'  : 'none';
-  document.getElementById('scan-mode-dates').style.display = mode === 'dates' ? 'block' : 'none';
+  document.getElementById('scan-mode-days').style.display   = mode === 'days'  ? 'flex'  : 'none';
+  document.getElementById('scan-mode-dates').style.display  = mode === 'dates' ? 'block' : 'none';
+  document.getElementById('scan-mode-convs').style.display  = mode === 'convs' ? 'block' : 'none';
   const daysBtn  = document.getElementById('scan-mode-days-btn');
   const datesBtn = document.getElementById('scan-mode-dates-btn');
+  const convsBtn = document.getElementById('scan-mode-convs-btn');
   if (daysBtn)  { daysBtn.style.background  = mode === 'days'  ? 'var(--ac)' : '#fff'; daysBtn.style.color  = mode === 'days'  ? '#fff' : 'var(--muted)'; daysBtn.style.borderColor  = mode === 'days'  ? 'var(--ac)' : 'var(--border)'; }
   if (datesBtn) { datesBtn.style.background = mode === 'dates' ? 'var(--ac)' : '#fff'; datesBtn.style.color = mode === 'dates' ? '#fff' : 'var(--muted)'; datesBtn.style.borderColor = mode === 'dates' ? 'var(--ac)' : 'var(--border)'; }
+  if (convsBtn) { convsBtn.style.background = mode === 'convs' ? 'var(--ac)' : '#fff'; convsBtn.style.color = mode === 'convs' ? '#fff' : 'var(--muted)'; convsBtn.style.borderColor = mode === 'convs' ? 'var(--ac)' : 'var(--border)'; }
 }
 
 async function checkRunningWorkflow() {
@@ -1971,7 +1979,15 @@ async function triggerScan() {
   const forceRescan = document.getElementById('scan-force-rescan')?.checked || false;
 
   let inputs;
-  if (_scanMode === 'dates') {
+  if (_scanMode === 'convs') {
+    const raw = document.getElementById('scan-conversation-ids')?.value?.trim() || '';
+    if (!raw) { toast('⚠️ Wklej przynajmniej jeden ID konwersacji'); return; }
+    // Normalizacja: nowe linie, przecinki, spacje → lista oddzielona przecinkami
+    const ids = raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+    if (!ids.length) { toast('⚠️ Wklej przynajmniej jeden ID konwersacji'); return; }
+    const noImages = document.getElementById('scan-no-images')?.checked || false;
+    inputs = { days: '3', date_from: '', date_to: '', limit: '0', no_images: noImages, force_rescan: false, conversation_ids: ids.join(',') };
+  } else if (_scanMode === 'dates') {
     const dateFrom = document.getElementById('scan-date-from')?.value || '';
     const dateTo   = document.getElementById('scan-date-to')?.value   || '';
     if (!dateFrom || !dateTo) { toast('⚠️ Podaj obie daty'); return; }
@@ -1979,13 +1995,13 @@ async function triggerScan() {
     const limitRaw = document.getElementById('scan-limit-dates')?.value?.trim();
     const limit    = limitRaw ? parseInt(limitRaw, 10) : 0;
     if (limitRaw && (isNaN(limit) || limit < 1)) { toast('⚠️ Limit musi być liczbą >= 1'); return; }
-    inputs = { days: '3', date_from: dateFrom, date_to: dateTo, limit: String(limit || 0), no_images: noImages, force_rescan: forceRescan };
+    inputs = { days: '3', date_from: dateFrom, date_to: dateTo, limit: String(limit || 0), no_images: document.getElementById('scan-no-images')?.checked || false, force_rescan: document.getElementById('scan-force-rescan')?.checked || false };
   } else {
     const days     = parseInt(document.getElementById('scan-days')?.value || '3', 10);
     const limitRaw = document.getElementById('scan-limit')?.value?.trim();
     const limit    = limitRaw ? parseInt(limitRaw, 10) : 0;
     if (limitRaw && (isNaN(limit) || limit < 1)) { toast('⚠️ Limit musi być liczbą >= 1'); return; }
-    inputs = { days: String(days), date_from: '', date_to: '', limit: String(limit || 0), no_images: noImages, force_rescan: forceRescan };
+    inputs = { days: String(days), date_from: '', date_to: '', limit: String(limit || 0), no_images: document.getElementById('scan-no-images')?.checked || false, force_rescan: document.getElementById('scan-force-rescan')?.checked || false };
   }
 
   try {
