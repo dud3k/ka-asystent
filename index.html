@@ -73,6 +73,7 @@
   .chat-row.me { align-items: flex-end; }
   .chat-row.them { align-items: flex-start; }
   .chat-who { font-size: 10px; color: #bbb; margin-bottom: 3px; }
+  .chat-time { font-weight:400; color:#94a3b8; margin-left:8px; font-size:11px; }
   .bubble { max-width: 85%; padding: 9px 13px; font-size: 14px; line-height: 1.55; }
   .bubble.me { background: var(--ac); color: #fff; border-radius: 16px 16px 4px 16px; }
   .bubble.them { background: var(--white); color: var(--text); border: 1px solid var(--border); border-radius: 16px 16px 16px 4px; }
@@ -1166,7 +1167,11 @@ function renderItem() {
   const listingUrl = cur.listingUrl ? `<a href="${cur.listingUrl}" target="_blank" style="font-size:12px;color:${AC};font-weight:600;text-decoration:none">🏷️ Zobacz ogłoszenie →</a>` : '';
   const notesHtml = cur.notes ? `<div class="note-box">${linkify(cur.notes)}</div>` : '';
   const msgsHtml = cur.messages && cur.messages.length > 0
-    ? `<div class="chat-list">${cur.messages.map(msg => `<div class="chat-row ${msg.sender==='buyer'?'me':'them'}"><div class="chat-who">${msg.sender==='seller'?'🇩🇪 Sprzedający':'Ty'}</div><div class="bubble ${msg.sender==='buyer'?'me':'them'}">${esc(msg.translatedText||msg.originalText)}${msg.originalText&&msg.originalText!==msg.translatedText?`<div class="bubble-orig">🇩🇪 ${esc(msg.originalText)}</div>`:''}</div></div>`).join('')}</div>`
+    ? `<div class="chat-list">${cur.messages.map(msg => {
+      const ts = msg.timestamp ? new Date(msg.timestamp) : null;
+      const timeStr = ts ? ts.toLocaleString('pl-PL', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+      return `<div class="chat-row ${msg.sender==='buyer'?'me':'them'}"><div class="chat-who">${msg.sender==='seller'?'🇩🇪 Sprzedający':'Ty'}${timeStr ? `<span class="chat-time">${timeStr}</span>` : ''}</div><div class="bubble ${msg.sender==='buyer'?'me':'them'}">${esc(msg.translatedText||msg.originalText)}${msg.originalText&&msg.originalText!==msg.translatedText?`<div class="bubble-orig">🇩🇪 ${esc(msg.originalText)}</div>`:''}</div></div>`;
+    }).join('')}</div>`
     : `<div style="text-align:center;padding:14px 0;color:#bbb;font-size:13px">Brak wiadomości. Dodaj screenshot z rozmowy.</div>`;
   const draftResultHtml = draftOut ? `<div class="draft-result" id="draft-result-box"><div class="lbl">GOTOWA WIADOMOŚĆ — skopiuj do Kleinanzeigen:</div><div class="draft-text" id="draft-text-out">${esc(draftOut)}</div><button class="copy-btn" onclick="copyDraft()">📋 Kopiuj</button></div>` : '';
 
@@ -2581,7 +2586,7 @@ function renderKanban() {
   let mainContent;
   if (currentKanbanView === 'kanban') {
     const cols = COLUMNS.map(col => {
-      const colItems = activeItems().filter(i => i.status === col.id);
+      const colItems = sortItems(activeItems().filter(i => i.status === col.id), 'updated');
       const totalValue = colItems.reduce((s, i) => s + (i.finalPrice || 0), 0);
       return `<div class="kb-col">
         <div class="kb-col-inner" style="background:${col.bg}">
@@ -2602,7 +2607,7 @@ function renderKanban() {
     mainContent = `<div class="kanban-board">${cols}</div>`;
   } else {
     const groups = COLUMNS.map(col => {
-      const colItems = activeItems().filter(i => i.status === col.id);
+      const colItems = sortItems(activeItems().filter(i => i.status === col.id), 'updated');
       if (!colItems.length) return '';
       return `<div class="kb-list-group">
         <div class="kb-list-header">
