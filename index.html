@@ -437,6 +437,8 @@ function getSettings() {
 }
 function saveSettings(partial) {
   localStorage.setItem('ka_settings', JSON.stringify(Object.assign(getSettings(), partial)));
+  localStorage.setItem('ka_settings_meta', JSON.stringify({ updatedAt: new Date().toISOString() }));
+  scheduleSave();  // wypchnij zmianę ustawień do Gist
 }
 function saveAppSettings() {
   const rate = parseFloat(document.getElementById('setting-exchange').value);
@@ -835,10 +837,14 @@ function loadItems() {
   saveItems();
 }
 function saveItems() {
+  // Purge: usuń fizycznie itemy soft-deleted > 30 dni temu
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  items = items.filter(i => !i.deletedAt || i.deletedAt > cutoff);
   localStorage.setItem('ka_items_v2', JSON.stringify(items));
   scheduleSave();
 }
 function getItem(id) { return items.find(i => i.id === id) || null; }
+function activeItems() { return items.filter(i => !i.deletedAt); }
 function trackChange(item, field, newValue, source = 'manual') {
   if (!item.changelog) item.changelog = [];
   const oldValue = item[field];
@@ -1077,14 +1083,14 @@ async function createNewItem() {
 
 function renderHome() {
   const list = document.getElementById('items-list');
-  let filtered = items;
-  if      (currentFilter === 'active')    filtered = items.filter(i => !i.watchlist && !['closed','completed'].includes(i.status));
-  else if (currentFilter === 'buying')    filtered = items.filter(i => ['negotiating','purchased'].includes(i.status));
-  else if (currentFilter === 'logistics') filtered = items.filter(i => ['shipped_de','at_forwarder','shipped_pl','received'].includes(i.status));
-  else if (currentFilter === 'warehouse') filtered = items.filter(i => ['inspecting','in_repair','in_stock'].includes(i.status));
-  else if (currentFilter === 'selling')   filtered = items.filter(i => ['listed','sold','completed'].includes(i.status));
-  else if (currentFilter === 'closed')    filtered = items.filter(i => i.status === 'closed');
-  else if (currentFilter === 'watchlist') filtered = items.filter(i => i.watchlist);
+  let filtered = activeItems();
+  if      (currentFilter === 'active')    filtered = activeItems().filter(i => !i.watchlist && !['closed','completed'].includes(i.status));
+  else if (currentFilter === 'buying')    filtered = activeItems().filter(i => ['negotiating','purchased'].includes(i.status));
+  else if (currentFilter === 'logistics') filtered = activeItems().filter(i => ['shipped_de','at_forwarder','shipped_pl','received'].includes(i.status));
+  else if (currentFilter === 'warehouse') filtered = activeItems().filter(i => ['inspecting','in_repair','in_stock'].includes(i.status));
+  else if (currentFilter === 'selling')   filtered = activeItems().filter(i => ['listed','sold','completed'].includes(i.status));
+  else if (currentFilter === 'closed')    filtered = activeItems().filter(i => i.status === 'closed');
+  else if (currentFilter === 'watchlist') filtered = activeItems().filter(i => i.watchlist);
   if (currentSearch) {
     const q = currentSearch.toLowerCase();
     filtered = filtered.filter(i =>
@@ -1146,7 +1152,7 @@ function renderUploadError(msg) {
 function renderUploadResult() {
   const a = currentAnalysis;
   const msgsHtml = (a.messages || []).length > 0 ? `<div style="margin-top:10px"><div class="lbl">Wiadomości (${a.messages.length})</div>${a.messages.map(m => `<div style="margin-bottom:8px;padding:8px 10px;background:${m.sender==='buyer'?'#fff8ee':'#f7f4ee'};border-radius:8px;border-left:3px solid ${m.sender==='buyer'?AC:'#ccc'}"><div style="font-size:10px;color:#888;margin-bottom:3px">${m.sender==='seller'?'Sprzedający 🇩🇪':'Ty'}</div><div style="font-size:13px">${esc(m.translatedText)}</div>${m.originalText!==m.translatedText?`<div style="font-size:11px;color:#bbb;font-style:italic;margin-top:2px">🇩🇪 ${esc(m.originalText)}</div>`:''}</div>`).join('')}</div>` : '';
-  const existingItems = items.map(item => `<button class="btn-outline" onclick="applyTo('${item.id}')">📦 ${esc(item.title)}</button>`).join('');
+  const existingItems = activeItems().map(item => `<button class="btn-outline" onclick="applyTo('${item.id}')">📦 ${esc(item.title)}</button>`).join('');
   document.getElementById('upload-content').innerHTML = `<div class="card fade-in"><div style="margin-bottom:10px"><span class="badge green">✅ Przeanalizowano</span><span class="badge orange">${a.type==='listing'?'Ogłoszenie':a.type==='conversation'?'Rozmowa':'Śledzenie'}</span></div>${a.itemTitle?`<div style="font-weight:700;font-size:15px;margin-bottom:6px">${esc(a.itemTitle)}</div>`:''} ${a.price?`<div style="font-size:13px;color:#555;margin-bottom:4px">💰 Cena: <strong>${a.price} EUR</strong></div>`:''} ${a.trackingNumber?`<div style="font-size:13px;color:${AC};font-weight:700">📦 ${esc(a.carrier)}: ${esc(a.trackingNumber)}</div>`:''} ${msgsHtml}</div><div class="lbl mb10">Dodaj do:</div>${fromId?`<button class="btn mb10" onclick="applyTo('${fromId}')">➕ Dodaj do bieżącego przedmiotu</button>`:''} ${existingItems}<button class="btn" style="background:${fromId?'#555':AC}" onclick="createNewItem()">✨ Utwórz nowy przedmiot</button>`;
 }
 
@@ -1275,7 +1281,16 @@ function saveTracking() {
 }
 function savePrice() { const v = parseFloat(document.getElementById('fp-input').value); if (isNaN(v)) return; updateItem(currentId, { finalPrice: v, status: 'purchased' }); renderItem(); }
 function toggleWatchlist() { const cur = getItem(currentId); if (!cur) return; updateItem(currentId, { watchlist: !cur.watchlist }); renderItem(); }
-function deleteItem() { if (!confirm('Usunąć ten przedmiot?')) return; items = items.filter(i => i.id !== currentId); saveItems(); showScreen('kanban'); }
+function deleteItem() {
+  if (!confirm('Usunąć ten przedmiot?')) return;
+  const item = getItem(currentId);
+  if (item) {
+    item.deletedAt = new Date().toISOString();
+    item.updatedAt = new Date().toISOString();
+    saveItems();
+  }
+  showScreen('kanban');
+}
 
 async function generateDraft() {
   const txt = document.getElementById('draft-input')?.value?.trim(); if (!txt) return;
@@ -1373,7 +1388,7 @@ function diagSortDates() {
 
 function fixSortDates() {
   let fixed = 0;
-  items.forEach(item => {
+  activeItems().forEach(item => {
     const msgs = item.messages || [];
     const maxMsgTs = msgs.map(m => m.timestamp).filter(Boolean)
       .map(t => new Date(t).getTime()).filter(t => !isNaN(t))
@@ -1400,8 +1415,8 @@ function exportData() {
   const exportObj = {
     exportedAt: new Date().toISOString(),
     appVersion: APP_VERSION,
-    itemCount: items.length,
-    items: items.map(item => ({
+    itemCount: activeItems().length,
+    items: activeItems().map(item => ({
       title: item.title,
       description: item.description || '',
       status: item.status,
@@ -1443,8 +1458,8 @@ function exportData() {
   const stats = document.getElementById('export-stats');
   const sizeKb = (new Blob([json]).size / 1024).toFixed(1);
   stats.innerHTML = `<div class="sync-stats">
-    <div class="sync-stat"><span class="num">${items.length}</span>pozycji</div>
-    <div class="sync-stat"><span class="num">${items.reduce((a,i) => a + (i.messages||[]).length, 0)}</span>wiadomości</div>
+    <div class="sync-stat"><span class="num">${activeItems().length}</span>pozycji</div>
+    <div class="sync-stat"><span class="num">${activeItems().reduce((a,i) => a + (i.messages||[]).length, 0)}</span>wiadomości</div>
     <div class="sync-stat"><span class="num">${sizeKb} KB</span>rozmiar</div>
   </div>
   <div style="font-size:11px;color:var(--muted);margin-top:6px">💡 Dane skopiowane do schowka i wyświetlone w polu importu poniżej.</div>`;
@@ -1454,19 +1469,19 @@ function renderSyncOverview() {
   const el = document.getElementById('sync-overview');
   if (!el) return;
   const byPhase = { buying: 0, logistics: 0, warehouse: 0, selling: 0 };
-  items.forEach(i => { const p = getPhase(i.status); if (p in byPhase) byPhase[p]++; });
-  const withTracking = items.filter(i => i.trackingNumber).length;
-  const watchlist = items.filter(i => i.watchlist).length;
+  activeItems().forEach(i => { const p = getPhase(i.status); if (p in byPhase) byPhase[p]++; });
+  const withTracking = activeItems().filter(i => i.trackingNumber).length;
+  const watchlist = activeItems().filter(i => i.watchlist).length;
   const phaseLabels = { buying:'💬 Zakupy', logistics:'📦 Logistyka', warehouse:'🔧 Magazyn', selling:'💰 Sprzedaż' };
   el.innerHTML = `<div class="sync-stats">
-    <div class="sync-stat"><span class="num">${items.length}</span>pozycji</div>
+    <div class="sync-stat"><span class="num">${activeItems().length}</span>pozycji</div>
     <div class="sync-stat"><span class="num">${withTracking}</span>z numerem śledzenia</div>
     <div class="sync-stat"><span class="num">${watchlist}</span>do obserwowania</div>
   </div>
   <div style="font-size:12px;color:var(--muted);margin-top:8px">
     ${Object.entries(byPhase).filter(([,v])=>v>0).map(([k,v])=>`${phaseLabels[k]}: <strong>${v}</strong>`).join(' · ')}
   </div>
-  <div style="font-size:11px;color:#bbb;margin-top:10px">Ostatnia aktualizacja: ${items.length > 0 ? new Date(Math.max(...items.map(i => new Date(i.updatedAt||0).getTime()))).toLocaleString('pl-PL') : '—'}</div>`;
+  <div style="font-size:11px;color:#bbb;margin-top:10px">Ostatnia aktualizacja: ${activeItems().length > 0 ? new Date(Math.max(...activeItems().map(i => new Date(i.updatedAt||0).getTime()))).toLocaleString('pl-PL') : '—'}</div>`;
 }
 
 // ── Direct Scan Import ────────────────────────────────────────────────────────
@@ -2135,13 +2150,75 @@ function setSyncIcon(state) {
   btn.style.opacity = (state === 'unconfigured') ? '0.4' : '1';
 }
 
+function mergeItems(localItems, remoteItems) {
+  // Klucz merge: conversationUrl (stabilny między urządzeniami), fallback na id
+  function mergeKey(item) { return item.conversationUrl || item.id; }
+
+  const localMap  = new Map();
+  const remoteMap = new Map();
+  localItems.forEach(i  => localMap.set(mergeKey(i), i));
+  remoteItems.forEach(i => remoteMap.set(mergeKey(i), i));
+
+  const merged = new Map();
+
+  // 1. Wszystkie lokalne itemy
+  for (const [key, local] of localMap) {
+    const remote = remoteMap.get(key);
+    if (!remote) {
+      // Istnieje tylko lokalnie — zachowaj
+      merged.set(key, local);
+    } else {
+      // Istnieje w obu — LWW per item
+      const localTime  = new Date(local.updatedAt  || 0).getTime();
+      const remoteTime = new Date(remote.updatedAt || 0).getTime();
+      merged.set(key, remoteTime > localTime ? remote : local);
+    }
+  }
+
+  // 2. Itemy tylko w remote (nowe z drugiego urządzenia)
+  for (const [key, remote] of remoteMap) {
+    if (!merged.has(key)) {
+      merged.set(key, remote);
+    }
+  }
+
+  return Array.from(merged.values());
+}
+
 async function saveToGist(itemsToSave) {
   const gistId = getGistId();
   const token  = getGistToken();
   if (!gistId || !token) { setSyncIcon('unconfigured'); return false; }
   setSyncIcon('saving');
-  const payload = { lastSavedAt: new Date().toISOString(), items: itemsToSave };
+
   try {
+    // 1. Read: pobierz aktualny stan Gist
+    let mergedItems = itemsToSave;
+    const getRes = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'KA-Asystent' }
+    });
+    if (getRes.ok) {
+      const gist = await getRes.json();
+      const file = gist.files?.[GIST_DATA_FILE];
+      if (file?.content) {
+        const remote = JSON.parse(file.content);
+        if (remote.items && remote.items.length > 0) {
+          // 2. Merge: połącz lokalne z remote
+          mergedItems = mergeItems(itemsToSave, remote.items);
+        }
+      }
+    }
+    // Jeśli GET nie zadziałał (offline, 404) — zapisz lokalne bez merge
+
+    // 3. Write: zapisz zmergowany wynik
+    const settings = getSettings();
+    const settingsMeta = JSON.parse(localStorage.getItem('ka_settings_meta') || '{}');
+    const payload = {
+      lastSavedAt: new Date().toISOString(),
+      items: mergedItems,
+      settings: settings,
+      settingsUpdatedAt: settingsMeta.updatedAt || new Date().toISOString()
+    };
     const res = await fetch(`https://api.github.com/gists/${gistId}`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
@@ -2150,10 +2227,13 @@ async function saveToGist(itemsToSave) {
     if (res.status === 401) { toast('⚠️ Token wygasł — wpisz nowy w ⚙️'); setSyncIcon('error'); return false; }
     if (res.status === 404) { toast('⚠️ Gist nie znaleziony — sprawdź Gist ID'); setSyncIcon('error'); return false; }
     if (!res.ok) { toast(`⚠️ Błąd zapisu Gist: ${res.status}`); setSyncIcon('error'); return false; }
+
+    // Zaktualizuj lokalne dane zmergowanym wynikiem
+    items = mergedItems;
+    localStorage.setItem('ka_items_v2', JSON.stringify(items));
     localStorage.setItem('ka_items_meta', JSON.stringify({ lastSavedAt: payload.lastSavedAt }));
     setSyncIcon('ok');
     updateSyncTs(payload.lastSavedAt);
-    toast('☁️ Zapisano', 2000);
     return true;
   } catch {
     setSyncIcon('offline');
@@ -2164,7 +2244,7 @@ async function saveToGist(itemsToSave) {
 
 function scheduleSave() {
   if (!getGistId() || !getGistToken()) return;
-  const hash = items.length + '_' + (items[0]?.updatedAt || '') + '_' + (items[0]?.id || '');
+  const hash = items.map(i => (i.id || '') + ':' + (i.updatedAt || '') + ':' + (i.deletedAt || '')).sort().join('|');
   if (hash === _lastSyncHash) return;
   clearTimeout(_saveTimeout);
   _saveTimeout = setTimeout(async () => {
@@ -2200,16 +2280,27 @@ async function loadFromGist(silent = false) {
     const localMeta     = JSON.parse(localStorage.getItem('ka_items_meta') || '{}');
     const localSavedAt  = localMeta.lastSavedAt || null;
     const remoteSavedAt = remote.lastSavedAt || null;
-    if (!localSavedAt || (remoteSavedAt && remoteSavedAt > localSavedAt)) {
-      items = remote.items || [];
+    if (remote.items && remote.items.length > 0) {
+      const remoteItems = remote.items || [];
+      const before = items.length;
+      items = mergeItems(items, remoteItems);
       localStorage.setItem('ka_items_v2', JSON.stringify(items));
       localStorage.setItem('ka_items_meta', JSON.stringify({ lastSavedAt: remoteSavedAt }));
       _lastSyncHash = null;
       migrateAllItems();
       renderKanban();
       updateSyncTs(remoteSavedAt);
-      if (!silent) toast('✅ Dane załadowane z chmury');
-      else         toast('🔄 Dane zaktualizowane z chmury');
+      // Sync ustawień — remote wygrywa jeśli nowsze
+      if (remote.settings && remote.settingsUpdatedAt) {
+        const localSettingsMeta = JSON.parse(localStorage.getItem('ka_settings_meta') || '{}');
+        if (!localSettingsMeta.updatedAt || remote.settingsUpdatedAt > localSettingsMeta.updatedAt) {
+          localStorage.setItem('ka_settings', JSON.stringify(remote.settings));
+          localStorage.setItem('ka_settings_meta', JSON.stringify({ updatedAt: remote.settingsUpdatedAt }));
+        }
+      }
+      const diff = items.length - before;
+      if (!silent) toast(`✅ Sync OK (${items.length} itemów${diff > 0 ? ', +' + diff + ' nowych' : ''})`);
+      else         toast(`🔄 Sync (${items.length} itemów${diff > 0 ? ', +' + diff + ' nowych' : ''})`, 2000);
     } else {
       // Dane lokalne aktualne — pokaż timestamp z meta
       updateSyncTs(localSavedAt);
@@ -2267,6 +2358,14 @@ function setGistStatusEl(type, msg) {
 async function saveGistSettings() {
   const id = (document.getElementById('gist-id-input').value || '').trim();
   const token = (document.getElementById('gist-token-input').value || '').trim();
+
+  // Wyczyść cache weryfikacji jeśli credentials się zmieniły
+  const prevId = localStorage.getItem('ka_gist_id') || '';
+  const prevToken = localStorage.getItem('ka_gist_token') || '';
+  if (id !== prevId || token !== prevToken) {
+    localStorage.removeItem('ka_gist_verified');
+  }
+
   if (id) localStorage.setItem('ka_gist_id', id);
   if (token) localStorage.setItem('ka_gist_token', token);
 
@@ -2279,14 +2378,16 @@ async function saveGistSettings() {
     const res = await fetch(`https://api.github.com/gists/${id}`, {
       headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'KA-Asystent' }
     });
-    if (res.status === 401) { setGistStatusEl('error', '🔴 Token nieprawidłowy lub wygasły (401)'); return; }
-    if (res.status === 404) { setGistStatusEl('error', '🔴 Gist nie znaleziony — sprawdź Gist ID (404)'); return; }
-    if (!res.ok)            { setGistStatusEl('error', `🔴 Błąd GitHub API: HTTP ${res.status}`); return; }
+    if (res.status === 401) { localStorage.removeItem('ka_gist_verified'); setGistStatusEl('error', '🔴 Token nieprawidłowy lub wygasły (401)'); return; }
+    if (res.status === 404) { localStorage.removeItem('ka_gist_verified'); setGistStatusEl('error', '🔴 Gist nie znaleziony — sprawdź Gist ID (404)'); return; }
+    if (!res.ok)            { localStorage.removeItem('ka_gist_verified'); setGistStatusEl('error', `🔴 Błąd GitHub API: HTTP ${res.status}`); return; }
     const gist = await res.json();
     const login = gist.owner?.login || '?';
     const files = Object.keys(gist.files || {}).join(', ') || '(brak plików)';
+    localStorage.setItem('ka_gist_verified', JSON.stringify({ login, files }));
     setGistStatusEl('ok', `🟢 Połączony — @${login} · pliki: ${files}`);
   } catch {
+    localStorage.removeItem('ka_gist_verified');
     setGistStatusEl('error', '🔴 Brak połączenia z GitHub');
   }
 }
@@ -2297,7 +2398,9 @@ function updateGistStatus() {
   if (!id && !token) { setGistStatusEl('warn', '⚪ Nie skonfigurowano — wpisz Gist ID i token'); return; }
   if (!token)        { setGistStatusEl('warn', '⚠️ Brak tokenu GitHub'); return; }
   if (!id)           { setGistStatusEl('warn', '⚠️ Brak Gist ID'); return; }
-  // Token jest zapisany — pokaż skrót, nie weryfikuj (żeby nie spowalniać otwarcia ustawień)
+  // Użyj cache ostatniej weryfikacji (żeby nie spowalniać otwarcia ustawień API callem)
+  const verified = JSON.parse(localStorage.getItem('ka_gist_verified') || 'null');
+  if (verified) { setGistStatusEl('ok', `🟢 Połączony — @${verified.login} · pliki: ${verified.files}`); return; }
   setGistStatusEl('ok', `🟢 Token skonfigurowany · Gist: ${id.slice(0, 8)}…  (kliknij Zapisz żeby zweryfikować)`);
 }
 
@@ -2416,11 +2519,11 @@ function buildFinanceSummary() {
   const settings = getSettings();
   const rate = settings.exchangeRate || 4.30;
   const activeStatuses = ['purchased','shipped_de','at_forwarder','shipped_pl','received','in_repair','in_stock','listed'];
-  const spent = items.filter(i => i.finalPrice && activeStatuses.includes(i.status))
+  const spent = activeItems().filter(i => i.finalPrice && activeStatuses.includes(i.status))
     .reduce((s, i) => s + (i.finalPrice || 0), 0);
-  const earned = items.filter(i => ['sold','completed'].includes(i.status)).reduce((s, i) => s + (i.salePrice || 0), 0);
-  const inPipeline = items.filter(i => !['sold','negotiating','closed','completed'].includes(i.status)).length;
-  const profitItems = items.filter(i => ['sold','completed'].includes(i.status));
+  const earned = activeItems().filter(i => ['sold','completed'].includes(i.status)).reduce((s, i) => s + (i.salePrice || 0), 0);
+  const inPipeline = activeItems().filter(i => !['sold','negotiating','closed','completed'].includes(i.status)).length;
+  const profitItems = activeItems().filter(i => ['sold','completed'].includes(i.status));
   const totalProfit = profitItems.reduce((s, i) => {
     const p = calculateProfit(i, settings);
     return p !== null ? s + p : s;
@@ -2442,7 +2545,7 @@ function buildForwarderAlert() {
   const settings = getSettings();
   const threshold = settings.alertThreshold || 3;
   const fwdCost = settings.forwardingPL || 22;
-  const count = items.filter(i => i.status === 'at_forwarder').length;
+  const count = activeItems().filter(i => i.status === 'at_forwarder').length;
   if (count < 2) return '';
   const urgent = count >= threshold;
   return `<div class="forwarder-alert ${urgent ? 'urgent' : 'normal'}">
@@ -2462,7 +2565,7 @@ function renderKanban() {
     <div class="kb-header-row">
       <div>
         <div class="kb-title">📸 KA Deal Tracker</div>
-        <div class="kb-sub">${items.length} pozycji w pipeline</div>
+        <div class="kb-sub">${activeItems().length} pozycji w pipeline</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <div class="kb-toggle">
@@ -2478,7 +2581,7 @@ function renderKanban() {
   let mainContent;
   if (currentKanbanView === 'kanban') {
     const cols = COLUMNS.map(col => {
-      const colItems = items.filter(i => i.status === col.id);
+      const colItems = activeItems().filter(i => i.status === col.id);
       const totalValue = colItems.reduce((s, i) => s + (i.finalPrice || 0), 0);
       return `<div class="kb-col">
         <div class="kb-col-inner" style="background:${col.bg}">
@@ -2499,7 +2602,7 @@ function renderKanban() {
     mainContent = `<div class="kanban-board">${cols}</div>`;
   } else {
     const groups = COLUMNS.map(col => {
-      const colItems = items.filter(i => i.status === col.id);
+      const colItems = activeItems().filter(i => i.status === col.id);
       if (!colItems.length) return '';
       return `<div class="kb-list-group">
         <div class="kb-list-header">
