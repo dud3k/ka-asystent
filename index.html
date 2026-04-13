@@ -1997,7 +1997,7 @@ async function triggerScan() {
     const ids = raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
     if (!ids.length) { toast('⚠️ Wklej przynajmniej jeden ID konwersacji'); return; }
     const noImages = document.getElementById('scan-no-images')?.checked || false;
-    inputs = { days: '3', date_from: '', date_to: '', limit: '0', no_images: noImages, force_rescan: false, conversation_ids: ids.join(',') };
+    inputs = { days: '3', date_from: '', date_to: '', limit: '0', no_images: String(noImages), force_rescan: 'false', conversation_ids: ids.join(',') };
   } else if (_scanMode === 'dates') {
     const dateFrom = document.getElementById('scan-date-from')?.value || '';
     const dateTo   = document.getElementById('scan-date-to')?.value   || '';
@@ -2006,13 +2006,13 @@ async function triggerScan() {
     const limitRaw = document.getElementById('scan-limit-dates')?.value?.trim();
     const limit    = limitRaw ? parseInt(limitRaw, 10) : 0;
     if (limitRaw && (isNaN(limit) || limit < 1)) { toast('⚠️ Limit musi być liczbą >= 1'); return; }
-    inputs = { days: '3', date_from: dateFrom, date_to: dateTo, limit: String(limit || 0), no_images: document.getElementById('scan-no-images')?.checked || false, force_rescan: document.getElementById('scan-force-rescan')?.checked || false };
+    inputs = { days: '3', date_from: dateFrom, date_to: dateTo, limit: String(limit || 0), no_images: String(document.getElementById('scan-no-images')?.checked || false), force_rescan: String(document.getElementById('scan-force-rescan')?.checked || false) };
   } else {
     const days     = parseInt(document.getElementById('scan-days')?.value || '3', 10);
     const limitRaw = document.getElementById('scan-limit')?.value?.trim();
     const limit    = limitRaw ? parseInt(limitRaw, 10) : 0;
     if (limitRaw && (isNaN(limit) || limit < 1)) { toast('⚠️ Limit musi być liczbą >= 1'); return; }
-    inputs = { days: String(days), date_from: '', date_to: '', limit: String(limit || 0), no_images: document.getElementById('scan-no-images')?.checked || false, force_rescan: document.getElementById('scan-force-rescan')?.checked || false };
+    inputs = { days: String(days), date_from: '', date_to: '', limit: String(limit || 0), no_images: String(document.getElementById('scan-no-images')?.checked || false), force_rescan: String(document.getElementById('scan-force-rescan')?.checked || false) };
   }
 
   try {
