@@ -1713,12 +1713,20 @@ function executePatch(patch, dryRun, strictMode = false) {
       report.details.push(`🆕 <strong>${esc(item.title)}</strong> — auto-utworzono z update (match: "${upd.match}")`);
     }
     const changes = [];
+    const skipped = [];
     if (upd.set && typeof upd.set === 'object') {
       const normalizedSet = normalizeSetPatch(upd.set);
       Object.entries(normalizedSet).forEach(([key, val]) => {
+        if (val === undefined || val === null) return;
+        // Ochrona ręcznych zmian: jeśli ostatnia zmiana tego pola była 'manual', patch nie nadpisuje
+        const lastChange = (item.changelog || []).filter(e => e.field === key).at(-1);
+        if (lastChange?.source === 'manual') {
+          skipped.push(key);
+          return;
+        }
         // Track change for patch source
         if (!dryRun && TRACKED_FIELDS.includes(key)) trackChange(item, key, val, 'patch');
-        if (val !== undefined && val !== null && item[key] !== val) {
+        if (item[key] !== val) {
           changes.push(`${key}: "${item[key]||'—'}" → "${val}"`);
           if (!dryRun) item[key] = val;
         }
@@ -1755,6 +1763,9 @@ function executePatch(patch, dryRun, strictMode = false) {
         changes.push(`+${uniqueNew.length} nowych wiadomości`);
         if (!dryRun) item.messages = [...(item.messages||[]), ...uniqueNew];
       }
+    }
+    if (skipped.length > 0) {
+      report.details.push(`🔒 <strong>${esc(item.title)}</strong>: pominięto (ręcznie zmienione): ${skipped.join(', ')}`);
     }
     if (changes.length > 0) {
       if (!dryRun) {
