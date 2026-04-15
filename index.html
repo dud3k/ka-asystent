@@ -2834,6 +2834,17 @@ function updateBundleItemField(idx, field, val) {
   _bundleItems[idx][field] = val;
   const el = document.getElementById('bundle-alloc-preview');
   if (el) el.innerHTML = buildBundleAllocHtml(getItem(_bundleSplitItemId));
+  if (field === 'name') updateBundleSplitActions();
+}
+
+function updateBundleSplitActions() {
+  const el = document.getElementById('bundle-split-actions');
+  if (!el) return;
+  const canSplit = _bundleItems.length >= 2 && _bundleItems.every(i => i.name.trim());
+  el.innerHTML = `
+    <button onclick="closeBundleSplit()" class="btn" style="flex:1;background:#888">Anuluj</button>
+    ${canSplit ? `<button onclick="confirmBundleSplit()" class="btn" style="flex:2">✅ Rozbij (${_bundleItems.length} elem.)</button>` : ''}
+  `;
 }
 
 function buildBundleAllocHtml(item) {
@@ -2923,7 +2934,7 @@ function renderBundleSplitPanel() {
       </div>
     </details>
 
-    <div style="display:flex;gap:8px;margin-top:4px">
+    <div id="bundle-split-actions" style="display:flex;gap:8px;margin-top:4px">
       <button onclick="closeBundleSplit()" class="btn" style="flex:1;background:#888">Anuluj</button>
       ${canSplit ? `<button onclick="confirmBundleSplit()" class="btn" style="flex:2">✅ Rozbij (${_bundleItems.length} elem.)</button>` : ''}
     </div>
