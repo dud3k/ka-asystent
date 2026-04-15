@@ -2779,6 +2779,7 @@ function openBundleSplit(itemId) {
 }
 
 function closeBundleSplit() {
+  if (_bundleItems.length > 0 && !confirm('Masz niezapisane elementy. Odrzucić zmiany?')) return;
   document.getElementById('bundle-split-overlay').classList.remove('open');
   _bundleSplitItemId = null;
   _bundleItems = [];
@@ -2805,7 +2806,8 @@ function parseBundleJson() {
       type: p.type || 'other',
       condition: p.condition || 'unknown',
       estimatedValueEUR: typeof p.estimatedValueEUR === 'number' ? p.estimatedValueEUR : 0,
-      notes: p.notes || ''
+      notes: p.notes || '',
+      allocatedPrice: null
     }));
     if (errEl) errEl.innerHTML = '';
     renderBundleSplitPanel();
@@ -2816,11 +2818,13 @@ function parseBundleJson() {
 }
 
 function addBundleItemManual() {
-  _bundleItems.push({ name: '', type: 'other', condition: 'good', estimatedValueEUR: 0, notes: '' });
+  syncBundleFieldsFromDOM();
+  _bundleItems.push({ name: '', type: 'other', condition: 'good', estimatedValueEUR: 0, notes: '', allocatedPrice: null });
   renderBundleSplitPanel();
 }
 
 function removeBundleItem(idx) {
+  syncBundleFieldsFromDOM();
   _bundleItems.splice(idx, 1);
   renderBundleSplitPanel();
 }
@@ -2847,6 +2851,17 @@ function buildBundleAllocHtml(item) {
   </div>`;
 }
 
+function syncBundleFieldsFromDOM() {
+  _bundleItems.forEach((bi, idx) => {
+    const nameInput = document.querySelector(`#bundle-item-name-${idx}`);
+    if (nameInput) bi.name = nameInput.value;
+    const valInput = document.querySelector(`#bundle-item-val-${idx}`);
+    if (valInput) bi.estimatedValueEUR = parseFloat(valInput.value) || 0;
+    const priceInput = document.querySelector(`#bundle-item-price-${idx}`);
+    if (priceInput) bi.allocatedPrice = priceInput.value !== '' ? (parseFloat(priceInput.value) || 0) : null;
+  });
+}
+
 function renderBundleSplitPanel() {
   const item = getItem(_bundleSplitItemId);
   if (!item) return;
@@ -2856,7 +2871,7 @@ function renderBundleSplitPanel() {
   const itemsHtml = _bundleItems.map((bi, idx) => `
     <div style="padding:8px 10px;background:#f8fafc;border-radius:8px;margin-bottom:8px;border:1px solid #e8dfc9">
       <div style="display:flex;gap:6px;margin-bottom:6px">
-        <input class="inp" style="flex:1;font-size:13px;padding:6px 8px" value="${esc(bi.name)}" placeholder="Pełna nazwa modelu" oninput="updateBundleItemField(${idx},'name',this.value)">
+        <input id="bundle-item-name-${idx}" class="inp" style="flex:1;font-size:13px;padding:6px 8px" value="${esc(bi.name)}" placeholder="Pełna nazwa modelu" oninput="updateBundleItemField(${idx},'name',this.value)">
         <button onclick="removeBundleItem(${idx})" style="background:none;border:none;cursor:pointer;color:#cc4444;font-size:18px;padding:0 4px;flex-shrink:0">✕</button>
       </div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -2867,9 +2882,19 @@ function renderBundleSplitPanel() {
           ${['mint','good','fair','poor','unknown'].map(c=>`<option value="${c}"${bi.condition===c?' selected':''}>${c}</option>`).join('')}
         </select>
         <div style="display:flex;align-items:center;gap:3px">
-          <input type="number" style="width:65px;padding:5px 6px;border:1px solid #e8dfc9;border-radius:6px;font-size:12px;font-family:inherit;text-align:right" value="${bi.estimatedValueEUR||0}" oninput="updateBundleItemField(${idx},'estimatedValueEUR',this.value)" step="5" min="0">
-          <span style="font-size:11px;color:#888">€</span>
+          <input id="bundle-item-val-${idx}" type="number" style="width:65px;padding:5px 6px;border:1px solid #e8dfc9;border-radius:6px;font-size:12px;font-family:inherit;text-align:right" value="${bi.estimatedValueEUR||0}" oninput="updateBundleItemField(${idx},'estimatedValueEUR',this.value)" step="5" min="0">
+          <span style="font-size:11px;color:#888">€ szac.</span>
         </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:3px;margin-top:6px">
+        <span style="font-size:11px;color:#888;min-width:40px">Cena:</span>
+        <input type="number" id="bundle-item-price-${idx}"
+          style="width:75px;padding:5px 6px;border:1px solid #e8dfc9;border-radius:6px;font-size:12px;font-family:inherit;text-align:right"
+          value="${bi.allocatedPrice != null ? bi.allocatedPrice : ''}"
+          placeholder="—"
+          oninput="updateBundleAllocatedPrice(${idx}, this.value)"
+          step="1" min="0">
+        <span style="font-size:11px;color:#888">€</span>
       </div>
     </div>`).join('');
 
@@ -2881,24 +2906,77 @@ function renderBundleSplitPanel() {
     <div style="font-size:13px;font-weight:600;margin-bottom:2px">${esc(item.title)}</div>
     <div style="font-size:12px;color:#888;margin-bottom:14px">Cena zakupu: <strong>${item.finalPrice||'?'} EUR</strong></div>
 
-    <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;margin-bottom:12px">
-      <div style="font-size:12px;font-weight:600;margin-bottom:6px">📋 Wklej JSON z Gemini</div>
-      <textarea id="bundle-json-input" style="width:100%;min-height:65px;padding:8px;border:1px solid #e8dfc9;border-radius:6px;font-size:11px;font-family:'SF Mono',monospace;background:#fff;outline:none;resize:vertical;line-height:1.4;box-sizing:border-box" placeholder='{"items":[{"name":"Canon EOS 5D","type":"body","condition":"good","estimatedValueEUR":200}]}'></textarea>
-      <button class="btn" style="margin-top:6px;padding:8px;font-size:13px;width:100%" onclick="parseBundleJson()">📋 Parsuj JSON</button>
-      <div id="bundle-parse-error"></div>
-    </div>
+    <button onclick="addBundleItemManual()" class="btn" style="width:100%;margin-bottom:12px;padding:10px;font-size:14px;font-weight:700">+ Dodaj element</button>
 
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div style="font-size:12px;font-weight:700;color:#555">Elementy (${_bundleItems.length})</div>
-      <button onclick="addBundleItemManual()" style="padding:5px 12px;background:none;border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ac)">+ Dodaj</button>
-    </div>
-    ${_bundleItems.length === 0 ? `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px">Wklej JSON z Gemini lub dodaj ręcznie</div>` : itemsHtml}
-    ${_bundleItems.length >= 2 ? `<div style="background:#f0fff0;border:1px solid #b0e0b0;border-radius:8px;padding:10px 12px;margin-bottom:12px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">📊 Alokacja kosztów</div><div id="bundle-alloc-preview">${buildBundleAllocHtml(item)}</div></div>` : ''}
+    ${_bundleItems.length === 0 ? `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px">Dodaj elementy ręcznie lub wklej JSON z Gemini poniżej</div>` : itemsHtml}
+
+    <div id="bundle-price-summary"></div>
+
+    ${_bundleItems.length >= 2 ? `<div style="background:#f0fff0;border:1px solid #b0e0b0;border-radius:8px;padding:10px 12px;margin-bottom:12px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">📊 Alokacja kosztów (proporcjonalna)</div><div id="bundle-alloc-preview">${buildBundleAllocHtml(item)}</div></div>` : ''}
+
+    <details style="margin-bottom:12px">
+      <summary style="font-size:12px;font-weight:600;color:#666;cursor:pointer;padding:6px 0">📋 Wklej JSON z Gemini (zaawansowane)</summary>
+      <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;margin-top:6px">
+        <textarea id="bundle-json-input" style="width:100%;min-height:65px;padding:8px;border:1px solid #e8dfc9;border-radius:6px;font-size:11px;font-family:'SF Mono',monospace;background:#fff;outline:none;resize:vertical;line-height:1.4;box-sizing:border-box" placeholder='{"items":[{"name":"Canon EOS 5D","type":"body","condition":"good","estimatedValueEUR":200}]}'></textarea>
+        <button class="btn" style="margin-top:6px;padding:8px;font-size:13px;width:100%" onclick="parseBundleJson()">📋 Parsuj JSON</button>
+        <div id="bundle-parse-error"></div>
+      </div>
+    </details>
+
     <div style="display:flex;gap:8px;margin-top:4px">
       <button onclick="closeBundleSplit()" class="btn" style="flex:1;background:#888">Anuluj</button>
       ${canSplit ? `<button onclick="confirmBundleSplit()" class="btn" style="flex:2">✅ Rozbij (${_bundleItems.length} elem.)</button>` : ''}
     </div>
   `;
+  updateBundleAllocationSummary();
+}
+
+function updateBundleAllocatedPrice(idx, val) {
+  _bundleItems[idx].allocatedPrice = val !== '' ? (parseFloat(val) || 0) : null;
+  updateBundleAllocationSummary();
+  autoFillLastBundlePrice();
+}
+
+function updateBundleAllocationSummary() {
+  const el = document.getElementById('bundle-price-summary');
+  if (!el) return;
+  const parentItem = getItem(_bundleSplitItemId);
+  if (!parentItem) return;
+  const totalPurchase = parentItem.finalPrice || parentItem.costs?.purchase || 0;
+  const allocated = _bundleItems.reduce((s, bi) => s + (bi.allocatedPrice || 0), 0);
+  const remaining = totalPurchase - allocated;
+
+  let color = '#555';
+  let icon = '';
+  if (remaining < 0) { color = '#c00'; icon = '⚠️ '; }
+  else if (remaining === 0 && _bundleItems.length > 0) { color = '#1a7'; icon = '✅ '; }
+
+  el.innerHTML = allocated > 0 || _bundleItems.length >= 2 ? `<div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;font-weight:600;color:${color}">
+    <span>${icon}Przydzielono: ${allocated} € / ${totalPurchase} €</span>
+    <span>Pozostało: ${remaining} €</span>
+  </div>` : '';
+}
+
+function autoFillLastBundlePrice() {
+  if (_bundleItems.length < 2) return;
+  const parentItem = getItem(_bundleSplitItemId);
+  if (!parentItem) return;
+  const totalPurchase = parentItem.finalPrice || parentItem.costs?.purchase || 0;
+
+  const emptyIdxs = _bundleItems.map((bi, i) => bi.allocatedPrice == null ? i : -1).filter(i => i >= 0);
+  if (emptyIdxs.length !== 1) return;
+
+  const filledSum = _bundleItems.reduce((s, bi) => s + (bi.allocatedPrice || 0), 0);
+  const remaining = totalPurchase - filledSum;
+  if (remaining <= 0) return;
+
+  const lastIdx = emptyIdxs[0];
+  _bundleItems[lastIdx].allocatedPrice = Math.round(remaining * 100) / 100;
+
+  const input = document.querySelector(`#bundle-item-price-${lastIdx}`);
+  if (input) input.value = _bundleItems[lastIdx].allocatedPrice;
+
+  updateBundleAllocationSummary();
 }
 
 function splitBundle(parentItem, childSpecs, settings) {
@@ -2944,6 +3022,12 @@ function confirmBundleSplit() {
   if (!_bundleItems.every(i => i.name.trim())) { toast('⚠️ Wszystkie elementy muszą mieć nazwę'); return; }
   if (!confirm(`Rozbić "${parent.title}" na ${_bundleItems.length} elementów?\nOperacja jest nieodwracalna — parent otrzyma status "Zakończone".`)) return;
   const settings = getSettings();
+  const hasManualPrices = _bundleItems.some(bi => bi.allocatedPrice != null);
+  if (hasManualPrices) {
+    _bundleItems.forEach(bi => {
+      if (bi.allocatedPrice != null) bi.estimatedValueEUR = bi.allocatedPrice;
+    });
+  }
   const children = splitBundle(parent, _bundleItems, settings);
   // Mark parent as bundle+completed
   const parentPatch = { isBundle: true, childItemIds: children.map(c => c.id), bundleContents: _bundleItems.map(i => i.name), status: 'completed' };
