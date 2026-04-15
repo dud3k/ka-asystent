@@ -2184,7 +2184,11 @@ function setSyncIcon(state) {
 
 function mergeItems(localItems, remoteItems) {
   // Klucz merge: conversationUrl (stabilny między urządzeniami), fallback na id
-  function mergeKey(item) { return item.conversationUrl || item.id; }
+  // Child items z bundle split dziedziczą conversationUrl parenta — używaj id aby uniknąć kolizji
+  function mergeKey(item) {
+    if (item.parentItemId) return item.id;
+    return item.conversationUrl || item.id;
+  }
 
   const localMap  = new Map();
   const remoteMap = new Map();
@@ -3048,6 +3052,7 @@ function confirmBundleSplit() {
   // Prepend children
   children.forEach(child => items.unshift(child));
   saveItems();
+  _bundleItems = []; // wyzeruj PRZED close — unika podwójnego confirm
   closeBundleSplit();
   toast(`✅ Rozbito na ${children.length} elementów`);
   showScreen('kanban');
