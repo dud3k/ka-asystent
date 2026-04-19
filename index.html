@@ -635,143 +635,6 @@ function buildBundleSplitButton(item) {
   </div>`;
 }
 
-// ── Pre-filled data from Kleinanzeigen scan ──────────────────────────────────
-const PREFILLED = [
-  {
-    id: genId(), status: 'purchased', title: 'Canon EF 24-70mm f/2.8 USM',
-    description: 'Obiektyw Canon EF 24-70mm f/2.8 USM. Negocjacje: Marcin 300€ → Paul 350€ → zgoda na 325€ inkl. wysyłka.',
-    askingPrice: 350, finalPrice: 325, carrier: null, trackingNumber: null, trackingUrl: null,
-    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=z49x:49tct93:2p0cz9m0g',
-    notes: '⚠️ Paul obiecał wysłać 20.03 ale nie przesłał numeru śledzenia. Sprawdź czy paczka dotarła.', logisticStatus: 'oplacony',
-    watchlist: false,
-    messages: [
-      { id: genId(), sender: 'buyer', originalText: 'Ich kann Ihnen daher 300 € anbieten.', translatedText: 'Mogę zaoferować 300 EUR.' },
-      { id: genId(), sender: 'seller', originalText: 'Ich würde noch auf 350,00 € gehen.', translatedText: 'Zejdę do 350 EUR.' },
-      { id: genId(), sender: 'buyer', originalText: 'Machen wir 325 € inklusive Versand!', translatedText: 'Robimy 325 EUR inkl. wysyłka!' },
-      { id: genId(), sender: 'seller', originalText: 'Mmh ja können wir machen.', translatedText: 'Ok, możemy tak zrobić.' },
-      { id: genId(), sender: 'seller', originalText: 'super, ich verpacke es heute abend und schicke es morgen raus.', translatedText: 'Super, pakuję dziś wieczór i wysyłam jutro.' },
-    ], createdAt: '2026-03-19T00:00:00Z', updatedAt: new Date().toISOString()
-  },
-  {
-    id: genId(), status: 'shipped', title: 'Nikon D3500 Kamera',
-    description: 'Nikon D3500. Negocjacje: Marcin 200€ → Bertram 150€ → długie targowanie → zgoda na 230€.',
-    askingPrice: 250, finalPrice: 230, carrier: 'Hermes', trackingNumber: '02077168012884',
-    trackingUrl: 'https://www.myhermes.de/empfangen/sendungsverfolgung/sendungsinformation#02077168012884',
-    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=90vs:1qsjf2z:2p2wmdnv1',
-    notes: 'Wysłano Hermes 19.03.2026 17:00. Koszt wysyłki 7 EUR (refundowany).', watchlist: false, logisticStatus: 'wyslane_de',
-    messages: [
-      { id: genId(), sender: 'buyer', originalText: 'Ich kann Ihnen daher 200 € anbieten.', translatedText: 'Oferuję 200 EUR.' },
-      { id: genId(), sender: 'seller', originalText: 'Hi wir können gerne 150€ machen.', translatedText: 'Możemy zrobić 150 EUR.' },
-      { id: genId(), sender: 'seller', originalText: 'Jo perfekt danke schicke ihnen gleich die sendungsnummer', translatedText: 'Super, zaraz wyślę numer śledzenia.' },
-    ], createdAt: '2026-03-15T00:00:00Z', updatedAt: new Date().toISOString()
-  },
-  {
-    id: genId(), status: 'purchased', title: '2 Digitalkameras (kompakt)',
-    description: '2 kompaktowe aparaty cyfrowe (czarny i srebrny). Brak ładowarek, nieprzetestowane — zakup na ryzyko.',
-    askingPrice: 70, finalPrice: 50, carrier: 'DHL', trackingNumber: '00340434391975897307',
-    trackingUrl: getTrackUrl('DHL', '00340434391975897307'),
-    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=9djp:5sgnpgc:2p2x05k8v',
-    notes: 'Wysłano DHL 18.03.2026. Zakup bez ładowarki, na ryzyko. ✅ Dostarczone 20.03.2026 o 11:12.', watchlist: false, logisticStatus: 'dostarczone_de',
-    messages: [
-      { id: genId(), sender: 'buyer', originalText: 'Ich kann Ihnen daher 70 € anbieten für beide.', translatedText: 'Oferuję 70 EUR za oba.' },
-      { id: genId(), sender: 'seller', originalText: 'Für beide ?', translatedText: 'Za oba?' },
-      { id: genId(), sender: 'seller', originalText: 'Ja ist ok', translatedText: 'Ok, zgoda.' },
-    ], createdAt: '2026-03-15T00:00:00Z', updatedAt: new Date().toISOString()
-  },
-  {
-    id: genId(), status: 'shipped', title: 'Canon EOS 5D Classic',
-    description: 'Canon EOS 5D Classic (DS126091), 12.8MP Full Frame. Brak akumulatora — używał dummy akku na kabel (zasilanie sieciowe). Kup akku LP-E6 osobno.',
-    askingPrice: 120, finalPrice: 100, carrier: 'DHL', trackingNumber: '00340434391977366078',
-    trackingUrl: getTrackUrl('DHL', '00340434391977366078'),
-    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=9f62:10d77tw:2p2x0q8h7',
-    notes: 'Wysłano DHL 19.03.2026. Brak akumulatora — trzeba dokupić.', watchlist: false, logisticStatus: 'wyslane_de',
-    messages: [
-      { id: genId(), sender: 'buyer', originalText: 'Ich kann Ihnen 100 € anbieten — kein Akku dabei.', translatedText: 'Oferuję 100 EUR — brak akumulatora.' },
-      { id: genId(), sender: 'seller', originalText: 'Ja, ich bin froh wenn sie in gute Hände kommt.', translatedText: 'Tak, cieszę się że trafi w dobre ręce.' },
-      { id: genId(), sender: 'seller', originalText: 'Ich melde mich sobald das Paket auf dem Weg ist.', translatedText: 'Dam znać gdy paczka jest w drodze.' },
-    ], createdAt: '2026-03-15T00:00:00Z', updatedAt: new Date().toISOString()
-  },
-  {
-    id: genId(), status: 'purchased', title: 'Nikon D7100 + 18-55mm VR + 55-200mm VR',
-    description: 'Nikon D7100 z dwoma obiektywami VR. 31 600 auslösungen. Brak jednej nakrętki obiektywu.',
-    askingPrice: 220, finalPrice: 210, carrier: null, trackingNumber: null, trackingUrl: null,
-    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=1r27f:6z8t51:2p1lf1qgx',
-    notes: '⚠️ Sprzedawca wysłał link śledzenia ale był oznaczony jako ryzyko (zablokowany). Sprawdź czy paczka dotarła.', watchlist: false, logisticStatus: 'oplacony',
-    messages: [
-      { id: genId(), sender: 'buyer', originalText: 'Würde 180 € anbieten für das komplette Set.', translatedText: 'Oferuję 180 EUR za cały zestaw.' },
-      { id: genId(), sender: 'seller', originalText: 'Ich würde auf 220 gehen, weil die eine Kappe fehlt.', translatedText: 'Schodzę do 220 EUR bo brak nakrętki.' },
-      { id: genId(), sender: 'buyer', originalText: 'Machen wir glatte 210 € inkl. Versand!', translatedText: 'Robimy okrągłe 210 EUR inkl. wysyłka!' },
-      { id: genId(), sender: 'seller', originalText: 'Das Geld wurde überwiesen.', translatedText: 'Pieniądze zostały przelane.' },
-    ], createdAt: '2026-03-10T00:00:00Z', updatedAt: new Date().toISOString()
-  },
-  {
-    id: genId(), status: 'negotiating', title: 'Panasonic Kamera (Sicher bezahlen)',
-    description: 'Panasonic — zakup przez "Sicher bezahlen". Artykuł opłacony, sprzedawca ma 48h na potwierdzenie.',
-    askingPrice: null, finalPrice: 59.74, carrier: null, trackingNumber: null, trackingUrl: null,
-    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=rrbq:32gzvws:2p3pk3x2n',
-    notes: '⏳ Opłacono 22.03.2026 przez Sicher bezahlen (50€ + 2,75€ ochrona + 6,99€ wysyłka = 59,74€). Czeka na wysyłkę od sprzedającej Saskia.', watchlist: false, logisticStatus: 'oplacony',
-    messages: [], createdAt: '2026-03-22T00:00:00Z', updatedAt: new Date().toISOString()
-  },
-  {
-    id: genId(), status: 'negotiating', title: 'Canon EF 24-70mm f/2.8 ⚠️ REKLAMACJA',
-    description: 'Canon EF 24-70 f/2.8 — zakupiony za 310 EUR. WADLIWY — Flexkabel szumi przy 24mm.',
-    askingPrice: null, finalPrice: 310, carrier: null, trackingNumber: null, trackingUrl: null,
-    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=9nk6:30t06vw:2p251h2cm',
-    notes: '⚠️ REKLAMACJA — obiektyw ma wadliwy Flexkabel (szum przy 24mm). Marcin/sprzedawca ustalili: naprawa w Polsce z kosztorysem, Marko musi zatwierdzić cenę przed naprawą.', watchlist: false, logisticStatus: 'oplacony',
-    messages: [
-      { id: genId(), sender: 'buyer', originalText: 'Ich kann daher 300 € anbieten.', translatedText: 'Oferuję 300 EUR.' },
-      { id: genId(), sender: 'seller', originalText: 'Ich würde vorschlagen, 320 Euro incl. versicherten Versand.', translatedText: 'Proponuję 320 EUR inkl. ubezpieczony wysyłka.' },
-      { id: genId(), sender: 'buyer', originalText: 'Machen wir 310 € inkl. Versand!', translatedText: 'Robimy 310 EUR inkl. wysyłka!' },
-      { id: genId(), sender: 'buyer', originalText: 'Das Flexkabel schleift an den Ringen bei 24mm — zu 100% das Flexkabel.', translatedText: 'Flexkabel ślizga się po pierścieniach przy 24mm — na 100% to Flexkabel.' },
-      { id: genId(), sender: 'seller', originalText: 'so machen wir das VG Marko', translatedText: 'Tak to zrobimy. Pozdrawiam, Marko.' },
-    ], createdAt: '2026-03-09T00:00:00Z', updatedAt: new Date().toISOString()
-  },
-  // WATCHLIST
-  {
-    id: genId(), status: 'negotiating', title: '🔁 Canon EF 24-70 2.8f — WRÓĆ',
-    description: 'Canon EF 24-70 2.8f. Aleksander zgodził się na wysyłkę ale wyjechał na urlop. Wróci wkrótce.',
-    askingPrice: null, finalPrice: null, carrier: null, trackingNumber: null, trackingUrl: null,
-    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=kd1p:5qr3gpg:2p3c0mwxj',
-    notes: '🔁 Wróć za 1-2 tygodnie. Aleksander był chętny na wysyłkę, pojechał na urlop. Napisz "Ich stelle das rein nach dem Urlaub."', watchlist: true,
-    messages: [
-      { id: genId(), sender: 'buyer', originalText: 'Wäre ein Versand möglich?', translatedText: 'Czy możliwy wysyłka?' },
-      { id: genId(), sender: 'seller', originalText: 'Ich stelle das rein nach dem Urlaub.', translatedText: 'Wystawię to po urlopie.' },
-    ], createdAt: '2026-03-19T00:00:00Z', updatedAt: new Date().toISOString()
-  },
-  {
-    id: genId(), status: 'negotiating', title: '🔁 Nikon D7100 (yannic) — WRÓĆ',
-    description: 'Nikon D7100. Duża różnica cenowa: Marcin 200€ vs yannic 300€. Ogłoszenie wciąż aktywne.',
-    askingPrice: 300, finalPrice: null, carrier: null, trackingNumber: null, trackingUrl: null,
-    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=1qvjz:4nlsrf6:2p1lbx004',
-    notes: '🔁 Wróć za 2-3 tygodnie. Jeśli nie sprzeda — może zejdzie z ceny. Ostatnia oferta Marcina: 200 EUR.', watchlist: true,
-    messages: [
-      { id: genId(), sender: 'buyer', originalText: 'Wären 200 € dafür für Sie in Ordnung?', translatedText: 'Czy 200 EUR byłoby OK?' },
-      { id: genId(), sender: 'seller', originalText: 'mit 300€ wäre ich einverstanden aber drunter leider nicht', translatedText: 'Na 300€ się zgadzam, ale nie mniej.' },
-    ], createdAt: '2026-03-13T00:00:00Z', updatedAt: new Date().toISOString()
-  },
-  {
-    id: genId(), status: 'negotiating', title: '🔁 Nikon D7100 Kamera Set (BK) — ZŁÓŻ OFERTĘ',
-    description: 'Nikon D7100 Kamera Set z obiektywami. 29 790 auslösungen. Brak złożonej oferty — tylko pytanie o auslösungen.',
-    askingPrice: null, finalPrice: null, carrier: null, trackingNumber: null, trackingUrl: null,
-    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=m5bx:xk1jvq:2p3g5h486',
-    notes: '🔁 Złóż ofertę teraz! Niski przebieg (29 790), rozmowa nie doszła do ceny. Zaproponuj ok. 180-200 EUR.', watchlist: true,
-    messages: [
-      { id: genId(), sender: 'buyer', originalText: 'Können Sie mir sagen, wie viele Fotos gemacht wurden?', translatedText: 'Ile zdjęć zostało zrobionych?' },
-      { id: genId(), sender: 'seller', originalText: '29790 Fotos wurden gemacht', translatedText: '29 790 zdjęć zostało zrobionych.' },
-    ], createdAt: '2026-03-20T00:00:00Z', updatedAt: new Date().toISOString()
-  },
-  {
-    id: genId(), status: 'negotiating', title: '🔁 Nikon D7100 (Anima) — WRÓĆ',
-    description: 'Nikon D7100. Anima odrzucił ofertę 150 EUR bez podania swojej ceny.',
-    askingPrice: null, finalPrice: null, carrier: null, trackingNumber: null, trackingUrl: null,
-    conversationUrl: 'https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=1qtf5:50pk9ht:2p1lc6j24',
-    notes: '🔁 Wróć za 2 tygodnie. Odrzucił 150 EUR bez kontrpropozycji — może zejdzie jeśli nie znajdzie kupca.', watchlist: true,
-    messages: [
-      { id: genId(), sender: 'buyer', originalText: 'Ich kann Ihnen daher 150 € anbieten.', translatedText: 'Oferuję 150 EUR.' },
-      { id: genId(), sender: 'seller', originalText: 'Das geht leider nicht', translatedText: 'Niestety nie.' },
-    ], createdAt: '2026-03-20T00:00:00Z', updatedAt: new Date().toISOString()
-  },
-];
 
 // ── State ────────────────────────────────────────────────────────────────────
 let items = [];
@@ -838,8 +701,8 @@ function loadItems() {
       return;
     }
   } catch {}
-  // First run only (no key in localStorage) — load prefilled data
-  items = PREFILLED.map(i => ({ ...i }));
+  // First run — start with empty list
+  items = [];
   saveItems();
 }
 function saveItems() {
@@ -1114,7 +977,7 @@ function renderHome() {
     list.innerHTML = `<div class="empty" style="padding:32px 24px">
       <div style="font-size:42px;margin-bottom:10px">${hasFilters ? '🔍' : '📦'}</div>
       <div style="font-size:15px;font-weight:700;color:#777">${hasFilters ? 'Brak wyników' : 'Brak przedmiotów'}</div>
-      <div style="font-size:13px;color:#aaa;margin-top:6px;margin-bottom:${hasFilters?'14px':'0'}">${hasFilters ? 'Żaden przedmiot nie pasuje do aktywnych filtrów.' : 'Dodaj screenshot ogłoszenia.'}</div>
+      <div style="font-size:13px;color:#aaa;margin-top:6px;margin-bottom:${hasFilters?'14px':'0'}">${hasFilters ? 'Żaden przedmiot nie pasuje do aktywnych filtrów.' : 'Pobierz dane przez Synchronizacja → Pobierz z Gist lub zaimportuj patch JSON.'}</div>
       ${hasFilters ? '<button onclick="resetFilters()" style="padding:8px 18px;background:#E88B00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✕ Wyczyść filtry</button>' : ''}
     </div>`;
     return;
