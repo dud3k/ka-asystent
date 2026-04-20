@@ -730,7 +730,7 @@ function trackChange(item, field, newValue, source = 'manual') {
 }
 
 const TRACKED_FIELDS = ['status', 'finalPrice', 'trackingNumber', 'carrier', 'notes',
-  'inspectionStatus', 'repairCost', 'salePlatform', 'salePrice'];
+  'inspectionStatus', 'repairCost', 'salePlatform', 'salePrice', 'serialNumber', 'model'];
 
 function updateItem(id, patch, source = 'manual') {
   items = items.map(i => {
@@ -1078,6 +1078,21 @@ function renderItem() {
 
     <div class="card">
       <div class="section-header">
+        <div class="lbl">🔎 Dane z Gemini</div>
+        <button class="btn-sm" onclick="toggleGeminiEdit()">${cur.serialNumber?'Edytuj':'+ Dodaj'}</button>
+      </div>
+      <div id="gemini-view">${cur.serialNumber
+        ? `<div>Numer seryjny: <strong>${esc(cur.serialNumber)}</strong></div><div>Model: <strong>${esc(cur.model||'')}</strong></div>`
+        : `<span style="color:#aaa;font-size:13px">Brak danych. Wklej linię od Gemini.</span>`
+      }</div>
+      <div id="gemini-edit" style="display:none">
+        <textarea class="inp mb8" id="gemini-input" rows="2" placeholder="Wklej linię od Gemini w formacie:&#10;20520793&#9;Nikon AF-P DX Nikkor 70-300mm f/4.5-6.3G ED VR"></textarea>
+        <button class="btn" onclick="saveGeminiData()">Zapisz</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header">
         <div class="lbl">📦 Śledzenie przesyłki</div>
         <button class="btn-sm" onclick="toggleTrackEdit()">${cur.trackingNumber?'Edytuj':'+ Dodaj'}</button>
       </div>
@@ -1150,6 +1165,22 @@ function saveTracking() {
   const car = document.getElementById('track-carrier').value;
   if (!num) return;
   updateItem(currentId, { trackingNumber: num, carrier: car, trackingUrl: getTrackUrl(car, num) });
+  renderItem();
+}
+function toggleGeminiEdit() {
+  const v = document.getElementById('gemini-view');
+  const e = document.getElementById('gemini-edit');
+  if (e.style.display === 'none') { e.style.display = 'block'; v.style.display = 'none'; }
+  else { e.style.display = 'none'; v.style.display = 'block'; }
+}
+function saveGeminiData() {
+  const txt = document.getElementById('gemini-input').value;
+  const parsed = parseGeminiLine(txt);
+  if (!parsed) {
+    alert('Niepoprawny format. Oczekiwano:\n20520793\tNikon AF-P DX Nikkor 70-300mm ...');
+    return;
+  }
+  updateItem(currentId, { serialNumber: parsed.serialNumber, model: parsed.model });
   renderItem();
 }
 function savePrice() { const v = parseFloat(document.getElementById('fp-input').value); if (isNaN(v)) return; updateItem(currentId, { finalPrice: v, status: 'purchased' }); renderItem(); }
@@ -1519,6 +1550,24 @@ function parseMsgDate(m) {
   return null;
 }
 
+function parseGeminiLine(text) {
+  if (!text) return null;
+  const line = text.trim().split('\n')[0].trim();
+  if (!line) return null;
+  let parts = line.split('\t');
+  if (parts.length < 2) {
+    const m = line.match(/^(\S+)\s+(.+)$/);
+    if (!m) return null;
+    parts = [m[1], m[2]];
+  }
+  const serialNumber = parts[0].trim();
+  const model = parts.slice(1).join('\t').trim();
+  if (!serialNumber || !model) return null;
+  if (serialNumber.length < 2 || serialNumber.length > 40) return null;
+  if (!/^[A-Za-z0-9\-_./]+$/.test(serialNumber)) return null;
+  return { serialNumber, model };
+}
+
 function getLastMsgDate(msgs) {
   if (!msgs || msgs.length === 0) return null;
   const dates = msgs.map(parseMsgDate).filter(t => t !== null);
@@ -1715,7 +1764,9 @@ function executePatch(patch, dryRun, strictMode = false) {
       thumbnail: null,
       messages: mappedMsgs,
       createdAt: normNewSet.createdAt || normNewSet.lastMessageDate || normNewSet.lastActivity || new Date().toISOString(),
-      updatedAt: normNewSet.lastMessageDate || getLastMsgDate(mappedMsgs) || normNewSet.lastActivity || new Date().toISOString()
+      updatedAt: normNewSet.lastMessageDate || getLastMsgDate(mappedMsgs) || normNewSet.lastActivity || new Date().toISOString(),
+      serialNumber: normNewSet.serialNumber || null,
+      model: normNewSet.model || null
     };
     if (!dryRun) items.unshift(item);
     report.created.push({ title: item.title });
