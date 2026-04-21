@@ -64,6 +64,7 @@
   .upload-small { background: none; border: 1px solid var(--ac); border-radius: 8px; color: var(--ac); font-size: 12px; font-weight: 700; padding: 5px 10px; cursor: pointer; position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
   .upload-small input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
   .status-select { font-size: 12px; padding: 4px 6px; border: 1px solid #ddd; border-radius: 6px; background: #fff; cursor: pointer; font-family: inherit; }
+  #fab-add-item { position: fixed; right: 16px; bottom: 16px; width: 56px; height: 56px; border-radius: 50%; background: var(--ac); color: #fff; border: none; font-size: 28px; font-weight: 300; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.25); z-index: 200; display: flex; align-items: center; justify-content: center; line-height: 1; }
   .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
   .inp { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #fafaf7; outline: none; font-family: inherit; }
   .inp:focus { border-color: var(--ac); }
@@ -382,6 +383,54 @@
 
 <div id="screen-kanban" class="screen">
   <div id="kb-content"></div>
+  <button id="fab-add-item" onclick="showScreen('add-item')" title="Dodaj pozycję ręcznie">+</button>
+</div>
+
+<div id="screen-add-item" class="screen">
+  <div style="padding:16px;max-width:600px;margin:0 auto">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+      <button onclick="showScreen('kanban')" style="background:none;border:none;cursor:pointer;font-size:22px;padding:0;color:var(--ac)">←</button>
+      <div style="font-size:17px;font-weight:700">Dodaj pozycję</div>
+    </div>
+
+    <div class="card">
+      <div class="lbl mb8">Tytuł *</div>
+      <input id="add-title" class="inp mb14" type="text" placeholder="np. Canon EOS 5D Mark III body">
+
+      <div class="lbl mb8">Status</div>
+      <select id="add-status" class="inp mb14"></select>
+
+      <div class="lbl mb8">Cena zakupu</div>
+      <div class="row mb8">
+        <input id="add-price-eur" class="inp" type="number" step="0.01" placeholder="EUR" oninput="onAddPriceEurInput()">
+        <input id="add-price-pln" class="inp" type="number" step="0.01" placeholder="PLN" oninput="onAddPricePlnInput()">
+      </div>
+      <div id="add-rate-hint" style="font-size:11px;color:#888;margin-bottom:14px"></div>
+
+      <div class="lbl mb8">Data zakupu</div>
+      <input id="add-date" class="inp mb14" type="date">
+
+      <div class="lbl mb8">Numer seryjny</div>
+      <input id="add-serial" class="inp mb14" type="text" placeholder="np. 123456789">
+
+      <div class="lbl mb8">Model / wariant</div>
+      <input id="add-model" class="inp mb14" type="text" placeholder="np. Canon EF 24-70mm f/2.8L II">
+
+      <div class="lbl mb8">Cena sprzedaży (PLN)</div>
+      <input id="add-sale-pln" class="inp mb14" type="number" step="0.01" placeholder="PLN">
+
+      <div class="lbl mb8">Zdjęcie</div>
+      <label style="display:block;margin-bottom:14px">
+        <input id="add-thumb" type="file" accept="image/*" style="display:none">
+        <span class="btn-outline" style="cursor:pointer" onclick="document.getElementById('add-thumb').click()">📷 Wybierz zdjęcie</span>
+      </label>
+
+      <div class="lbl mb8">Notatki</div>
+      <textarea id="add-notes" class="inp mb14" rows="3" placeholder="Dodatkowe informacje..."></textarea>
+
+      <button class="btn" onclick="saveNewItem()">💾 Zapisz</button>
+    </div>
+  </div>
 </div>
 
 <div id="detail-overlay" class="detail-overlay" onclick="closeDetailModal()">
@@ -665,6 +714,112 @@ function promptApiKey() {
   }
   return _sessionApiKey;
 }
+// ── Ręczne dodawanie pozycji ─────────────────────────────────────────────────
+let _addPriceUserEditedPln = false;
+
+function initAddItemForm() {
+  // Wypełnij status dropdown
+  const sel = document.getElementById('add-status');
+  if (sel) {
+    const groups = [
+      { label: '💬 Zakup',     statuses: ['negotiating','purchased','closed'] },
+      { label: '📦 Logistyka', statuses: ['shipped_de','at_forwarder','shipped_pl','received'] },
+      { label: '🔧 Magazyn',   statuses: ['inspecting','in_repair','in_stock'] },
+      { label: '💰 Sprzedaż', statuses: ['listed','sold','completed'] },
+    ];
+    sel.innerHTML = groups.map(g => {
+      const opts = g.statuses.map(v =>
+        `<option value="${v}"${v==='received'?' selected':''}>${ST[v]?.e||''} ${ST[v]?.l||v}</option>`
+      ).join('');
+      return `<optgroup label="${g.label}">${opts}</optgroup>`;
+    }).join('');
+  }
+  // Ustaw dzisiejszą datę
+  const dateInp = document.getElementById('add-date');
+  if (dateInp && !dateInp.value) dateInp.value = new Date().toISOString().slice(0,10);
+  // Pokaż kurs
+  const rate = getSettings().exchangeRate;
+  const hint = document.getElementById('add-rate-hint');
+  if (hint) hint.textContent = `Kurs: ${rate} (zmień w Ustawieniach)`;
+  // Wyczyść flagę
+  _addPriceUserEditedPln = false;
+}
+
+function onAddPriceEurInput() {
+  if (_addPriceUserEditedPln) return;
+  const rate = getSettings().exchangeRate;
+  const eur = parseFloat(document.getElementById('add-price-eur').value);
+  const plnInp = document.getElementById('add-price-pln');
+  if (!isNaN(eur) && eur > 0) plnInp.value = (eur * rate).toFixed(2);
+  else plnInp.value = '';
+}
+
+function onAddPricePlnInput() {
+  _addPriceUserEditedPln = true;
+  const rate = getSettings().exchangeRate;
+  const pln = parseFloat(document.getElementById('add-price-pln').value);
+  const eurInp = document.getElementById('add-price-eur');
+  if (!isNaN(pln) && pln > 0) eurInp.value = (pln / rate).toFixed(2);
+  else eurInp.value = '';
+}
+
+function saveNewItem() {
+  const title = document.getElementById('add-title').value.trim();
+  if (!title) { alert('Tytuł jest wymagany'); return; }
+
+  const finalPrice = parseFloat(document.getElementById('add-price-eur').value);
+  const salePrice  = parseFloat(document.getElementById('add-sale-pln').value);
+  const createdAtRaw = document.getElementById('add-date').value;
+  const createdAt = createdAtRaw ? new Date(createdAtRaw + 'T12:00:00').toISOString() : new Date().toISOString();
+  const status = document.getElementById('add-status').value || 'received';
+
+  const item = {
+    id: genId(),
+    title,
+    status,
+    finalPrice: isNaN(finalPrice) ? null : finalPrice,
+    salePrice:  isNaN(salePrice)  ? null : salePrice,
+    serialNumber: document.getElementById('add-serial').value.trim() || null,
+    model:        document.getElementById('add-model').value.trim() || null,
+    notes:        document.getElementById('add-notes').value.trim() || '',
+    thumbnail:    null,
+    messages:     [],
+    createdAt,
+    updatedAt:    new Date().toISOString(),
+    source:       'manual',
+    watchlist:    false
+  };
+
+  const file = document.getElementById('add-thumb').files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      item.thumbnail = e.target.result;
+      items.unshift(item);
+      saveItems();
+      _resetAddItemForm();
+      showScreen('kanban');
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+
+  items.unshift(item);
+  saveItems();
+  _resetAddItemForm();
+  showScreen('kanban');
+}
+
+function _resetAddItemForm() {
+  ['add-title','add-price-eur','add-price-pln','add-date','add-serial','add-model','add-sale-pln','add-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const thumb = document.getElementById('add-thumb');
+  if (thumb) thumb.value = '';
+  _addPriceUserEditedPln = false;
+}
+
 function toggleSettings() {
   const p = document.getElementById('settings-panel');
   p.style.display = p.style.display === 'none' ? 'block' : 'none';
@@ -845,6 +1000,7 @@ function showScreen(name) {
   if (name === 'home') { backBtn.style.display = 'none'; title.innerHTML = '🛒 KA Asystent <span style="font-size:10px;color:#aaa;font-weight:400">v3.0 · Święty Józef</span>'; sub.style.display = 'none'; renderHome(); }
   else if (name === 'upload') { backBtn.style.display = 'block'; title.textContent = '📸 Analiza screenshota'; sub.style.display = 'none'; }
   else if (name === 'sync') { backBtn.style.display = 'block'; title.textContent = '🔄 Synchronizacja'; sub.style.display = 'none'; renderSyncOverview(); }
+  else if (name === 'add-item') { globalHeader.style.display = 'none'; settingsPanel.style.display = 'none'; initAddItemForm(); }
   else if (name === 'item') {
     backBtn.style.display = 'block';
     const cur = getItem(currentId);
