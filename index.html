@@ -136,6 +136,16 @@
   .detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: none; align-items: flex-end; justify-content: center; }
   .detail-overlay.open { display: flex; }
   .detail-modal { background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; max-height: 80vh; overflow-y: auto; padding: 20px 20px 30px; }
+  .gallery-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .gallery-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; cursor: pointer; }
+  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+  .lightbox.hidden { display: none; }
+  .lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; }
+  .lb-close { position: absolute; top: 16px; right: 20px; background: none; border: none; color: #fff; font-size: 36px; cursor: pointer; line-height: 1; }
+  .lb-prev, .lb-next { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 40px; cursor: pointer; padding: 8px 14px; border-radius: 8px; line-height: 1; }
+  .lb-prev { left: 12px; }
+  .lb-next { right: 12px; }
+  .btn-copy-id { background: none; border: 1px solid #ddd; border-radius: 6px; font-size: 11px; padding: 2px 7px; cursor: pointer; color: #888; font-family: inherit; vertical-align: middle; }
 </style>
 </head>
 <body>
@@ -439,6 +449,13 @@
 
 <div id="bundle-split-overlay" class="detail-overlay" onclick="closeBundleSplit()">
   <div class="detail-modal" style="max-height:90vh" onclick="event.stopPropagation()" id="bundle-split-inner"></div>
+</div>
+
+<div id="lightbox" class="lightbox hidden" onclick="closeLightbox()">
+  <button class="lb-close" onclick="closeLightbox()">×</button>
+  <button class="lb-prev" onclick="event.stopPropagation();lbNav(-1)">&#8249;</button>
+  <img id="lb-img" onclick="event.stopPropagation()" alt="">
+  <button class="lb-next" onclick="event.stopPropagation();lbNav(1)">&#8250;</button>
 </div>
 
 <script>
@@ -783,6 +800,8 @@ function saveNewItem() {
     model:        document.getElementById('add-model').value.trim() || null,
     notes:        document.getElementById('add-notes').value.trim() || '',
     thumbnail:    null,
+    photos:       [],
+    photosFolderId: null,
     messages:     [],
     createdAt,
     updatedAt:    new Date().toISOString(),
@@ -1154,7 +1173,7 @@ function renderHome() {
     const trackStr = item.trackingNumber ? `<div class="item-track">🚚 ${item.carrier}: ${item.trackingNumber}</div>` : '';
     const notesStr = item.notes ? `<div style="font-size:11px;color:#888;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${esc(item.notes.substring(0, 60))}${item.notes.length > 60 ? '...' : ''}</div>` : '';
     return `<div class="item-row" onclick="goItem('${item.id}')" style="${closedStyle}">
-      <div class="item-thumb">${item.thumbnail ? `<img src="${item.thumbnail}" alt="">` : '📦'}</div>
+      <div class="item-thumb">${item.photos && item.photos.length > 0 ? `<img src="${item.photos[0].url}" alt="">` : item.thumbnail ? `<img src="${item.thumbnail}" alt="">` : '📦'}</div>
       <div class="item-info">
         <div class="item-title">${esc(item.title)}</div>
         <div class="item-sub">${statusBadge} ${alertBadges} ${priceStr}${saleStr}</div>
@@ -1208,7 +1227,7 @@ function renderItem() {
   document.getElementById('item-content').innerHTML = `
     <div class="card">
       <div class="section-header" style="margin-bottom:8px">
-        <div style="font-weight:700;font-size:16px;flex:1;margin-right:8px">${esc(cur.title)}</div>
+        <div style="font-weight:700;font-size:16px;flex:1;margin-right:8px">${esc(cur.title)} <button onclick="copyItemId('${cur.id}')" title="Kopiuj ID do schowka" class="btn-copy-id">📋 ${cur.id.slice(0,8)}</button></div>
         ${buildStatusSelect(cur.status)}
       </div>
       <div class="info-row">
@@ -1222,6 +1241,8 @@ function renderItem() {
     </div>
 
     ${notesHtml}
+
+    ${buildGallerySection(cur)}
 
     ${convUrl || listingUrl ? `<div class="card" style="padding:10px 14px;display:flex;flex-direction:column;gap:8px">${convUrl}${listingUrl}</div>` : ''}
 
@@ -1350,6 +1371,57 @@ function deleteItem() {
     saveItems();
   }
   showScreen('kanban');
+}
+
+// ── Galeria zdjęć ──
+
+function buildGallerySection(item) {
+  const photos = item.photos || [];
+  const grid = photos.length > 0
+    ? photos.map((p, i) => `<img src="${p.url}" loading="lazy" onclick="openLightbox('${item.id}',${i})" class="gallery-thumb" alt="${esc(p.name)}">`).join('')
+    : `<div style="font-size:13px;color:#aaa;padding:6px 0">Brak zdjęć. Uruchom <code>node gdrive-sync.js --prepare-photo-folders</code> i zsynchronizuj.</div>`;
+  return `<div class="card">
+    <div class="lbl" style="margin-bottom:8px">🖼️ Zdjęcia (${photos.length})</div>
+    <div class="gallery-grid">${grid}</div>
+  </div>`;
+}
+
+let lbItemId = null, lbIndex = 0;
+
+function openLightbox(itemId, index) {
+  lbItemId = itemId;
+  lbIndex = index;
+  _lbRender();
+  document.getElementById('lightbox').classList.remove('hidden');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.add('hidden');
+}
+function lbNav(delta) {
+  const item = getItem(lbItemId);
+  if (!item || !item.photos) return;
+  const newIdx = lbIndex + delta;
+  if (newIdx < 0 || newIdx >= item.photos.length) return;
+  lbIndex = newIdx;
+  _lbRender();
+}
+function _lbRender() {
+  const item = getItem(lbItemId);
+  if (!item || !item.photos || !item.photos[lbIndex]) return;
+  document.getElementById('lb-img').src = item.photos[lbIndex].url;
+}
+
+document.addEventListener('keydown', function(e) {
+  const lb = document.getElementById('lightbox');
+  if (!lb || lb.classList.contains('hidden')) return;
+  if (e.key === 'Escape') closeLightbox();
+  else if (e.key === 'ArrowLeft') lbNav(-1);
+  else if (e.key === 'ArrowRight') lbNav(1);
+});
+
+function copyItemId(id) {
+  const shortId = id.slice(0, 8);
+  navigator.clipboard.writeText(shortId).then(() => toast('Skopiowano ID: ' + shortId));
 }
 
 async function generateDraft() {
