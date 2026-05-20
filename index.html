@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --ac: #E88B00; --bg: #f7f4ee; --white: #fff; --border: #e8dfc9; --text: #1a1a0a; --muted: #888; --danger: #cc4444; }
+  :root { --ac: #E88B00; --bg: #f7f4ee; --white: #fff; --border: #e8dfc9; --text: #1a1a0a; --muted: #475569; --danger: #cc4444; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 40px; }
   #header { background: var(--white); border-bottom: 1px solid var(--border); padding: 11px 16px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 100; max-width: 480px; margin: 0 auto; }
   #back-btn { background: none; border: none; cursor: pointer; font-size: 22px; color: var(--ac); padding: 2px 12px 2px 0; display: none; }
@@ -28,7 +28,7 @@
   .item-sub { font-size: 12px; color: #777; margin-top: 2px; }
   .item-track { font-size: 11px; color: var(--ac); margin-top: 2px; font-weight: 600; }
   .item-arrow { color: #ccc; font-size: 20px; flex-shrink: 0; }
-  .empty { text-align: center; padding: 44px 24px; color: #aaa; }
+  .empty { text-align: center; padding: 44px 24px; color: #475569; }
   .btn { width: 100%; padding: 13px; background: var(--ac); color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; display: block; text-align: center; }
   .btn.ghost { background: transparent; color: var(--danger); border: 1px solid #ffbbbb; font-size: 13px; }
   .btn-outline { width: 100%; padding: 11px 16px; background: var(--white); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; text-align: left; cursor: pointer; font-size: 14px; font-weight: 500; font-family: inherit; display: block; }
@@ -60,8 +60,8 @@
   .chat-row { display: flex; flex-direction: column; }
   .chat-row.me { align-items: flex-end; }
   .chat-row.them { align-items: flex-start; }
-  .chat-who { font-size: 10px; color: #bbb; margin-bottom: 3px; }
-  .chat-time { font-weight:400; color:#94a3b8; margin-left:8px; font-size:11px; }
+  .chat-who { font-size: 10px; color: #475569; margin-bottom: 3px; }
+  .chat-time { font-weight:400; color:#475569; margin-left:8px; font-size:11px; }
   .bubble { max-width: 85%; padding: 9px 13px; font-size: 14px; line-height: 1.55; }
   .bubble.me { background: var(--ac); color: #fff; border-radius: 16px 16px 4px 16px; }
   .bubble.them { background: var(--white); color: var(--text); border: 1px solid var(--border); border-radius: 16px 16px 16px 4px; }
@@ -84,7 +84,19 @@
   .sync-stat .num { font-size: 20px; font-weight: 800; display: block; color: var(--ac); }
   /* ── FAZA B: Kanban / Deal Tracker ──────────────────────────────────── */
   body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-  #screen-kanban { max-width: 100%; padding: 0; background: #f1f5f9; min-height: 100vh; }
+  #screen-items { max-width: 100%; padding: 0; background: #f1f5f9; min-height: 100vh; }
+  @media (min-width: 1024px) {
+    #screen-items { max-width: 1400px; }
+    #items-toolbar { max-width: 1400px; }
+    .items-list-wrapper { max-width: 800px; margin: 0 auto; }
+    .kanban-board { scrollbar-width: thin; scrollbar-color: #94a3b8 transparent; }
+    .kanban-board::-webkit-scrollbar { height: 8px; display: block; }
+    .kanban-board::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+  }
+  @media (min-width: 1400px) {
+    #screen-items { max-width: 1600px; }
+    #items-toolbar { max-width: 1600px; }
+  }
   .kb-header { background: linear-gradient(135deg, #1e293b, #0f172a); padding: 14px 16px 10px; position: sticky; top: 0; z-index: 100; }
   .kb-header-row { display: flex; justify-content: space-between; align-items: center; }
   .kb-title { font-size: 17px; font-weight: 800; color: #fff; }
@@ -109,7 +121,7 @@
   .kb-col-header-row { display: flex; justify-content: space-between; align-items: center; }
   .kb-col-title { display: flex; align-items: center; gap: 5px; }
   .kb-col-count { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
-  .kb-empty { text-align: center; padding: 20px; font-size: 12px; color: #cbd5e1; }
+  .kb-empty { text-align: center; padding: 20px; font-size: 12px; color: #475569; }
   .kb-card { padding: 10px 12px; margin-bottom: 8px; border-radius: 10px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); cursor: pointer; border-left: 3px solid transparent; transition: transform 0.1s; }
   .kb-card:active { transform: scale(0.98); }
   .kb-card.bundle { border-left-color: #f59e0b; }
@@ -132,7 +144,7 @@
   .lb-prev, .lb-next { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 40px; cursor: pointer; padding: 8px 14px; border-radius: 8px; line-height: 1; }
   .lb-prev { left: 12px; }
   .lb-next { right: 12px; }
-  .btn-copy-id { background: none; border: 1px solid #ddd; border-radius: 6px; font-size: 11px; padding: 2px 7px; cursor: pointer; color: #888; font-family: inherit; vertical-align: middle; }
+  .btn-copy-id { background: none; border: 1px solid #ddd; border-radius: 6px; font-size: 11px; padding: 2px 7px; cursor: pointer; color: #475569; font-family: inherit; vertical-align: middle; }
   #items-toolbar { position: sticky; top: var(--header-height, 48px); background: #f1f5f9; z-index: 90; padding: 8px 16px; border-bottom: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px; }
   #items-toolbar .toolbar-row { display: flex; gap: 8px; align-items: center; }
   #items-main { padding-bottom: 70px; min-height: 200px; }
@@ -143,6 +155,14 @@
   #status-inline-menu .smi.cur { font-weight: 700; }
   .ptr-indicator { position: fixed; top: -44px; left: 50%; transform: translateX(-50%); background: #1a1a0a; color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 8000; transition: top 0.15s ease; pointer-events: none; white-space: nowrap; }
   .ptr-indicator.ready { background: #E88B00; }
+  .card-details { background: var(--white); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 14px; overflow: hidden; }
+  .card-details summary { padding: 14px 16px; cursor: pointer; font-weight: 700; font-size: 14px; user-select: none; list-style: none; display: flex; justify-content: space-between; align-items: center; color: var(--text); }
+  .card-details summary::-webkit-details-marker { display: none; }
+  .card-details summary::after { content: '▸'; color: #475569; font-size: 12px; transition: transform 0.15s ease; margin-left: 8px; flex-shrink: 0; }
+  .card-details[open] summary::after { transform: rotate(90deg); }
+  .card-details .details-body { padding: 14px 16px; border-top: 1px solid var(--border); }
+  .details-label { flex: 1; }
+  .details-meta { color: #475569; font-size: 12px; font-weight: 500; }
 </style>
 </head>
 <body>
@@ -153,8 +173,8 @@
     <div id="header-title">KA Asystent</div>
     <div id="header-sub"></div>
   </div>
-  <button onclick="showScreen('sync')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Synchronizacja danych">🔄</button>
-  <button onclick="showScreen('settings')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Ustawienia">⚙️</button>
+  <button onclick="showScreen('sync')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#475569;padding:4px 8px" title="Synchronizacja danych">🔄</button>
+  <button onclick="showScreen('settings')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#475569;padding:4px 8px" title="Ustawienia">⚙️</button>
 </div>
 
 <div id="screen-settings" class="screen">
@@ -176,22 +196,22 @@
     <div class="card sync-section">
       <h3>🧮 Kalkulacja i widok</h3>
       <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-        <label style="font-size:12px;color:#888;white-space:nowrap;width:140px">Kurs EUR/PLN:</label>
+        <label style="font-size:12px;color:#475569;white-space:nowrap;width:140px">Kurs EUR/PLN:</label>
         <input type="number" id="setting-exchange" step="0.01" min="3" max="6" placeholder="4.30" class="inp"
                onblur="autosaveAppSetting('exchangeRate', parseFloat)()">
       </div>
       <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-        <label style="font-size:12px;color:#888;white-space:nowrap;width:140px">Forwarding (PLN):</label>
+        <label style="font-size:12px;color:#475569;white-space:nowrap;width:140px">Forwarding (PLN):</label>
         <input type="number" id="setting-forwarding" step="1" min="0" placeholder="22" class="inp"
                onblur="autosaveAppSetting('forwardingPL', parseFloat)()">
       </div>
       <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-        <label style="font-size:12px;color:#888;white-space:nowrap;width:140px">Alert Görlitz (szt):</label>
+        <label style="font-size:12px;color:#475569;white-space:nowrap;width:140px">Alert Görlitz (szt):</label>
         <input type="number" id="setting-threshold" step="1" min="1" placeholder="3" class="inp"
                onblur="autosaveAppSetting('alertThreshold', parseInt)()">
       </div>
       <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-        <label style="font-size:12px;color:#888;white-space:nowrap;width:140px">Platforma domyślna:</label>
+        <label style="font-size:12px;color:#475569;white-space:nowrap;width:140px">Platforma domyślna:</label>
         <select id="setting-platform" class="inp"
                 onchange="autosaveAppSetting('defaultPlatform', v => v)()">
           <option>OLX</option><option>FB Marketplace</option><option>Vinted</option><option>eBay</option><option>hurtowy</option>
@@ -199,7 +219,12 @@
       </div>
     </div>
 
-    <div style="margin-top:24px;padding:12px;text-align:center;color:#94a3b8;font-size:11px">
+    <div class="card sync-section">
+      <h3>📊 Statystyki pipeline</h3>
+      <div id="settings-stats"></div>
+    </div>
+
+    <div style="margin-top:24px;padding:12px;text-align:center;color:#475569;font-size:11px">
       KA Asystent v3.0 · Święty Józef
     </div>
   </div>
@@ -217,7 +242,7 @@
     <div id="sync-status-row" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px">
       <span id="sync-status-dot">●</span>
       <span id="sync-status-label">Sprawdzanie...</span>
-      <span id="sync-ts-label" style="color:#bbb;font-size:11px;margin-left:auto"></span>
+      <span id="sync-ts-label" style="color:#475569;font-size:11px;margin-left:auto"></span>
     </div>
     <div style="display:flex;gap:8px;margin-top:10px">
       <button class="btn" onclick="pullFromGist()" style="flex:1">⬇️ Pobierz z Gist</button>
@@ -247,16 +272,16 @@
     </div>
     <div id="scan-mode-dates" style="display:none;margin-bottom:8px">
       <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-        <label style="font-size:12px;color:#888;white-space:nowrap;width:24px">Od:</label>
+        <label style="font-size:12px;color:#475569;white-space:nowrap;width:24px">Od:</label>
         <input type="date" id="scan-date-from" style="flex:1;padding:7px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;font-family:inherit;background:#fafaf7">
-        <label style="font-size:12px;color:#888;white-space:nowrap">Do:</label>
+        <label style="font-size:12px;color:#475569;white-space:nowrap">Do:</label>
         <input type="date" id="scan-date-to" style="flex:1;padding:7px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;font-family:inherit;background:#fafaf7">
       </div>
       <input type="number" id="scan-limit-dates" min="1" max="99" placeholder="limit konwersacji Gemini (puste = wszystkie)" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;font-family:inherit">
     </div>
     <div id="scan-mode-convs" style="display:none;margin-bottom:8px">
       <textarea id="scan-conversation-ids" rows="3" placeholder="Wklej ID konwersacji (każde w nowej linii lub oddzielone przecinkiem)" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;font-family:inherit;resize:vertical"></textarea>
-      <div style="font-size:11px;color:#aaa;margin-top:4px">Skopiuj ID z URL: ...?conversationId=<strong>TO_ID</strong></div>
+      <div style="font-size:11px;color:#475569;margin-top:4px">Skopiuj ID z URL: ...?conversationId=<strong>TO_ID</strong></div>
     </div>
     <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px;cursor:pointer">
       <input type="checkbox" id="scan-no-images" style="width:16px;height:16px;cursor:pointer">
@@ -278,7 +303,7 @@
       <div id="scan-log-lines" style="color:#aaa;line-height:1.6;font-size:11px;font-family:monospace"></div>
       <div style="margin-top:8px;font-size:11px;color:#555" id="scan-updated-label"></div>
     </div>
-    <div id="scan-last-scan" style="font-size:11px;color:#aaa;margin-top:6px"></div>
+    <div id="scan-last-scan" style="font-size:11px;color:#475569;margin-top:6px"></div>
   </div>
 
   <div class="card sync-section">
@@ -358,7 +383,7 @@
         <button class="kb-toggle-btn" id="toggle-kanban" onclick="setKanbanView('kanban')">Kanban</button>
         <button class="kb-toggle-btn" id="toggle-list" onclick="setKanbanView('list')">Lista</button>
       </div>
-      <span id="item-count" style="margin-left:auto;font-size:11px;color:#94a3b8"></span>
+      <span id="item-count" style="margin-left:auto;font-size:11px;color:#475569"></span>
     </div>
     <input id="search-input" type="search" placeholder="🔍 Szukaj…" autocomplete="off" oninput="setSearch(this.value)" style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;font-family:inherit">
     <div class="toolbar-row">
@@ -417,7 +442,7 @@
         <input id="add-price-eur" class="inp" type="number" step="0.01" placeholder="EUR" oninput="onAddPriceEurInput()">
         <input id="add-price-pln" class="inp" type="number" step="0.01" placeholder="PLN" oninput="onAddPricePlnInput()">
       </div>
-      <div id="add-rate-hint" style="font-size:11px;color:#888;margin-bottom:14px"></div>
+      <div id="add-rate-hint" style="font-size:11px;color:#475569;margin-bottom:14px"></div>
 
       <div class="lbl mb8">Data zakupu</div>
       <input id="add-date" class="inp mb14" type="date">
@@ -648,66 +673,54 @@ function buildInspectionSection(item) {
   const opts = [
     {v:'',l:'— nie sprawdzono —'},{v:'pending',l:'⏳ Oczekuje'},{v:'ok',l:'✅ OK'},{v:'defective',l:'⚠️ Wadliwy'}
   ].map(o=>`<option value="${o.v}"${(item.inspectionStatus||'')===o.v?' selected':''}>${o.l}</option>`).join('');
-  return `<div class="card">
-    <div class="lbl mb8">🔍 Inspekcja</div>
-    <select class="inp mb8" onchange="saveField('inspectionStatus',this.value)">${opts}</select>
-    <textarea class="inp" rows="2" placeholder="Notatki z inspekcji..." oninput="saveField('inspectionNotes',this.value)">${esc(item.inspectionNotes||'')}</textarea>
-  </div>`;
+  return `<select class="inp mb8" onchange="saveField('inspectionStatus',this.value)">${opts}</select>
+    <textarea class="inp" rows="2" placeholder="Notatki z inspekcji..." oninput="saveField('inspectionNotes',this.value)">${esc(item.inspectionNotes||'')}</textarea>`;
 }
 
 function buildRepairSection(item) {
-  return `<div class="card">
-    <div class="lbl mb8">🔧 Serwis</div>
-    <input class="inp mb8" type="text" placeholder="Nazwa serwisu" value="${esc(item.repairShop||'')}" oninput="saveField('repairShop',this.value)">
+  return `<input class="inp mb8" type="text" placeholder="Nazwa serwisu" value="${esc(item.repairShop||'')}" oninput="saveField('repairShop',this.value)">
     <input class="inp mb8" type="number" step="0.01" placeholder="Koszt serwisu (PLN)" value="${item.repairCost||''}" oninput="saveField('repairCost',this.value===''?null:parseFloat(this.value))">
     <textarea class="inp mb8" rows="2" placeholder="Notatki serwisowe..." oninput="saveField('repairNotes',this.value)">${esc(item.repairNotes||'')}</textarea>
     <div class="row">
-      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:4px">Wysłano do serwisu</div><input class="inp" type="date" value="${item.repairSentDate||''}" onchange="saveField('repairSentDate',this.value)"></div>
-      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:4px">Odebrano z serwisu</div><input class="inp" type="date" value="${item.repairReceivedDate||''}" onchange="saveField('repairReceivedDate',this.value)"></div>
-    </div>
-  </div>`;
+      <div style="flex:1"><div style="font-size:11px;color:#475569;margin-bottom:4px">Wysłano do serwisu</div><input class="inp" type="date" value="${item.repairSentDate||''}" onchange="saveField('repairSentDate',this.value)"></div>
+      <div style="flex:1"><div style="font-size:11px;color:#475569;margin-bottom:4px">Odebrano z serwisu</div><input class="inp" type="date" value="${item.repairReceivedDate||''}" onchange="saveField('repairReceivedDate',this.value)"></div>
+    </div>`;
 }
 
 function buildSaleSection(item) {
   const settings = getSettings();
   const platforms = ['OLX','FB Marketplace','Vinted','eBay','hurtowy'];
   const platOpts = platforms.map(p=>`<option value="${p}"${(item.salePlatform||settings.defaultPlatform)===p?' selected':''}>${p}</option>`).join('');
-  return `<div class="card">
-    <div class="lbl mb8">💰 Sprzedaż</div>
-    ${['in_stock','listed'].includes(item.status) ? `<button class="btn" style="background:#334155;margin-bottom:10px;padding:9px;font-size:13px" onclick="copyGeminiDescTemplate('${item.id}')">📝 Kopiuj szablon opisu dla Gemini</button>` : ''}
+  return `${['in_stock','listed'].includes(item.status) ? `<button class="btn" style="background:#334155;margin-bottom:10px;padding:9px;font-size:13px" onclick="copyGeminiDescTemplate('${item.id}')">📝 Kopiuj szablon opisu dla Gemini</button>` : ''}
     <select class="inp mb8" onchange="saveField('salePlatform',this.value)">${platOpts}</select>
     <input class="inp mb8" type="number" step="0.01" placeholder="Cena sprzedaży (PLN)" value="${item.salePrice||''}" oninput="saveField('salePrice',this.value===''?null:parseFloat(this.value))">
     <input class="inp mb8" type="text" placeholder="URL ogłoszenia sprzedaży" value="${esc(item.saleUrl||'')}" oninput="saveField('saleUrl',this.value)">
     <input class="inp mb8" type="text" placeholder="Imię kupującego" value="${esc(item.buyerName||'')}" oninput="saveField('buyerName',this.value)">
     <input class="inp mb8" type="text" placeholder="Nr śledzenia (wysyłka do kupca)" value="${esc(item.saleTrackingNumber||'')}" oninput="saveField('saleTrackingNumber',this.value)">
-    <div style="font-size:11px;color:#888;margin-bottom:4px">Data sprzedaży</div>
-    <input class="inp" type="date" value="${item.saleDate||''}" onchange="saveField('saleDate',this.value)">
-  </div>`;
+    <div style="font-size:11px;color:#475569;margin-bottom:4px">Data sprzedaży</div>
+    <input class="inp" type="date" value="${item.saleDate||''}" onchange="saveField('saleDate',this.value)">`;
 }
 
 function buildCostsSection(item) {
   const settings = getSettings();
   const c = item.costs || {};
   const rate = item.exchangeRate != null ? item.exchangeRate : settings.exchangeRate;
-  return `<div class="card">
-    <div class="lbl mb8">💸 Koszty</div>
-    <div class="row mb8">
-      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Zakup (EUR)</div><input class="inp" type="number" step="0.01" value="${c.purchase!=null?c.purchase:''}" placeholder="${item.finalPrice||''}" oninput="saveCost('purchase',this.value)"></div>
-      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Wysyłka DE (EUR)</div><input class="inp" type="number" step="0.01" value="${c.shippingDE!=null?c.shippingDE:''}" oninput="saveCost('shippingDE',this.value)"></div>
+  return `<div class="row mb8">
+      <div style="flex:1"><div style="font-size:11px;color:#475569;margin-bottom:3px">Zakup (EUR)</div><input class="inp" type="number" step="0.01" value="${c.purchase!=null?c.purchase:''}" placeholder="${item.finalPrice||''}" oninput="saveCost('purchase',this.value)"></div>
+      <div style="flex:1"><div style="font-size:11px;color:#475569;margin-bottom:3px">Wysyłka DE (EUR)</div><input class="inp" type="number" step="0.01" value="${c.shippingDE!=null?c.shippingDE:''}" oninput="saveCost('shippingDE',this.value)"></div>
     </div>
     <div class="row mb8">
-      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Forwarding (PLN)</div><input class="inp" type="number" step="1" value="${c.forwardingPL!=null?c.forwardingPL:''}" placeholder="${settings.forwardingPL}" oninput="saveCost('forwardingPL',this.value)"></div>
-      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Serwis (PLN)</div><input class="inp" type="number" step="0.01" value="${c.repair!=null?c.repair:item.repairCost||''}" oninput="saveCost('repair',this.value)"></div>
+      <div style="flex:1"><div style="font-size:11px;color:#475569;margin-bottom:3px">Forwarding (PLN)</div><input class="inp" type="number" step="1" value="${c.forwardingPL!=null?c.forwardingPL:''}" placeholder="${settings.forwardingPL}" oninput="saveCost('forwardingPL',this.value)"></div>
+      <div style="flex:1"><div style="font-size:11px;color:#475569;margin-bottom:3px">Serwis (PLN)</div><input class="inp" type="number" step="0.01" value="${c.repair!=null?c.repair:item.repairCost||''}" oninput="saveCost('repair',this.value)"></div>
     </div>
     <div class="row mb8">
-      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Prowizja platf. (PLN)</div><input class="inp" type="number" step="0.01" value="${c.saleFees!=null?c.saleFees:''}" oninput="saveCost('saleFees',this.value)"></div>
-      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Wysyłka do kupca (PLN)</div><input class="inp" type="number" step="0.01" value="${c.saleShipping!=null?c.saleShipping:''}" oninput="saveCost('saleShipping',this.value)"></div>
+      <div style="flex:1"><div style="font-size:11px;color:#475569;margin-bottom:3px">Prowizja platf. (PLN)</div><input class="inp" type="number" step="0.01" value="${c.saleFees!=null?c.saleFees:''}" oninput="saveCost('saleFees',this.value)"></div>
+      <div style="flex:1"><div style="font-size:11px;color:#475569;margin-bottom:3px">Wysyłka do kupca (PLN)</div><input class="inp" type="number" step="0.01" value="${c.saleShipping!=null?c.saleShipping:''}" oninput="saveCost('saleShipping',this.value)"></div>
     </div>
     <div class="row">
-      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Inne koszty (PLN)</div><input class="inp" type="number" step="0.01" value="${c.other!=null?c.other:''}" oninput="saveCost('other',this.value)"></div>
-      <div style="flex:1"><div style="font-size:11px;color:#888;margin-bottom:3px">Kurs EUR/PLN</div><input class="inp" type="number" step="0.01" value="${rate}" oninput="saveField('exchangeRate',this.value===''?null:parseFloat(this.value))"></div>
-    </div>
-  </div>`;
+      <div style="flex:1"><div style="font-size:11px;color:#475569;margin-bottom:3px">Inne koszty (PLN)</div><input class="inp" type="number" step="0.01" value="${c.other!=null?c.other:''}" oninput="saveCost('other',this.value)"></div>
+      <div style="flex:1"><div style="font-size:11px;color:#475569;margin-bottom:3px">Kurs EUR/PLN</div><input class="inp" type="number" step="0.01" value="${rate}" oninput="saveField('exchangeRate',this.value===''?null:parseFloat(this.value))"></div>
+    </div>`;
 }
 
 function buildBundleSplitButton(item) {
@@ -717,16 +730,26 @@ function buildBundleSplitButton(item) {
   if (item.isBundle && item.status === 'completed') return ''; // already split
   return `<div class="card" style="text-align:center">
     <div class="lbl mb8">📦 Zestaw / Bundle</div>
-    <div style="font-size:12px;color:#888;margin-bottom:10px">Zawiera kilka elementów? Rozbij na osobne rekordy z proporcjonalną alokacją kosztów.</div>
+    <div style="font-size:12px;color:#475569;margin-bottom:10px">Zawiera kilka elementów? Rozbij na osobne rekordy z proporcjonalną alokacją kosztów.</div>
     <button class="btn" onclick="openBundleSplit('${item.id}')">📦 Rozbij zestaw</button>
   </div>`;
 }
 
 
+function buildDetailsSection(id, summaryHtml, bodyHtml) {
+  const isOpen = openDetailsSections.has(id);
+  return `<details class="card-details" id="dt-${id}" ${isOpen ? 'open' : ''}
+    ontoggle="if(this.open) openDetailsSections.add('${id}'); else openDetailsSections.delete('${id}');">
+    <summary>${summaryHtml}</summary>
+    <div class="details-body">${bodyHtml}</div>
+  </details>`;
+}
+
 // ── State ────────────────────────────────────────────────────────────────────
 let items = [];
 let currentScreen = 'home';
 let currentId = null;
+const openDetailsSections = new Set();
 // ── Ręczne dodawanie pozycji ─────────────────────────────────────────────────
 let _addPriceUserEditedPln = false;
 
@@ -844,6 +867,13 @@ function initSettingsScreen() {
   const fwEl = document.getElementById('setting-forwarding'); if (fwEl) fwEl.value = s.forwardingPL;
   const thEl = document.getElementById('setting-threshold');  if (thEl) thEl.value = s.alertThreshold;
   const plEl = document.getElementById('setting-platform');   if (plEl) plEl.value = s.defaultPlatform;
+  renderSettingsStats();
+}
+
+function renderSettingsStats() {
+  const wrap = document.getElementById('settings-stats');
+  if (!wrap) return;
+  wrap.innerHTML = buildFinanceSummary() + buildForwarderAlert();
 }
 
 function loadItems() {
@@ -1057,7 +1087,7 @@ function renderHome() {
     list.innerHTML = `<div class="empty" style="padding:32px 24px">
       <div style="font-size:42px;margin-bottom:10px">${hasFilters ? '🔍' : '📦'}</div>
       <div style="font-size:15px;font-weight:700;color:#777">${hasFilters ? 'Brak wyników' : 'Brak przedmiotów'}</div>
-      <div style="font-size:13px;color:#aaa;margin-top:6px;margin-bottom:${hasFilters?'14px':'0'}">${hasFilters ? 'Żaden przedmiot nie pasuje do aktywnych filtrów.' : 'Pobierz dane przez Synchronizacja → Pobierz z Gist lub zaimportuj patch JSON.'}</div>
+      <div style="font-size:13px;color:#475569;margin-top:6px;margin-bottom:${hasFilters?'14px':'0'}">${hasFilters ? 'Żaden przedmiot nie pasuje do aktywnych filtrów.' : 'Pobierz dane przez Synchronizacja → Pobierz z Gist lub zaimportuj patch JSON.'}</div>
       ${hasFilters ? '<button onclick="resetFilters()" style="padding:8px 18px;background:#E88B00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✕ Wyczyść filtry</button>' : ''}
     </div>`;
     return;
@@ -1076,7 +1106,7 @@ function renderHome() {
     const priceStr = item.finalPrice ? `💰 ${item.finalPrice} EUR` : item.askingPrice ? `Cena wywoławcza: ${item.askingPrice} EUR` : 'Cena nieznana';
     const saleStr = item.salePrice ? ` → <strong>${item.salePrice} PLN</strong>` : '';
     const trackStr = item.trackingNumber ? `<div class="item-track">🚚 ${item.carrier}: ${item.trackingNumber}</div>` : '';
-    const notesStr = item.notes ? `<div style="font-size:11px;color:#888;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${esc(item.notes.substring(0, 60))}${item.notes.length > 60 ? '...' : ''}</div>` : '';
+    const notesStr = item.notes ? `<div style="font-size:11px;color:#475569;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${esc(item.notes.substring(0, 60))}${item.notes.length > 60 ? '...' : ''}</div>` : '';
     return `<div class="item-row" onclick="goItem('${item.id}')" style="${closedStyle}">
       <div class="item-thumb">${item.photos && item.photos.length > 0 ? `<img src="${item.photos[0].url}" alt="">` : item.thumbnail ? `<img src="${item.thumbnail}" alt="">` : '📦'}</div>
       <div class="item-info">
@@ -1096,7 +1126,7 @@ function renderItem() {
   const st = ST[cur.status] || ST.negotiating;
   const trackHtml = cur.trackingNumber
     ? `<div class="track-box"><div class="track-num">${esc(cur.carrier)}: ${esc(cur.trackingNumber)}</div>${cur.trackingUrl?`<a class="track-link" href="${cur.trackingUrl}" target="_blank">🔍 Śledź paczkę →</a>`:''}</div>`
-    : `<div style="font-size:13px;color:#bbb">Brak numeru śledzenia.</div>`;
+    : `<div style="font-size:13px;color:#475569">Brak numeru śledzenia.</div>`;
   const convUrl = cur.conversationUrl ? `<a href="${cur.conversationUrl}" target="_blank" style="font-size:12px;color:${AC};font-weight:600;text-decoration:none">💬 Otwórz rozmowę na Kleinanzeigen →</a>` : '';
   const listingUrl = cur.listingUrl ? `<a href="${cur.listingUrl}" target="_blank" style="font-size:12px;color:${AC};font-weight:600;text-decoration:none">🏷️ Zobacz ogłoszenie →</a>` : '';
   const notesHtml = cur.notes ? `<div class="note-box">${linkify(cur.notes)}</div>` : '';
@@ -1106,7 +1136,7 @@ function renderItem() {
       const timeStr = ts ? ts.toLocaleString('pl-PL', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
       return `<div class="chat-row ${msg.sender==='buyer'?'me':'them'}"><div class="chat-who">${msg.sender==='seller'?'🇩🇪 Sprzedający':'Ty'}${timeStr ? `<span class="chat-time">${timeStr}</span>` : ''}</div><div class="bubble ${msg.sender==='buyer'?'me':'them'}">${esc(msg.translatedText||msg.originalText)}${msg.originalText&&msg.originalText!==msg.translatedText?`<div class="bubble-orig">🇩🇪 ${esc(msg.originalText)}</div>`:''}</div></div>`;
     }).join('')}</div>`
-    : `<div style="text-align:center;padding:14px 0;color:#bbb;font-size:13px">Brak wiadomości. Dodaj screenshot z rozmowy.</div>`;
+    : `<div style="text-align:center;padding:14px 0;color:#475569;font-size:13px">Brak wiadomości. Dodaj screenshot z rozmowy.</div>`;
   // Conditional sections
   const showInspection = ['received','inspecting','in_repair','in_stock','listed','sold','completed'].includes(cur.status);
   const showRepair     = cur.status === 'in_repair';
@@ -1135,66 +1165,69 @@ function renderItem() {
 
     ${convUrl || listingUrl ? `<div class="card" style="padding:10px 14px;display:flex;flex-direction:column;gap:8px">${convUrl}${listingUrl}</div>` : ''}
 
-    ${showInspection ? buildInspectionSection(cur) : ''}
-    ${showRepair     ? buildRepairSection(cur)     : ''}
-    ${showSale       ? buildSaleSection(cur)       : ''}
-    ${showCosts      ? buildCostsSection(cur)      : ''}
-    ${buildProfitSection(cur)}
+    ${showInspection ? buildDetailsSection('inspection',
+        `<span class="details-label">🔍 Inspekcja</span><span class="details-meta">${cur.inspectionStatus === 'ok' ? '✓ OK' : cur.inspectionStatus === 'defective' ? '⚠️ Wadliwy' : cur.inspectionStatus === 'pending' ? '⏳ Oczekuje' : '—'}</span>`,
+        buildInspectionSection(cur)) : ''}
+    ${showRepair ? buildDetailsSection('repair',
+        `<span class="details-label">🔧 Naprawa</span><span class="details-meta">${cur.repairShop ? esc(cur.repairShop) : '—'}</span>`,
+        buildRepairSection(cur)) : ''}
+    ${showSale ? buildDetailsSection('sale',
+        `<span class="details-label">🏷️ Sprzedaż</span><span class="details-meta">${cur.salePrice ? cur.salePrice + ' PLN' : '—'}</span>`,
+        buildSaleSection(cur)) : ''}
+    ${showCosts ? buildDetailsSection('costs',
+        `<span class="details-label">💸 Koszty</span><span class="details-meta">${cur.costs && cur.costs.purchase != null ? cur.costs.purchase + ' EUR' : '—'}</span>`,
+        buildCostsSection(cur)) : ''}
+    ${buildProfitSection(cur) ? buildDetailsSection('profit',
+        `<span class="details-label">📈 Profit</span><span class="details-meta">${cur.salePrice ? '→ ' + cur.salePrice + ' PLN' : '—'}</span>`,
+        buildProfitSection(cur)) : ''}
     ${buildBundleSplitButton(cur)}
 
-    <div class="card">
-      <div class="section-header">
-        <div class="lbl">🔎 Dane z Gemini</div>
-        <button class="btn-sm" onclick="toggleGeminiEdit()">${cur.serialNumber?'Edytuj':'+ Dodaj'}</button>
-      </div>
-      <div id="gemini-view">${cur.serialNumber
-        ? `<div>Numer seryjny: <strong>${esc(cur.serialNumber)}</strong></div><div>Model: <strong>${esc(cur.model||'')}</strong></div>`
-        : `<span style="color:#aaa;font-size:13px">Brak danych. Wklej linię od Gemini.</span>`
-      }</div>
-      <div id="gemini-edit" style="display:none">
-        <textarea class="inp mb8" id="gemini-input" rows="2" placeholder="Wklej linię od Gemini w formacie:&#10;20520793&#9;Nikon AF-P DX Nikkor 70-300mm f/4.5-6.3G ED VR"></textarea>
-        <button class="btn" onclick="saveGeminiData()">Zapisz</button>
-      </div>
-    </div>
+    ${buildDetailsSection('gemini',
+        `<span class="details-label">🔎 Dane z Gemini</span><span class="details-meta">${cur.serialNumber ? '✓' : 'brak'}</span>`,
+        `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div></div><button class="btn-sm" onclick="toggleGeminiEdit()">${cur.serialNumber?'Edytuj':'+ Dodaj'}</button>
+        </div>
+        <div id="gemini-view">${cur.serialNumber
+          ? `<div>Numer seryjny: <strong>${esc(cur.serialNumber)}</strong></div><div>Model: <strong>${esc(cur.model||'')}</strong></div>`
+          : `<span style="color:#475569;font-size:13px">Brak danych. Wklej linię od Gemini.</span>`
+        }</div>
+        <div id="gemini-edit" style="display:none">
+          <textarea class="inp mb8" id="gemini-input" rows="2" placeholder="Wklej linię od Gemini w formacie:&#10;20520793&#9;Nikon AF-P DX Nikkor 70-300mm f/4.5-6.3G ED VR"></textarea>
+          <button class="btn" onclick="saveGeminiData()">Zapisz</button>
+        </div>`)}
 
-    <div class="card">
-      <div class="section-header">
-        <div class="lbl">📦 Śledzenie przesyłki</div>
-        <button class="btn-sm" onclick="toggleTrackEdit()">${cur.trackingNumber?'Edytuj':'+ Dodaj'}</button>
-      </div>
-      <div id="track-view">${trackHtml}</div>
-      <div id="track-edit" style="display:none">
-        <select class="inp mb8" id="track-carrier">${['DHL','Hermes','DPD','GLS'].map(c=>`<option ${(cur.carrier||'DHL')===c?'selected':''}>${c}</option>`).join('')}</select>
-        <input class="inp mb8" id="track-num" type="text" placeholder="Numer śledzenia" value="${esc(cur.trackingNumber||'')}">
-        <button class="btn" onclick="saveTracking()">Zapisz numer</button>
-      </div>
-    </div>
+    ${buildDetailsSection('tracking',
+        `<span class="details-label">📦 Śledzenie przesyłki</span><span class="details-meta">${cur.trackingNumber ? (cur.carrier||'') + ' ' + cur.trackingNumber.slice(-6) : 'brak'}</span>`,
+        `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div></div><button class="btn-sm" onclick="toggleTrackEdit()">${cur.trackingNumber?'Edytuj':'+ Dodaj'}</button>
+        </div>
+        <div id="track-view">${trackHtml}</div>
+        <div id="track-edit" style="display:none">
+          <select class="inp mb8" id="track-carrier">${['DHL','Hermes','DPD','GLS'].map(c=>`<option ${(cur.carrier||'DHL')===c?'selected':''}>${c}</option>`).join('')}</select>
+          <input class="inp mb8" id="track-num" type="text" placeholder="Numer śledzenia" value="${esc(cur.trackingNumber||'')}">
+          <button class="btn" onclick="saveTracking()">Zapisz numer</button>
+        </div>`)}
 
-    <div class="card">
-      <div class="section-header mb14" style="margin-bottom:12px">
-        <div class="lbl">💬 Rozmowa (${(cur.messages||[]).length})</div>
-      </div>
-      ${msgsHtml}
-    </div>
+    ${buildDetailsSection('chat',
+        `<span class="details-label">💬 Rozmowa</span><span class="details-meta">${(cur.messages||[]).length} wiadomości</span>`,
+        msgsHtml)}
 
-    <div class="card">
-      <div class="lbl">💰 Cena zakupu (EUR)</div>
-      <div class="row">
-        <input class="inp" id="fp-input" type="number" step="0.01" placeholder="Kwota w EUR" value="${cur.finalPrice||''}">
-        <button style="padding:10px 18px;background:${AC};color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;font-family:inherit;flex-shrink:0" onclick="savePrice()">Zapisz</button>
-      </div>
-    </div>
+    ${buildDetailsSection('price',
+        `<span class="details-label">💰 Cena zakupu (EUR)</span><span class="details-meta">${cur.finalPrice ? cur.finalPrice + ' EUR' : '—'}</span>`,
+        `<div class="row">
+          <input class="inp" id="fp-input" type="number" step="0.01" placeholder="Kwota w EUR" value="${cur.finalPrice||''}">
+          <button style="padding:10px 18px;background:${AC};color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;font-family:inherit;flex-shrink:0" onclick="savePrice()">Zapisz</button>
+        </div>`)}
 
-    ${(cur.changelog && cur.changelog.length > 0) ? `<div class="card">
-      <div class="lbl">📜 Historia zmian (${cur.changelog.length})</div>
-      <div style="max-height:200px;overflow-y:auto;font-size:12px;line-height:1.6">
-        ${[...cur.changelog].reverse().map(c => {
-          const d = new Date(c.date).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-          const src = c.source === 'patch' ? '🔄' : c.source === 'auto' ? '⚙️' : '✏️';
-          return `<div style="padding:3px 0;border-bottom:1px solid rgba(0,0,0,0.05)">${src} <strong>${esc(c.field)}</strong>: ${esc(String(c.oldValue ?? '—'))} → ${esc(String(c.newValue ?? '—'))} <span style="color:#aaa">${d}</span></div>`;
-        }).join('')}
-      </div>
-    </div>` : ''}
+    ${(cur.changelog && cur.changelog.length > 0) ? buildDetailsSection('changelog',
+        `<span class="details-label">📜 Historia zmian</span><span class="details-meta">${cur.changelog.length}</span>`,
+        `<div style="max-height:200px;overflow-y:auto;font-size:12px;line-height:1.6">
+          ${[...cur.changelog].reverse().map(c => {
+            const d = new Date(c.date).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+            const src = c.source === 'patch' ? '🔄' : c.source === 'auto' ? '⚙️' : '✏️';
+            return `<div style="padding:3px 0;border-bottom:1px solid rgba(0,0,0,0.05)">${src} <strong>${esc(c.field)}</strong>: ${esc(String(c.oldValue ?? '—'))} → ${esc(String(c.newValue ?? '—'))} <span style="color:#475569">${d}</span></div>`;
+          }).join('')}
+        </div>`) : ''}
 
     <div style="display:flex;gap:8px;margin-bottom:8px">
       <button class="btn" style="background:${cur.watchlist?'#888':'#1a7a1a'}" onclick="toggleWatchlist()">${cur.watchlist?'Usuń z listy obserwowanych':'🔁 Dodaj do listy obserwowanych'}</button>
@@ -1258,13 +1291,24 @@ function deleteItem() {
 
 function buildGallerySection(item) {
   const photos = item.photos || [];
-  const grid = photos.length > 0
-    ? photos.map((p, i) => `<img src="${p.url}" loading="lazy" onclick="openLightbox('${item.id}',${i})" class="gallery-thumb" alt="${esc(p.name)}">`).join('')
-    : `<div style="font-size:13px;color:#aaa;padding:6px 0">Brak zdjęć. Uruchom <code>node gdrive-sync.js --prepare-photo-folders</code> i zsynchronizuj.</div>`;
-  return `<div class="card">
-    <div class="lbl" style="margin-bottom:8px">🖼️ Zdjęcia (${photos.length})</div>
-    <div class="gallery-grid">${grid}</div>
-  </div>`;
+  if (photos.length === 0) {
+    return buildDetailsSection('gallery',
+      `<span class="details-label">📷 Zdjęcia</span><span class="details-meta">brak — zobacz jak dodać</span>`,
+      `<p style="color:#475569;font-size:13px;margin-bottom:8px">Nie dodano jeszcze zdjęć dla tej pozycji.</p>
+      <a href="https://github.com/dud3k/ka-scraper/blob/master/docs/PHOTO-UPLOAD.md"
+         target="_blank" rel="noopener"
+         style="color:var(--ac);font-weight:600;text-decoration:none;display:inline-block;margin-bottom:8px">
+        📖 Jak dodać zdjęcia →
+      </a>
+      <p style="color:#475569;font-size:12px;margin-top:4px">
+        ID tej pozycji: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">${item.id.slice(0,8)}</code>
+        (potrzebne przy tworzeniu folderu)
+      </p>`);
+  }
+  const grid = photos.map((p, i) => `<img src="${p.url}" loading="lazy" onclick="openLightbox('${item.id}',${i})" class="gallery-thumb" alt="${esc(p.name||'')}">`).join('');
+  return buildDetailsSection('gallery',
+    `<span class="details-label">📷 Zdjęcia</span><span class="details-meta">${photos.length}</span>`,
+    `<div class="gallery-grid">${grid}</div>`);
 }
 
 let lbItemId = null, lbIndex = 0;
@@ -1477,7 +1521,7 @@ function renderSyncOverview() {
   <div style="font-size:12px;color:var(--muted);margin-top:8px">
     ${Object.entries(byPhase).filter(([,v])=>v>0).map(([k,v])=>`${phaseLabels[k]}: <strong>${v}</strong>`).join(' · ')}
   </div>
-  <div style="font-size:11px;color:#bbb;margin-top:10px">Ostatnia aktualizacja: ${activeItems().length > 0 ? new Date(Math.max(...activeItems().map(i => new Date(i.updatedAt||0).getTime()))).toLocaleString('pl-PL') : '—'}</div>`;
+  <div style="font-size:11px;color:#475569;margin-top:10px">Ostatnia aktualizacja: ${activeItems().length > 0 ? new Date(Math.max(...activeItems().map(i => new Date(i.updatedAt||0).getTime()))).toLocaleString('pl-PL') : '—'}</div>`;
 }
 
 // ── Direct Scan Import ────────────────────────────────────────────────────────
@@ -1881,7 +1925,7 @@ function renderPatchReport(report, isDryRun) {
       <div class="sync-stat"><span class="num" style="color:#0066cc">${report.created.length}</span>nowych</div>
       ${hasErrors ? `<div class="sync-stat"><span class="num" style="color:#cc0000">${report.errors.length}</span>błędów</div>` : ''}
     </div>
-    ${report.details.length > 0 ? report.details.map(d => `<div class="rpt-item">${d}</div>`).join('') : '<div style="color:#aaa">Brak zmian do zastosowania.</div>'}
+    ${report.details.length > 0 ? report.details.map(d => `<div class="rpt-item">${d}</div>`).join('') : '<div style="color:#475569">Brak zmian do zastosowania.</div>'}
     ${hasErrors ? `<div style="margin-top:8px;padding:8px;background:#fff8f0;border-radius:6px;font-size:12px;color:#a05000">${report.errors.map(e => `⚠️ ${esc(e)}`).join('<br>')}</div>` : ''}
   </div>`;
 }
@@ -2162,7 +2206,7 @@ function initSyncStatusRow() {
   const gid = getGistId();
   const tok = getGistToken();
   if (!gid || !tok) {
-    dot.style.color = '#bbb'; lbl.textContent = 'Brak konfiguracji Gist';
+    dot.style.color = '#475569'; lbl.textContent = 'Brak konfiguracji Gist';
     return;
   }
   const verified = localStorage.getItem('ka_gist_verified') === '1';
@@ -2417,7 +2461,7 @@ function setGistStatusEl(type, msg) {
     ok:      'background:#edfbf0;color:#1a7a3c;border:1px solid #b2e5c4',
     error:   'background:#fff0f0;color:#c0392b;border:1px solid #f5c6c6',
     warn:    'background:#fffbe6;color:#8a6d00;border:1px solid #ffe58f',
-    loading: 'background:#f5f5f5;color:#888;border:1px solid #e0e0e0',
+    loading: 'background:#f5f5f5;color:#475569;border:1px solid #e0e0e0',
   };
   el.style.cssText = `font-size:12px;margin-top:7px;padding:5px 9px;border-radius:6px;${styles[type] || styles.warn}`;
   el.textContent = msg;
@@ -2530,9 +2574,9 @@ function setKanbanView(v) {
 
 function buildKanbanCard(item) {
   const col = COLUMNS.find(c => c.id === item.status) || COLUMNS[0];
-  const sellerNote = item.seller && item.seller !== '—' ? `<div style="font-size:11px;color:#94a3b8;margin-top:3px">${esc(item.seller)}</div>` : '';
+  const sellerNote = item.seller && item.seller !== '—' ? `<div style="font-size:11px;color:#475569;margin-top:3px">${esc(item.seller)}</div>` : '';
   const parentNote = item.parentItemId ? `<div style="font-size:10px;color:#a78bfa;margin-top:3px">↳ z zestawu</div>` : '';
-  const notesNote = item.notes ? `<div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.3">${esc(item.notes.substring(0,50))}${item.notes.length > 50 ? '…' : ''}</div>` : '';
+  const notesNote = item.notes ? `<div style="font-size:10px;color:#475569;margin-top:3px;line-height:1.3">${esc(item.notes.substring(0,50))}${item.notes.length > 50 ? '…' : ''}</div>` : '';
   const alertBadges = getAlertBadges(item);
   const price = item.finalPrice ? `<span style="font-size:12px;font-weight:700;color:#475569">${item.finalPrice} €</span>` : '';
   const carrier = item.carrier ? `<span style="font-size:10px;background:#f1f5f9;color:#64748b;padding:1px 5px;border-radius:6px">${esc(item.carrier)}</span>` : '';
@@ -2588,7 +2632,7 @@ function buildForwarderAlert() {
   return `<div class="forwarder-alert ${urgent ? 'urgent' : 'normal'}">
     <div>
       <div style="font-weight:700;font-size:13px;color:${urgent ? '#ea580c' : '#475569'}">${urgent ? '🔔' : '📦'} ${count} paczek u pośrednika</div>
-      <div style="font-size:11px;color:#94a3b8;margin-top:2px">Szac. forwarding: ~${count * fwdCost} PLN</div>
+      <div style="font-size:11px;color:#475569;margin-top:2px">Szac. forwarding: ~${count * fwdCost} PLN</div>
     </div>
     ${urgent ? `<div style="background:#ea580c;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px">Zadzwoń!</div>` : ''}
   </div>`;
@@ -2596,13 +2640,7 @@ function buildForwarderAlert() {
 
 function renderItems() {
   const kbContent = document.getElementById('kb-content');
-  if (kbContent) {
-    kbContent.innerHTML = `<div style="padding:12px 16px 4px">
-      <div class="kb-title">📸 KA Deal Tracker</div>
-    </div>
-    ${buildFinanceSummary()}
-    ${buildForwarderAlert()}`;
-  }
+  if (kbContent) kbContent.innerHTML = '';
 
   const toggleKanban = document.getElementById('toggle-kanban');
   const toggleList = document.getElementById('toggle-list');
@@ -2674,33 +2712,33 @@ function renderKanbanBoard(filtered, main) {
               </div>
               <div class="kb-col-count" style="background:${col.color}">${colItems.length}</div>
             </div>
-            ${totalValue > 0 ? `<div style="font-size:10px;color:#94a3b8;margin-top:3px">~${totalValue} €</div>` : ''}
+            ${totalValue > 0 ? `<div style="font-size:10px;color:#475569;margin-top:3px">~${totalValue} €</div>` : ''}
           </div>
           ${colItems.map(buildKanbanCard).join('') || '<div class="kb-empty">Pusto</div>'}
         </div>
       </div>`;
     }).join('');
-  main.innerHTML = `<div class="kanban-board">${cols || '<div style="text-align:center;padding:40px;color:#94a3b8">Brak pasujących pozycji</div>'}</div>`;
+  main.innerHTML = `<div class="kanban-board">${cols || '<div style="text-align:center;padding:40px;color:#475569">Brak pasujących pozycji</div>'}</div>`;
 }
 
 function renderItemsList(filtered, main) {
   const sorted = sortItems(filtered, currentSort);
   if (!sorted.length) {
     const hasFilters = currentFilter !== 'all' || currentSearch !== '';
-    main.innerHTML = `<div class="empty" style="padding:32px 24px;text-align:center">
+    main.innerHTML = `<div class="items-list-wrapper"><div class="empty" style="padding:32px 24px;text-align:center">
       <div style="font-size:42px;margin-bottom:10px">${hasFilters ? '🔍' : '📦'}</div>
       <div style="font-size:15px;font-weight:700;color:#777">${hasFilters ? 'Brak wyników' : 'Brak przedmiotów'}</div>
-      <div style="font-size:13px;color:#aaa;margin-top:6px;margin-bottom:${hasFilters?'14px':'0'}">${hasFilters ? 'Żaden przedmiot nie pasuje do aktywnych filtrów.' : 'Pobierz dane przez Synchronizacja → Pobierz z Gist.'}</div>
+      <div style="font-size:13px;color:#475569;margin-top:6px;margin-bottom:${hasFilters?'14px':'0'}">${hasFilters ? 'Żaden przedmiot nie pasuje do aktywnych filtrów.' : 'Pobierz dane przez Synchronizacja → Pobierz z Gist.'}</div>
       ${hasFilters ? '<button onclick="resetFilters()" style="padding:8px 18px;background:#E88B00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✕ Wyczyść filtry</button>' : ''}
-    </div>`;
+    </div></div>`;
     return;
   }
-  main.innerHTML = `<div style="padding:4px 16px 8px">${sorted.map(item => {
+  main.innerHTML = `<div class="items-list-wrapper" style="padding:4px 16px 8px">${sorted.map(item => {
     const col = COLUMNS.find(c => c.id === item.status) || COLUMNS[0];
     const alertBadges = getAlertBadges(item);
     const priceStr = item.finalPrice ? `<span style="font-size:12px;font-weight:700;color:#475569">${item.finalPrice} €</span>` : '';
     const trackStr = item.trackingNumber ? `<span style="font-size:10px;color:#64748b">🔢 ${esc(item.trackingNumber)}</span>` : '';
-    const notesStr = item.notes ? `<div style="font-size:11px;color:#94a3b8;margin-top:2px">${esc(item.notes.substring(0,60))}${item.notes.length>60?'…':''}</div>` : '';
+    const notesStr = item.notes ? `<div style="font-size:11px;color:#475569;margin-top:2px">${esc(item.notes.substring(0,60))}${item.notes.length>60?'…':''}</div>` : '';
     const closedStyle = item.status === 'closed' ? 'opacity:0.5;' : '';
     return `<div class="item-row" onclick="goItem('${item.id}')" style="${closedStyle}cursor:pointer">
       <div class="item-thumb">${item.photos&&item.photos.length>0?`<img src="${item.photos[0].url}" alt="">`:item.thumbnail?`<img src="${item.thumbnail}" alt="">`:'📦'}</div>
@@ -2708,7 +2746,7 @@ function renderItemsList(filtered, main) {
         <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
           <div class="item-title">${esc(item.title)}</div>${alertBadges}
         </div>
-        ${item.seller&&item.seller!=='—'?`<div style="font-size:11px;color:#94a3b8">${esc(item.seller)}</div>`:''}
+        ${item.seller&&item.seller!=='—'?`<div style="font-size:11px;color:#475569">${esc(item.seller)}</div>`:''}
         <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap">
           <span class="status-chip" onclick="event.stopPropagation();openStatusInlineMenu('${item.id}',event)" style="background:${col.color}22;color:${col.color};border:1px solid ${col.color}44">${col.emoji} ${col.label}</span>
           ${priceStr}${trackStr}
@@ -2855,7 +2893,7 @@ function buildBundleAllocHtml(item) {
     return `<div style="display:flex;justify-content:space-between;font-size:12px;color:#555;padding:2px 0">
       <span>${esc((bi.name||'?').substring(0,30))}</span><strong>${alloc} €</strong>
     </div>`;
-  }).join('') + `<div style="font-size:11px;color:#888;border-top:1px solid #e8dfc9;margin-top:5px;padding-top:4px;display:flex;justify-content:space-between">
+  }).join('') + `<div style="font-size:11px;color:#475569;border-top:1px solid #e8dfc9;margin-top:5px;padding-top:4px;display:flex;justify-content:space-between">
     <span>Σ szac. ${totalEst} € / zakup ${purchase} €</span>
   </div>`;
 }
@@ -2892,32 +2930,32 @@ function renderBundleSplitPanel() {
         </select>
         <div style="display:flex;align-items:center;gap:3px">
           <input id="bundle-item-val-${idx}" type="number" style="width:65px;padding:5px 6px;border:1px solid #e8dfc9;border-radius:6px;font-size:12px;font-family:inherit;text-align:right" value="${bi.estimatedValueEUR||0}" oninput="updateBundleItemField(${idx},'estimatedValueEUR',this.value)" step="5" min="0">
-          <span style="font-size:11px;color:#888">€ szac.</span>
+          <span style="font-size:11px;color:#475569">€ szac.</span>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:3px;margin-top:6px">
-        <span style="font-size:11px;color:#888;min-width:40px">Cena:</span>
+        <span style="font-size:11px;color:#475569;min-width:40px">Cena:</span>
         <input type="number" id="bundle-item-price-${idx}"
           style="width:75px;padding:5px 6px;border:1px solid #e8dfc9;border-radius:6px;font-size:12px;font-family:inherit;text-align:right"
           value="${bi.allocatedPrice != null ? bi.allocatedPrice : ''}"
           placeholder="—"
           oninput="updateBundleAllocatedPrice(${idx}, this.value)"
           step="1" min="0">
-        <span style="font-size:11px;color:#888">€</span>
+        <span style="font-size:11px;color:#475569">€</span>
       </div>
     </div>`).join('');
 
   el.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <div style="font-size:15px;font-weight:700">📦 Rozbij zestaw</div>
-      <div onclick="closeBundleSplit()" style="cursor:pointer;font-size:20px;color:#94a3b8;line-height:1">✕</div>
+      <div onclick="closeBundleSplit()" style="cursor:pointer;font-size:20px;color:#475569;line-height:1">✕</div>
     </div>
     <div style="font-size:13px;font-weight:600;margin-bottom:2px">${esc(item.title)}</div>
-    <div style="font-size:12px;color:#888;margin-bottom:14px">Cena zakupu: <strong>${item.finalPrice||'?'} EUR</strong></div>
+    <div style="font-size:12px;color:#475569;margin-bottom:14px">Cena zakupu: <strong>${item.finalPrice||'?'} EUR</strong></div>
 
     <button onclick="addBundleItemManual()" class="btn" style="width:100%;margin-bottom:12px;padding:10px;font-size:14px;font-weight:700">+ Dodaj element</button>
 
-    ${_bundleItems.length === 0 ? `<div style="text-align:center;padding:16px;color:#bbb;font-size:13px">Dodaj elementy ręcznie lub wklej JSON z Gemini poniżej</div>` : itemsHtml}
+    ${_bundleItems.length === 0 ? `<div style="text-align:center;padding:16px;color:#475569;font-size:13px">Dodaj elementy ręcznie lub wklej JSON z Gemini poniżej</div>` : itemsHtml}
 
     <div id="bundle-price-summary"></div>
 
@@ -3088,9 +3126,7 @@ function buildProfitSection(item) {
   const profit = revenue ? Math.round(revenue - costsPLN) : null;
   const pct = (revenue && costsPLN > 0) ? Math.round((profit / costsPLN) * 100) : null;
   const row = (label, val) => val ? `<div style="display:flex;justify-content:space-between;font-size:12px;color:#555;padding:2px 0"><span>${label}</span><span>${val} PLN</span></div>` : '';
-  return `<div class="card">
-    <div class="lbl mb8">💹 Kalkulacja finansowa</div>
-    ${row(`Zakup: ${purchase} € × ${rate}`, purchase ? Math.round(purchase * rate) : null)}
+  return `${row(`Zakup: ${purchase} € × ${rate}`, purchase ? Math.round(purchase * rate) : null)}
     ${row(`Wysyłka DE: ${shippingDE} € × ${rate}`, shippingDE ? Math.round(shippingDE * rate) : null)}
     ${row('Forwarding', fwdPLN||null)}
     ${row('Serwis', repair||null)}
@@ -3098,14 +3134,13 @@ function buildProfitSection(item) {
     ${row('Wysyłka do kupca', saleShip||null)}
     ${row('Inne', other||null)}
     <div style="border-top:1px solid #eee;margin:8px 0;padding-top:6px">
-      <div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;color:#888"><span>Koszt łącznie</span><strong>${Math.round(costsPLN)} PLN</strong></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;color:#475569"><span>Koszt łącznie</span><strong>${Math.round(costsPLN)} PLN</strong></div>
       ${revenue ? `<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;color:#16a34a"><span>Przychód (${esc(item.salePlatform||'?')})</span><strong>${revenue} PLN</strong></div>` : ''}
     </div>
     ${profit !== null ? `<div style="padding:10px 12px;border-radius:8px;background:${profit >= 0 ? '#f0fdf4' : '#fef2f2'};text-align:center;margin-top:4px">
       <div style="font-size:20px;font-weight:800;color:${profit >= 0 ? '#16a34a' : '#dc2626'}">${profit >= 0 ? '+' : ''}${profit} PLN</div>
-      ${pct !== null ? `<div style="font-size:11px;color:#888">${pct >= 0 ? '+' : ''}${pct}% zysku na koszcie</div>` : ''}
-    </div>` : `<div style="font-size:12px;color:#bbb;text-align:center;padding:6px">Dodaj cenę sprzedaży żeby zobaczyć zysk</div>`}
-  </div>`;
+      ${pct !== null ? `<div style="font-size:11px;color:#475569">${pct >= 0 ? '+' : ''}${pct}% zysku na koszcie</div>` : ''}
+    </div>` : `<div style="font-size:12px;color:#475569;text-align:center;padding:6px">Dodaj cenę sprzedaży żeby zobaczyć zysk</div>`}`;
 }
 
 // ── FAZA E: Szablon opisu do Gemini ────────────────────────────────────────────
