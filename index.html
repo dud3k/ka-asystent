@@ -19,9 +19,6 @@
   .screen.active { display: block; }
   .card { background: var(--white); border-radius: 14px; padding: 14px 16px; border: 1px solid var(--border); margin-bottom: 14px; }
   .lbl { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
-  .upload-area { width: 100%; background: var(--ac); border-radius: 12px; margin-bottom: 18px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; min-height: 52px; }
-  .upload-area label { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 16px; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; user-select: none; }
-  .upload-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
   .item-row { background: var(--white); border-radius: 14px; padding: 12px 14px; border: 1px solid var(--border); margin-bottom: 10px; display: flex; gap: 12px; align-items: center; cursor: pointer; transition: background 0.15s; }
   .item-row:active { background: #f9f6ef; }
   .item-thumb { width: 54px; height: 54px; border-radius: 8px; background: #f0ead8; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; overflow: hidden; }
@@ -37,9 +34,6 @@
   .btn-outline { width: 100%; padding: 11px 16px; background: var(--white); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; text-align: left; cursor: pointer; font-size: 14px; font-weight: 500; font-family: inherit; display: block; }
   .btn-sm { background: none; border: none; cursor: pointer; color: var(--ac); font-size: 13px; font-weight: 700; font-family: inherit; }
   .mb8 { margin-bottom: 8px; } .mb10 { margin-bottom: 10px; } .mb14 { margin-bottom: 14px; } .mb18 { margin-bottom: 18px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .spinner { display: inline-block; animation: spin 1.2s linear infinite; font-size: 34px; margin-bottom: 10px; }
-  .analyzing-box { text-align: center; padding: 28px 24px; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   .fade-in { animation: fadeIn 0.3s ease; }
   .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; margin-right: 6px; }
@@ -51,18 +45,11 @@
   .track-box { padding: 10px 12px; background: #f0f8ff; border-radius: 10px; }
   .track-num { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
   .track-link { display: inline-block; padding: 8px 16px; background: var(--ac); color: #fff; border-radius: 8px; font-size: 13px; text-decoration: none; font-weight: 700; }
-  .draft-result { margin-top: 12px; padding: 12px 14px; background: #f7f4ee; border-radius: 10px; border: 1px solid var(--border); }
-  .draft-text { font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
-  .copy-btn { margin-top: 10px; padding: 6px 14px; background: var(--white); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; font-family: inherit; }
   .row { display: flex; gap: 8px; align-items: center; }
   .row .inp { flex: 1; }
   .info-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; }
   .info-item { font-size: 13px; color: #666; }
   .info-item.green { color: #1a7a1a; }
-  .error-box { background: #fff0f0; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; border: 1px solid #ffcccc; }
-  .preview-img { width: 100%; border-radius: 12px; margin-bottom: 14px; max-height: 260px; object-fit: contain; background: #eee; display: block; }
-  .upload-small { background: none; border: 1px solid var(--ac); border-radius: 8px; color: var(--ac); font-size: 12px; font-weight: 700; padding: 5px 10px; cursor: pointer; position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
-  .upload-small input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
   .status-select { font-size: 12px; padding: 4px 6px; border: 1px solid #ddd; border-radius: 6px; background: #fff; cursor: pointer; font-family: inherit; }
   #fab-add-item { position: fixed; right: 16px; bottom: 16px; width: 56px; height: 56px; border-radius: 50%; background: var(--ac); color: #fff; border: none; font-size: 28px; font-weight: 300; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.25); z-index: 200; display: flex; align-items: center; justify-content: center; line-height: 1; }
   .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -146,6 +133,16 @@
   .lb-prev { left: 12px; }
   .lb-next { right: 12px; }
   .btn-copy-id { background: none; border: 1px solid #ddd; border-radius: 6px; font-size: 11px; padding: 2px 7px; cursor: pointer; color: #888; font-family: inherit; vertical-align: middle; }
+  #items-toolbar { position: sticky; top: var(--header-height, 48px); background: #f1f5f9; z-index: 90; padding: 8px 16px; border-bottom: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px; }
+  #items-toolbar .toolbar-row { display: flex; gap: 8px; align-items: center; }
+  #items-main { padding-bottom: 70px; min-height: 200px; }
+  .status-chip { display: inline-flex; align-items: center; min-height: 28px; padding: 4px 10px; border-radius: 8px; font-size: 12px; line-height: 1.2; cursor: pointer; white-space: nowrap; user-select: none; }
+  #status-inline-menu { position: fixed; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 10000; padding: 6px; min-width: 160px; max-width: calc(100vw - 32px); }
+  #status-inline-menu .smi { padding: 8px 12px; font-size: 12px; cursor: pointer; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
+  #status-inline-menu .smi:hover { background: #f1f5f9; }
+  #status-inline-menu .smi.cur { font-weight: 700; }
+  .ptr-indicator { position: fixed; top: -44px; left: 50%; transform: translateX(-50%); background: #1a1a0a; color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 8000; transition: top 0.15s ease; pointer-events: none; white-space: nowrap; }
+  .ptr-indicator.ready { background: #E88B00; }
 </style>
 </head>
 <body>
@@ -153,100 +150,80 @@
 <div id="header">
   <button id="back-btn" onclick="goBack()">←</button>
   <div style="flex:1">
-    <div id="header-title">🛒 KA Asystent <span style="font-size:10px;color:#aaa;font-weight:400">v2.5 · Święty Józef</span></div>
+    <div id="header-title">KA Asystent</div>
     <div id="header-sub"></div>
   </div>
-  <button onclick="showScreen('kanban')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Widok Kanban">📊</button>
-  <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
-    <button id="sync-icon-btn" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:2px 8px 0" title="Klik: pobierz z Gist | Długi klik (0.6s): wypchnij lokalne do Gist">☁️</button>
-    <span id="sync-ts" style="font-size:9px;color:#bbb;line-height:1;padding-bottom:2px"></span>
-  </div>
-  <button onclick="toggleSettings()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Ustawienia API">⚙️</button>
   <button onclick="showScreen('sync')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Synchronizacja danych">🔄</button>
+  <button onclick="showScreen('settings')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888;padding:4px 8px" title="Ustawienia">⚙️</button>
 </div>
 
-<div id="settings-panel" style="display:none;max-width:480px;margin:0 auto;padding:12px 16px;background:#fff8ee;border-bottom:1px solid #e8dfc9;">
-  <div style="font-size:13px;font-weight:700;color:#888;margin-bottom:8px">🔑 Klucz API (opcjonalny — tylko do AI)</div>
-  <div style="display:flex;gap:8px">
-    <input type="password" id="apikey-input" placeholder="sk-ant-..." style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit" value="">
-    <button onclick="saveApiKey()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
+<div id="screen-settings" class="screen">
+  <div style="padding:0;max-width:600px;margin:0 auto">
+    <h2 style="font-size:17px;font-weight:800;margin-bottom:16px">⚙️ Ustawienia</h2>
+
+    <div class="card sync-section">
+      <h3>☁️ Synchronizacja z chmurą</h3>
+      <div class="lbl mb8">Gist ID</div>
+      <input type="text" id="gist-id-input" placeholder="ID Gista (np. d77bb625...)" class="inp mb8"
+             onblur="autosaveGist()" oninput="autosaveGist.pending=true">
+      <div class="lbl mb8">GitHub Token</div>
+      <input type="password" id="gist-token-input" placeholder="ghp_... (scope: gist + repo do Actions)" class="inp mb8"
+             onblur="autosaveGist()">
+      <div id="gist-status"></div>
+      <p style="margin-top:8px">Gist ID to końcówka URL gista. Token wymaga scope <code>gist</code>; do zdalnego skanowania dodatkowo <code>repo</code>.</p>
+    </div>
+
+    <div class="card sync-section">
+      <h3>🧮 Kalkulacja i widok</h3>
+      <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+        <label style="font-size:12px;color:#888;white-space:nowrap;width:140px">Kurs EUR/PLN:</label>
+        <input type="number" id="setting-exchange" step="0.01" min="3" max="6" placeholder="4.30" class="inp"
+               onblur="autosaveAppSetting('exchangeRate', parseFloat)()">
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+        <label style="font-size:12px;color:#888;white-space:nowrap;width:140px">Forwarding (PLN):</label>
+        <input type="number" id="setting-forwarding" step="1" min="0" placeholder="22" class="inp"
+               onblur="autosaveAppSetting('forwardingPL', parseFloat)()">
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+        <label style="font-size:12px;color:#888;white-space:nowrap;width:140px">Alert Görlitz (szt):</label>
+        <input type="number" id="setting-threshold" step="1" min="1" placeholder="3" class="inp"
+               onblur="autosaveAppSetting('alertThreshold', parseInt)()">
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+        <label style="font-size:12px;color:#888;white-space:nowrap;width:140px">Platforma domyślna:</label>
+        <select id="setting-platform" class="inp"
+                onchange="autosaveAppSetting('defaultPlatform', v => v)()">
+          <option>OLX</option><option>FB Marketplace</option><option>Vinted</option><option>eBay</option><option>hurtowy</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;padding:12px;text-align:center;color:#94a3b8;font-size:11px">
+      KA Asystent v3.0 · Święty Józef
+    </div>
   </div>
-  <div style="font-size:11px;color:#aaa;margin-top:6px">Klucz API umożliwia analizę screenshotów i generowanie wiadomości. Klucz jest przechowywany tylko w tej sesji — po zamknięciu karty trzeba wpisać ponownie.</div>
-  <div style="font-size:13px;font-weight:700;color:#888;margin-top:12px;margin-bottom:8px">☁️ Gist + GitHub (synchronizacja)</div>
-  <div style="display:flex;gap:8px;margin-bottom:6px">
-    <input type="text" id="gist-id-input" placeholder="ID Gista (np. d77bb625...)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-    <button onclick="saveGistSettings()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz</button>
-  </div>
-  <input type="password" id="gist-token-input" placeholder="GitHub Token (ghp_... — do skanowania, statusu i importu patcha)" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-  <div id="gist-status" style="font-size:12px;margin-top:7px;padding:5px 9px;border-radius:6px;display:none"></div>
-  <div style="font-size:11px;color:#aaa;margin-top:4px">GIST_ID to końcówka URL Gista. Ten sam token używany do uruchamiania skanowania (Actions), odczytu statusu i importu patcha.</div>
-  <div style="font-size:13px;font-weight:700;color:#888;margin-top:14px;margin-bottom:8px">⚙️ Ustawienia aplikacji</div>
-  <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
-    <label style="font-size:12px;color:#888;white-space:nowrap;width:130px">Kurs EUR/PLN:</label>
-    <input type="number" id="setting-exchange" step="0.01" min="3" max="6" placeholder="4.30" style="flex:1;padding:6px 8px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-  </div>
-  <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
-    <label style="font-size:12px;color:#888;white-space:nowrap;width:130px">Forwarding (PLN):</label>
-    <input type="number" id="setting-forwarding" step="1" min="0" placeholder="22" style="flex:1;padding:6px 8px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-  </div>
-  <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
-    <label style="font-size:12px;color:#888;white-space:nowrap;width:130px">Alert Görlitz (szt):</label>
-    <input type="number" id="setting-threshold" step="1" min="1" placeholder="3" style="flex:1;padding:6px 8px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-  </div>
-  <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-    <label style="font-size:12px;color:#888;white-space:nowrap;width:130px">Platforma domyślna:</label>
-    <select id="setting-platform" style="flex:1;padding:6px 8px;border:1px solid #e8dfc9;border-radius:8px;font-size:13px;background:#fafaf7;outline:none;font-family:inherit">
-      <option>OLX</option><option>FB Marketplace</option><option>Vinted</option><option>eBay</option><option>hurtowy</option>
-    </select>
-  </div>
-  <button onclick="saveAppSettings()" style="padding:8px 14px;background:#E88B00;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:inherit">Zapisz ustawienia</button>
 </div>
 
-<div id="screen-home" class="screen">
-  <div class="upload-area">
-    <label for="file-home">📸 Dodaj screenshot z Kleinanzeigen</label>
-    <input type="file" id="file-home" accept="image/*" onchange="handleFile(event, null)">
-  </div>
-
-  <input type="text" id="search-input" placeholder="🔍 Szukaj (tytuł, nr przesyłki...)" oninput="setSearch(this.value)" class="inp" style="margin-bottom:10px">
-
-  <!-- Compact filter bar -->
-  <div id="filter-bar" style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
-    <select id="filter-status" onchange="setFilter(this.value)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:10px;font-size:13px;background:#fff;cursor:pointer;font-family:inherit;font-weight:600;color:#1a1a0a">
-      <option value="all">📋 Wszystkie</option>
-      <option value="active">🟢 Aktywne</option>
-      <option value="buying">💬 Zakupy</option>
-      <option value="logistics">📦 Logistyka</option>
-      <option value="warehouse">🔧 Magazyn</option>
-      <option value="selling">💰 Sprzedaż</option>
-      <option value="closed">⛔ Zamknięte</option>
-      <option value="watchlist">🔁 Do powrotu</option>
-    </select>
-    <select id="filter-sort" onchange="setSortPref(this.value)" style="flex:1;padding:8px 10px;border:1px solid #e8dfc9;border-radius:10px;font-size:13px;background:#fff;cursor:pointer;font-family:inherit;font-weight:600;color:#1a1a0a">
-      <option value="updated">🕐 Ostatnio zmienione</option>
-      <option value="created">📅 Data utworzenia</option>
-      <option value="price">💰 Cena</option>
-      <option value="name">🔤 Nazwa A-Z</option>
-    </select>
-  </div>
-
-  <div id="items-list"></div>
-
-</div>
-
-<div id="screen-upload" class="screen">
-  <img id="upload-preview" class="preview-img" style="display:none" alt="">
-  <div id="upload-content"></div>
-</div>
 
 <div id="screen-item" class="screen">
   <div id="item-content"></div>
 </div>
 
 <div id="screen-sync" class="screen">
-  <div class="card">
-    <div style="font-size:16px;font-weight:700;margin-bottom:4px">🔄 Synchronizacja danych</div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.5">Zdalne skanowanie → pobierz patch z Gist → importuj</div>
+
+  <div class="card sync-section">
+    <h3>☁️ Synchronizacja z Gist</h3>
+    <div id="sync-status-row" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px">
+      <span id="sync-status-dot">●</span>
+      <span id="sync-status-label">Sprawdzanie...</span>
+      <span id="sync-ts-label" style="color:#bbb;font-size:11px;margin-left:auto"></span>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn" onclick="pullFromGist()" style="flex:1">⬇️ Pobierz z Gist</button>
+      <button class="btn" onclick="pushToGistConfirm()" style="flex:1;background:#555">⬆️ Wyślij do Gist</button>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:6px">Wyślij = nadpisz dane w chmurze lokalnymi. Pytanie potwierdzenia przed wykonaniem.</p>
   </div>
 
   <div class="card sync-section" id="remote-scan-card">
@@ -305,15 +282,8 @@
   </div>
 
   <div class="card sync-section">
-    <h3>📋 Krok 1: Eksport danych</h3>
-    <p>Kopiuje pełny stan aplikacji (z wiadomościami) do schowka. Wklej go do Claude jako kontekst.</p>
-    <button class="btn" onclick="exportData()" id="export-btn">📋 Kopiuj dane do schowka</button>
-    <div id="export-stats" style="margin-top:10px"></div>
-  </div>
-
-  <div class="card sync-section">
-    <h3>📋 Krok 2: Import skanu bezpośredniego</h3>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Tworzy szkielety rekordów z <code>ka-changes-latest.json</code> bez udziału Gemini. Wiadomości bez tłumaczenia — Gemini dorzuci je w kroku 3.</p>
+    <h3>📋 Import skanu bezpośredniego</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Tworzy szkielety rekordów z <code>ka-changes-latest.json</code> bez udziału Gemini. Wiadomości bez tłumaczenia — Gemini dorzuci je w imporcie patcha.</p>
     <label style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:var(--white);border:2px dashed #2ecc71;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;color:#2ecc71;font-family:inherit;position:relative;overflow:hidden">
       📋 Wgraj ka-changes-latest.json
       <input type="file" accept=".json,application/json" onchange="importScanDirect(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer">
@@ -322,32 +292,34 @@
   </div>
 
   <div class="card sync-section">
-    <h3>📥 Krok 3: Import patch Gemini</h3>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Wgraj plik JSON lub wklej patch wygenerowany przez Gemini.</p>
-    <div style="margin-bottom:10px">
+    <h3>📥 Import patcha Gemini</h3>
+    <div style="display:flex;gap:0;margin-bottom:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+      <button class="seg-btn active" data-mode="file" onclick="switchPatchPane(this)" style="flex:1;padding:8px;border:none;background:var(--ac);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📁 Plik</button>
+      <button class="seg-btn" data-mode="paste" onclick="switchPatchPane(this)" style="flex:1;padding:8px;border:none;background:var(--white);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📋 Wklej</button>
+      <button class="seg-btn" data-mode="gist" onclick="switchPatchPane(this)" style="flex:1;padding:8px;border:none;background:var(--white);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">☁️ Z Gist</button>
+    </div>
+    <div id="patch-file-pane" class="patch-pane">
       <label style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:var(--white);border:2px dashed var(--ac);border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;color:var(--ac);font-family:inherit;position:relative;overflow:hidden">
         📁 Wgraj plik patch JSON
         <input type="file" accept=".json,application/json" onchange="loadPatchFile(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer">
       </label>
     </div>
-    <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px">— lub wklej ręcznie —</div>
-    <textarea class="sync-textarea" id="patch-input" placeholder='Wklej tutaj patch JSON z Gemini...'></textarea>
-    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;padding:8px;background:#1a1a2e;border-radius:8px">
-      <input type="checkbox" id="strict-mode-cb" style="cursor:pointer;width:16px;height:16px;flex-shrink:0">
-      <label for="strict-mode-cb" style="cursor:pointer;font-size:12px;color:var(--muted);line-height:1.4">🔒 Tryb ścisły — tylko aktualizuj istniejące rekordy (zalecane po imporcie skanu z kroku 2)</label>
+    <div id="patch-paste-pane" class="patch-pane" hidden>
+      <textarea class="sync-textarea" id="patch-input" placeholder='Wklej tutaj patch JSON z Gemini...'></textarea>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn" onclick="applyPatch()" style="flex:1">🔄 Zastosuj</button>
+        <button class="btn" onclick="previewPatch()" style="flex:1;background:#555">👁 Podgląd</button>
+      </div>
     </div>
-    <div style="margin-top:10px;display:flex;gap:8px">
-      <button class="btn" onclick="applyPatch()" style="flex:1">🔄 Zastosuj aktualizację</button>
-      <button class="btn" onclick="previewPatch()" style="flex:1;background:#555">👁 Podgląd</button>
+    <div id="patch-gist-pane" class="patch-pane" hidden>
+      <button class="btn" onclick="importPatchFromGist()" style="width:100%">☁️ Importuj patch z Gist</button>
+    </div>
+    <div style="margin-top:10px;display:flex;align-items:center;gap:8px;padding:8px;background:#1a1a2e;border-radius:8px">
+      <input type="checkbox" id="strict-mode-cb" style="cursor:pointer;width:16px;height:16px;flex-shrink:0">
+      <label for="strict-mode-cb" style="cursor:pointer;font-size:12px;color:var(--muted);line-height:1.4">🔒 Tryb ścisły — tylko aktualizuj istniejące rekordy</label>
     </div>
     <div id="patch-report"></div>
-  </div>
-
-  <div class="card sync-section">
-    <h3>☁️ Krok 4: Import patch z chmury (Gist)</h3>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Pobiera ka-patch.json z Gist i automatycznie aplikuje. Po sukcesie usuwa plik z Gist.</p>
-    <button class="btn" onclick="importPatchFromGist()" style="width:100%">☁️ Importuj patch z Gist</button>
-    <div id="gist-import-report" style="margin-top:8px"></div>
+    <div id="gist-import-report"></div>
   </div>
 
   <div class="card sync-section">
@@ -358,9 +330,6 @@
         <input type="file" accept=".json,application/json" onchange="importBackup(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer">
       </label>
     </div>
-    <button class="btn" onclick="fixSortDates()" style="width:100%;font-size:13px;padding:10px;background:#2471a3;margin-bottom:8px">🔧 Napraw sortowanie dat</button>
-    <button class="btn" onclick="diagSortDates()" style="width:100%;font-size:13px;padding:10px;background:#555;margin-bottom:8px">🔍 Diagnostyka dat (pokaż w konsoli)</button>
-    <button class="btn" onclick="if(confirm('Wyczyścić wszystkie dane?')){localStorage.setItem('ka_items_v2','[]');location.reload()}" style="width:100%;font-size:13px;padding:10px;background:#c0392b">🗑️ Wyczyść wszystkie dane</button>
   </div>
 
   <div class="card sync-section">
@@ -368,38 +337,71 @@
     <div id="sync-overview"></div>
   </div>
 
-  <div class="card sync-section">
-    <h3>📖 Format patcha</h3>
-    <div style="font-size:11px;color:var(--muted);line-height:1.6;font-family:'SF Mono','Menlo','Consolas',monospace;background:#fafaf7;padding:10px;border-radius:8px;white-space:pre-wrap">{
-  "updates": [
-    {
-      "match": "conversationId tutaj",
-      "set": {"status": "shipped_de", "trackingNumber": "123...", "listingUrl": "https://..."},
-      "addMessages": [{"sender":"seller", "originalText":"...", "translatedText":"..."}]
-    }
-  ],
-  "newItems": [
-    {
-      "title": "Nowy przedmiot",
-      "conversationUrl": "https://...",
-      "listingUrl": "https://www.kleinanzeigen.de/s-anzeige/...",
-      "status": "negotiating",
-      "messages": [...]
-    }
-  ]
-}</div>
-  </div>
+  <details class="card sync-section">
+    <summary style="cursor:pointer;font-weight:700;font-size:13px;color:var(--muted)">▸ Pokaż zaawansowane</summary>
+    <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+      <button class="btn" onclick="exportData()" id="export-btn">📋 Kopiuj dane do schowka</button>
+      <p style="font-size:11px;color:var(--muted)">Eksportuje pełny stan aplikacji do schowka. Rzadko potrzebne — głównie do wklejania kontekstu do AI w chacie.</p>
+      <button class="btn" onclick="fixSortDates()" style="background:#2471a3">🔧 Napraw sortowanie dat</button>
+      <button class="btn" onclick="diagSortDates()" style="background:#555">🔍 Diagnostyka dat (konsola)</button>
+      <button class="btn" onclick="if(confirm('Wyczyścić wszystkie dane?')){localStorage.setItem('ka_items_v2','[]');location.reload()}" style="background:#c0392b">🗑️ Wyczyść wszystkie dane</button>
+    </div>
+  </details>
+
 </div>
 
-<div id="screen-kanban" class="screen">
+<div id="screen-items" class="screen" style="overscroll-behavior:contain">
   <div id="kb-content"></div>
+  <div id="items-toolbar">
+    <div class="toolbar-row">
+      <div class="kb-toggle">
+        <button class="kb-toggle-btn" id="toggle-kanban" onclick="setKanbanView('kanban')">Kanban</button>
+        <button class="kb-toggle-btn" id="toggle-list" onclick="setKanbanView('list')">Lista</button>
+      </div>
+      <span id="item-count" style="margin-left:auto;font-size:11px;color:#94a3b8"></span>
+    </div>
+    <input id="search-input" type="search" placeholder="🔍 Szukaj…" autocomplete="off" oninput="setSearch(this.value)" style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;font-family:inherit">
+    <div class="toolbar-row">
+      <select id="filter-status" onchange="setFilter(this.value)" style="flex:1;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;background:#fff;font-family:inherit;min-width:0">
+        <option value="all">📋 Wszystkie</option>
+        <option value="active">🟢 Aktywne</option>
+        <option value="watchlist">🔁 Do powrotu</option>
+        <optgroup label="Grupy">
+          <option value="buying">💬 Zakupy</option>
+          <option value="logistics">📦 Logistyka</option>
+          <option value="warehouse">🔧 Magazyn</option>
+          <option value="selling">💰 Sprzedaż</option>
+          <option value="closed">⛔ Zamknięte</option>
+        </optgroup>
+        <optgroup label="Status">
+          <option value="negotiating">💬 Negocjacje</option>
+          <option value="purchased">💳 Zapłacone</option>
+          <option value="shipped_de">📤 W drodze DE</option>
+          <option value="at_forwarder">📦 Görlitz</option>
+          <option value="shipped_pl">🚚 W drodze PL</option>
+          <option value="received">✅ Odebrane</option>
+          <option value="in_repair">🔧 Serwis</option>
+          <option value="in_stock">🏷️ Do sprzedaży</option>
+          <option value="listed">📢 Wystawione</option>
+          <option value="sold">💰 Sprzedane</option>
+        </optgroup>
+      </select>
+      <select id="filter-sort" onchange="setSortPref(this.value)" style="flex:1;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;background:#fff;font-family:inherit;min-width:0">
+        <option value="updated">⏱ Ostatnio zmienione</option>
+        <option value="created">📅 Data dodania</option>
+        <option value="price">💶 Cena malejąco</option>
+        <option value="name">🔤 Nazwa A-Z</option>
+      </select>
+    </div>
+  </div>
+  <div id="items-main"></div>
   <button id="fab-add-item" onclick="showScreen('add-item')" title="Dodaj pozycję ręcznie">+</button>
 </div>
 
 <div id="screen-add-item" class="screen">
   <div style="padding:16px;max-width:600px;margin:0 auto">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
-      <button onclick="showScreen('kanban')" style="background:none;border:none;cursor:pointer;font-size:22px;padding:0;color:var(--ac)">←</button>
+      <button onclick="showScreen('items')" style="background:none;border:none;cursor:pointer;font-size:22px;padding:0;color:var(--ac)">←</button>
       <div style="font-size:17px;font-weight:700">Dodaj pozycję</div>
     </div>
 
@@ -443,9 +445,7 @@
   </div>
 </div>
 
-<div id="detail-overlay" class="detail-overlay" onclick="closeDetailModal()">
-  <div class="detail-modal" onclick="event.stopPropagation()" id="detail-modal-inner"></div>
-</div>
+<div id="status-inline-menu" hidden></div>
 
 <div id="bundle-split-overlay" class="detail-overlay" onclick="closeBundleSplit()">
   <div class="detail-modal" style="max-height:90vh" onclick="event.stopPropagation()" id="bundle-split-inner"></div>
@@ -459,8 +459,6 @@
 </div>
 
 <script>
-const API_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-sonnet-4-20250514';
 const AC = '#E88B00';
 let currentFilter = 'all';
 let currentSort = localStorage.getItem('ka_sort_pref') || 'updated';
@@ -481,13 +479,6 @@ function getTrackUrl(carrier, num) {
 const APP_VERSION = '2.8';
 const APP_CODENAME = 'Święty Józef';
 
-// Returns a suggested unified status based on screenshot analysis
-function autoStatusFromAnalysis(analysis, existingStatus) {
-  if (existingStatus && existingStatus !== 'negotiating') return existingStatus;
-  if (analysis.trackingNumber) return 'shipped_de';
-  if (analysis.finalPrice) return 'purchased';
-  return existingStatus || 'negotiating';
-}
 
 // ── Phase helper ─────────────────────────────────────────────────────────────
 function getPhase(status) {
@@ -512,35 +503,65 @@ function saveSettings(partial) {
   localStorage.setItem('ka_settings_meta', JSON.stringify({ updatedAt: new Date().toISOString() }));
   scheduleSave();  // wypchnij zmianę ustawień do Gist
 }
-function saveAppSettings() {
-  const rate = parseFloat(document.getElementById('setting-exchange').value);
-  const fwd  = parseFloat(document.getElementById('setting-forwarding').value);
-  const thr  = parseInt(document.getElementById('setting-threshold').value);
-  const plat = document.getElementById('setting-platform').value;
-  saveSettings({
-    exchangeRate:    isNaN(rate) ? 4.30 : rate,
-    forwardingPL:   isNaN(fwd)  ? 22   : fwd,
-    alertThreshold: isNaN(thr)  ? 3    : thr,
-    defaultPlatform: plat || 'OLX'
-  });
-  const btn = event.target;
-  btn.textContent = '✅ Zapisano';
-  setTimeout(() => { btn.textContent = 'Zapisz ustawienia'; }, 2000);
+function autosaveGist() {
+  const gid = (document.getElementById('gist-id-input').value || '').trim();
+  const tok = (document.getElementById('gist-token-input').value || '').trim();
+  const prevId = localStorage.getItem('ka_gist_id') || '';
+  const prevToken = localStorage.getItem('ka_gist_token') || '';
+  if (gid !== prevId || tok !== prevToken) localStorage.removeItem('ka_gist_verified');
+  if (gid) localStorage.setItem('ka_gist_id', gid);
+  if (tok) localStorage.setItem('ka_gist_token', tok);
+  updateGistStatus();
+  toast('✓ Zapisano');
+}
+
+function autosaveAppSetting(key, parseFn) {
+  return function() {
+    const raw = parseFn(document.getElementById({
+      exchangeRate: 'setting-exchange',
+      forwardingPL: 'setting-forwarding',
+      alertThreshold: 'setting-threshold',
+      defaultPlatform: 'setting-platform'
+    }[key]).value);
+    const defaults = { exchangeRate: 4.30, forwardingPL: 22, alertThreshold: 3, defaultPlatform: 'OLX' };
+    const prev = getSettings()[key];
+    if (key !== 'defaultPlatform' && (isNaN(raw) || (key !== 'forwardingPL' && raw <= 0))) {
+      toast('⚠️ Nieprawidłowa wartość');
+      document.getElementById({
+        exchangeRate: 'setting-exchange',
+        forwardingPL: 'setting-forwarding',
+        alertThreshold: 'setting-threshold',
+        defaultPlatform: 'setting-platform'
+      }[key]).value = prev;
+      return;
+    }
+    saveSettings({ [key]: raw });
+    toast('✓ Zapisano');
+    renderItems();
+  };
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
-function toast(msg, duration = 3000) {
+let _toastActionCb = null;
+function toast(msg, duration = 3000, actionLabel = null, actionCallback = null) {
   let el = document.getElementById('ka-toast');
   if (!el) {
     el = document.createElement('div');
     el.id = 'ka-toast';
-    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a0a;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap';
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a0a;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:opacity 0.3s;white-space:nowrap;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 32px)';
     document.body.appendChild(el);
   }
-  el.textContent = msg;
+  _toastActionCb = actionCallback || null;
+  if (actionLabel && actionCallback) {
+    el.style.pointerEvents = 'auto';
+    el.innerHTML = `<span>${esc(msg)}</span><button onclick="_toastActionCb&&_toastActionCb()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:10px;cursor:pointer;font-family:inherit;white-space:nowrap">${actionLabel}</button>`;
+  } else {
+    el.style.pointerEvents = 'none';
+    el.textContent = msg;
+  }
   el.style.opacity = '1';
   clearTimeout(el._t);
-  el._t = setTimeout(() => { el.style.opacity = '0'; }, duration);
+  el._t = setTimeout(() => { el.style.opacity = '0'; el.style.pointerEvents = 'none'; _toastActionCb = null; }, duration);
 }
 
 // ── Migration: logisticStatus → unified status ────────────────────────────────
@@ -706,31 +727,6 @@ function buildBundleSplitButton(item) {
 let items = [];
 let currentScreen = 'home';
 let currentId = null;
-let fromId = null;
-let currentImgPrev = null;
-let currentImgB64 = null;
-let currentAnalysis = null;
-let draftOut = '';
-
-// API key — session-only (never in localStorage)
-let _sessionApiKey = null;
-
-function getApiKey() { return _sessionApiKey || ''; }
-function saveApiKey() {
-  const key = document.getElementById('apikey-input').value.trim();
-  if (key && !key.startsWith('sk-')) { alert('Nieprawidłowy klucz API — powinien zaczynać się od sk-'); return; }
-  _sessionApiKey = key || null;
-  const btn = event.target; btn.textContent = '✅ Zapisano (sesja)'; setTimeout(() => btn.textContent = 'Zapisz', 2000);
-}
-function promptApiKey() {
-  if (_sessionApiKey) return _sessionApiKey;
-  _sessionApiKey = prompt('Podaj klucz API Anthropic (opcjonalnie — potrzebny tylko do funkcji AI):');
-  if (_sessionApiKey) {
-    const inp = document.getElementById('apikey-input');
-    if (inp) inp.value = _sessionApiKey;
-  }
-  return _sessionApiKey;
-}
 // ── Ręczne dodawanie pozycji ─────────────────────────────────────────────────
 let _addPriceUserEditedPln = false;
 
@@ -817,7 +813,7 @@ function saveNewItem() {
       items.unshift(item);
       saveItems();
       _resetAddItemForm();
-      showScreen('kanban');
+      showScreen('items');
     };
     reader.readAsDataURL(file);
     return;
@@ -826,7 +822,7 @@ function saveNewItem() {
   items.unshift(item);
   saveItems();
   _resetAddItemForm();
-  showScreen('kanban');
+  showScreen('items');
 }
 
 function _resetAddItemForm() {
@@ -839,31 +835,15 @@ function _resetAddItemForm() {
   _addPriceUserEditedPln = false;
 }
 
-function toggleSettings() {
-  const p = document.getElementById('settings-panel');
-  p.style.display = p.style.display === 'none' ? 'block' : 'none';
-  if (p.style.display === 'block') {
-    const inp = document.getElementById('apikey-input');
-    if (inp) inp.value = getApiKey() || '';
-    const gi = document.getElementById('gist-id-input');
-    if (gi) gi.value = getGistId();
-    const gt = document.getElementById('gist-token-input');
-    if (gt) gt.value = getGistToken();
-    updateGistStatus();
-    const s = getSettings();
-    const exEl = document.getElementById('setting-exchange');   if (exEl) exEl.value = s.exchangeRate;
-    const fwEl = document.getElementById('setting-forwarding'); if (fwEl) fwEl.value = s.forwardingPL;
-    const thEl = document.getElementById('setting-threshold');  if (thEl) thEl.value = s.alertThreshold;
-    const plEl = document.getElementById('setting-platform');   if (plEl) plEl.value = s.defaultPlatform;
-  }
-}
-// Migrate old key from localStorage (one-time cleanup)
-function migrateApiKey() {
-  const oldKey = localStorage.getItem('ka_apikey');
-  if (oldKey) {
-    localStorage.removeItem('ka_apikey');
-    alert('Klucz API został usunięty z pamięci trwałej ze względów bezpieczeństwa. Będzie pytany przy każdej sesji.');
-  }
+function initSettingsScreen() {
+  const gi = document.getElementById('gist-id-input');     if (gi) gi.value = getGistId();
+  const gt = document.getElementById('gist-token-input');  if (gt) gt.value = getGistToken();
+  updateGistStatus();
+  const s = getSettings();
+  const exEl = document.getElementById('setting-exchange');   if (exEl) exEl.value = s.exchangeRate;
+  const fwEl = document.getElementById('setting-forwarding'); if (fwEl) fwEl.value = s.forwardingPL;
+  const thEl = document.getElementById('setting-threshold');  if (thEl) thEl.value = s.alertThreshold;
+  const plEl = document.getElementById('setting-platform');   if (plEl) plEl.value = s.defaultPlatform;
 }
 
 function loadItems() {
@@ -947,12 +927,12 @@ const LS_LEGACY = {
 
 function setSearch(val) {
   currentSearch = val;
-  renderHome();
+  renderItems();
 }
 
 function setFilter(f) {
   currentFilter = f;
-  renderHome();
+  renderItems();
 }
 
 function resetFilters() {
@@ -960,8 +940,7 @@ function resetFilters() {
   currentSearch = '';
   const si = document.getElementById('search-input');
   if (si) si.value = '';
-  syncFilterSelects();
-  renderHome();
+  renderItems();
 }
 
 // setLsFilter removed — logisticStatus replaced by unified status in v3.0
@@ -969,7 +948,7 @@ function resetFilters() {
 function setSortPref(val) {
   currentSort = val;
   localStorage.setItem('ka_sort_pref', val);
-  renderHome();
+  renderItems();
 }
 
 function sortItems(arr, sortBy) {
@@ -1000,28 +979,42 @@ function syncFilterSelects() {
   if (fs) fs.value = currentFilter;
 }
 
+function applyFilter(pool, key) {
+  if (key === 'all')       return pool;
+  if (key === 'active')    return pool.filter(i => !i.watchlist && !['sold','closed','completed'].includes(i.status));
+  if (key === 'watchlist') return pool.filter(i => i.watchlist);
+  if (key === 'buying')    return pool.filter(i => ['negotiating','purchased'].includes(i.status));
+  if (key === 'logistics') return pool.filter(i => ['shipped_de','at_forwarder','shipped_pl','received'].includes(i.status));
+  if (key === 'warehouse') return pool.filter(i => ['inspecting','in_repair','in_stock'].includes(i.status));
+  if (key === 'selling')   return pool.filter(i => ['listed','sold','completed'].includes(i.status));
+  if (key === 'closed')    return pool.filter(i => i.status === 'closed');
+  return pool.filter(i => i.status === key);
+}
+
 function showScreen(name) {
+  if (name === 'kanban') name = 'items';
+  if (name === 'home') name = 'items';
   currentScreen = name;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + name).classList.add('active');
+  const screenEl = document.getElementById('screen-' + name);
+  if (!screenEl) return;
+  screenEl.classList.add('active');
   const globalHeader = document.getElementById('header');
-  const settingsPanel = document.getElementById('settings-panel');
-  if (name === 'kanban') {
+  if (name === 'items' || name === 'add-item') {
     globalHeader.style.display = 'none';
-    settingsPanel.style.display = 'none';
-    renderKanban();
+    if (name === 'items') renderItems();
+    else initAddItemForm();
     return;
   }
   globalHeader.style.display = '';
   const backBtn = document.getElementById('back-btn');
   const sub = document.getElementById('header-sub');
   const title = document.getElementById('header-title');
-  if (name === 'home') { backBtn.style.display = 'none'; title.innerHTML = '🛒 KA Asystent <span style="font-size:10px;color:#aaa;font-weight:400">v3.0 · Święty Józef</span>'; sub.style.display = 'none'; renderHome(); }
-  else if (name === 'upload') { backBtn.style.display = 'block'; title.textContent = '📸 Analiza screenshota'; sub.style.display = 'none'; }
-  else if (name === 'sync') { backBtn.style.display = 'block'; title.textContent = '🔄 Synchronizacja'; sub.style.display = 'none'; renderSyncOverview(); }
-  else if (name === 'add-item') { globalHeader.style.display = 'none'; settingsPanel.style.display = 'none'; initAddItemForm(); }
+  backBtn.style.display = 'block';
+  sub.style.display = 'none';
+  if (name === 'sync') { title.textContent = '🔄 Synchronizacja'; renderSyncOverview(); initSyncStatusRow(); }
+  else if (name === 'settings') { title.textContent = '⚙️ Ustawienia'; initSettingsScreen(); }
   else if (name === 'item') {
-    backBtn.style.display = 'block';
     const cur = getItem(currentId);
     title.textContent = cur ? cur.title : 'Przedmiot';
     sub.style.display = cur ? 'block' : 'none';
@@ -1031,99 +1024,11 @@ function showScreen(name) {
 }
 
 function goBack() {
-  if (currentScreen === 'upload' && fromId) goItem(fromId);
-  else if (currentScreen === 'sync') showScreen('kanban');
-  else showScreen('kanban');
+  showScreen('items');
 }
 
-function goItem(id) { currentId = id; draftOut = ''; showScreen('item'); }
+function goItem(id) { currentId = id; showScreen('item'); }
 
-function handleFile(e, fromItemId) {
-  const f = e.target.files[0]; if (!f) return; e.target.value = '';
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const dataUrl = ev.target.result;
-    currentImgPrev = dataUrl; currentImgB64 = dataUrl.split(',')[1];
-    currentAnalysis = null; fromId = fromItemId || null;
-    const prev = document.getElementById('upload-preview');
-    prev.src = dataUrl; prev.style.display = 'block';
-    showScreen('upload'); renderUploadAnalyzing(); runAnalysis(currentImgB64);
-  };
-  reader.readAsDataURL(f);
-}
-
-// Fetch listing page to enrich product name
-async function enrichFromListing(listingId, currentTitle) {
-  if (!listingId || !getApiKey()) return currentTitle;
-  const key = getApiKey();
-  try {
-    const url = `https://www.kleinanzeigen.de/s-anzeige/x-x/${listingId}`;
-    const resp = await fetch(`https://api.anthropic.com/v1/messages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': getApiKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({
-        model: MODEL, max_tokens: 200,
-        system: 'Jesteś ekspertem od sprzętu fotograficznego. Na podstawie podanego tytułu ogłoszenia lub numeru modelu zwróć TYLKO pełną handlową nazwę produktu (np. "Canon EOS 5D Classic 12.8MP", "Nikon D7100 24MP"). Żadnego innego tekstu.',
-        messages: [{ role: 'user', content: `Ogłoszenie: "${currentTitle}". Jak nazywa się ten produkt?` }]
-      })
-    });
-    if (!resp.ok) return currentTitle;
-    const d = await resp.json();
-    const name = d.content?.[0]?.text?.trim();
-    return (name && name.length < 80) ? name : currentTitle;
-  } catch { return currentTitle; }
-}
-
-async function callAI(messages, sys) {
-  const key = getApiKey() || promptApiKey(); if (!key) { throw new Error('Funkcje AI wymagają klucza API. Podaj go w ustawieniach (⚙️) lub przy następnym wywołaniu.'); }
-  const r = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model: MODEL, max_tokens: 1000, system: sys, messages }) });
-  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e?.error?.message || 'Błąd API: ' + r.status); }
-  const d = await r.json(); return d.content?.[0]?.text || '';
-}
-
-async function runAnalysis(data) {
-  setAnalyzing(true);
-  try {
-    const sys = `Analizujesz zrzuty ekranu z Kleinanzeigen. Zwróć TYLKO prawidłowy JSON bez backtick-ów:
-{"type":"listing","itemTitle":null,"itemDescription":null,"price":null,"messages":[],"trackingNumber":null,"carrier":null,"finalPrice":null,"listingId":null}
-messages: [{"sender":"seller","originalText":"","translatedText":""}]
-carrier: "DHL"|"Hermes"|"DPD"|"GLS"|null. Tłumacz z niemieckiego na polski w translatedText.
-Dla itemTitle podaj czytelną nazwę produktu (np. "Canon EOS 5D Classic" zamiast "DS126091", "Nikon D7100" zamiast numeru modelu).
-Jeśli widzisz numer ogłoszenia lub URL na screenshocie, zapisz ID ogłoszenia w polu listingId.`;
-    const txt = await callAI([{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } }, { type: 'text', text: 'Przeanalizuj screenshot z Kleinanzeigen.' }] }], sys);
-    currentAnalysis = JSON.parse(txt.replace(/```json|```/g, '').trim());
-    renderUploadResult();
-  } catch(e) { currentAnalysis = { error: e.message }; renderUploadError(e.message); }
-  finally { setAnalyzing(false); }
-}
-
-function setAnalyzing(v) { /* handled by renderUploadAnalyzing */ }
-
-function applyTo(itemId) {
-  if (!currentAnalysis || currentAnalysis.error) return;
-  const a = currentAnalysis;
-  const msgs = (a.messages || []).map(m => ({ id: genId(), timestamp: new Date().toISOString(), sender: m.sender, originalText: m.originalText, translatedText: m.translatedText }));
-  const url = a.trackingNumber ? getTrackUrl(a.carrier, a.trackingNumber) : null;
-  const cur = getItem(itemId);
-  const newStatus = autoStatusFromAnalysis(a, cur.status);
-  const patch = { trackingNumber: a.trackingNumber || cur.trackingNumber, carrier: a.carrier || cur.carrier, trackingUrl: url || cur.trackingUrl, finalPrice: a.finalPrice || cur.finalPrice, messages: [...(cur.messages || []), ...msgs] };
-  if (newStatus !== cur.status) patch.status = newStatus;
-  updateItem(itemId, patch);
-  goItem(itemId);
-}
-
-async function createNewItem() {
-  const a = currentAnalysis || {};
-  const url = a.trackingNumber ? getTrackUrl(a.carrier, a.trackingNumber) : null;
-  const autoSt = a.trackingNumber ? 'shipped_de' : (a.finalPrice ? 'purchased' : 'negotiating');
-  // Try to enrich product name from model number
-  if (a.listingId && getApiKey()) {
-    const enriched = await enrichFromListing(a.listingId, a.itemTitle || 'Nowy przedmiot');
-    if (enriched) a.itemTitle = enriched;
-  }
-  const item = { id: genId(), title: a.itemTitle || 'Nowy przedmiot', description: a.itemDescription || '', askingPrice: a.price || null, finalPrice: a.finalPrice || null, status: autoSt, carrier: a.carrier || null, trackingNumber: a.trackingNumber || null, trackingUrl: url, thumbnail: currentImgPrev, watchlist: false, conversationUrl: null, listingUrl: null, notes: '', messages: (a.messages || []).map(m => ({ id: genId(), timestamp: new Date().toISOString(), sender: m.sender, originalText: m.originalText, translatedText: m.translatedText })), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-  items.unshift(item); saveItems(); goItem(item.id);
-}
 
 function renderHome() {
   const list = document.getElementById('items-list');
@@ -1185,20 +1090,6 @@ function renderHome() {
   }).join('');
 }
 
-function renderUploadAnalyzing() {
-  document.getElementById('upload-content').innerHTML = `<div class="card analyzing-box"><div class="spinner">🔍</div><div style="font-size:15px;font-weight:700">Analizuję screenshot...</div><div style="font-size:12px;color:#888;margin-top:5px">AI wyciąga informacje i tłumaczy wiadomości</div></div>`;
-}
-
-function renderUploadError(msg) {
-  document.getElementById('upload-content').innerHTML = `<div class="error-box"><div style="color:#c00;font-weight:700;margin-bottom:8px">❌ Błąd analizy</div><div style="font-size:13px;color:#a00;margin-bottom:12px">${esc(msg)}</div><button class="btn" style="width:auto;padding:8px 20px;font-size:13px" onclick="renderUploadAnalyzing();runAnalysis(currentImgB64)">Spróbuj ponownie</button></div>`;
-}
-
-function renderUploadResult() {
-  const a = currentAnalysis;
-  const msgsHtml = (a.messages || []).length > 0 ? `<div style="margin-top:10px"><div class="lbl">Wiadomości (${a.messages.length})</div>${a.messages.map(m => `<div style="margin-bottom:8px;padding:8px 10px;background:${m.sender==='buyer'?'#fff8ee':'#f7f4ee'};border-radius:8px;border-left:3px solid ${m.sender==='buyer'?AC:'#ccc'}"><div style="font-size:10px;color:#888;margin-bottom:3px">${m.sender==='seller'?'Sprzedający 🇩🇪':'Ty'}</div><div style="font-size:13px">${esc(m.translatedText)}</div>${m.originalText!==m.translatedText?`<div style="font-size:11px;color:#bbb;font-style:italic;margin-top:2px">🇩🇪 ${esc(m.originalText)}</div>`:''}</div>`).join('')}</div>` : '';
-  const existingItems = activeItems().map(item => `<button class="btn-outline" onclick="applyTo('${item.id}')">📦 ${esc(item.title)}</button>`).join('');
-  document.getElementById('upload-content').innerHTML = `<div class="card fade-in"><div style="margin-bottom:10px"><span class="badge green">✅ Przeanalizowano</span><span class="badge orange">${a.type==='listing'?'Ogłoszenie':a.type==='conversation'?'Rozmowa':'Śledzenie'}</span></div>${a.itemTitle?`<div style="font-weight:700;font-size:15px;margin-bottom:6px">${esc(a.itemTitle)}</div>`:''} ${a.price?`<div style="font-size:13px;color:#555;margin-bottom:4px">💰 Cena: <strong>${a.price} EUR</strong></div>`:''} ${a.trackingNumber?`<div style="font-size:13px;color:${AC};font-weight:700">📦 ${esc(a.carrier)}: ${esc(a.trackingNumber)}</div>`:''} ${msgsHtml}</div><div class="lbl mb10">Dodaj do:</div>${fromId?`<button class="btn mb10" onclick="applyTo('${fromId}')">➕ Dodaj do bieżącego przedmiotu</button>`:''} ${existingItems}<button class="btn" style="background:${fromId?'#555':AC}" onclick="createNewItem()">✨ Utwórz nowy przedmiot</button>`;
-}
 
 function renderItem() {
   const cur = getItem(currentId); if (!cur) return;
@@ -1216,8 +1107,6 @@ function renderItem() {
       return `<div class="chat-row ${msg.sender==='buyer'?'me':'them'}"><div class="chat-who">${msg.sender==='seller'?'🇩🇪 Sprzedający':'Ty'}${timeStr ? `<span class="chat-time">${timeStr}</span>` : ''}</div><div class="bubble ${msg.sender==='buyer'?'me':'them'}">${esc(msg.translatedText||msg.originalText)}${msg.originalText&&msg.originalText!==msg.translatedText?`<div class="bubble-orig">🇩🇪 ${esc(msg.originalText)}</div>`:''}</div></div>`;
     }).join('')}</div>`
     : `<div style="text-align:center;padding:14px 0;color:#bbb;font-size:13px">Brak wiadomości. Dodaj screenshot z rozmowy.</div>`;
-  const draftResultHtml = draftOut ? `<div class="draft-result" id="draft-result-box"><div class="lbl">GOTOWA WIADOMOŚĆ — skopiuj do Kleinanzeigen:</div><div class="draft-text" id="draft-text-out">${esc(draftOut)}</div><button class="copy-btn" onclick="copyDraft()">📋 Kopiuj</button></div>` : '';
-
   // Conditional sections
   const showInspection = ['received','inspecting','in_repair','in_stock','listed','sold','completed'].includes(cur.status);
   const showRepair     = cur.status === 'in_repair';
@@ -1284,16 +1173,8 @@ function renderItem() {
     <div class="card">
       <div class="section-header mb14" style="margin-bottom:12px">
         <div class="lbl">💬 Rozmowa (${(cur.messages||[]).length})</div>
-        <label class="upload-small">+ Screenshot<input type="file" accept="image/*" onchange="handleFile(event,'${cur.id}')"></label>
       </div>
       ${msgsHtml}
-    </div>
-
-    <div class="card">
-      <div class="lbl">✍️ Napisz odpowiedź po niemiecku</div>
-      <textarea class="inp mb8" id="draft-input" placeholder="Opisz po polsku co chcesz napisać..."></textarea>
-      <button class="btn" id="draft-btn" onclick="generateDraft()">🇩🇪 Generuj wiadomość po niemiecku</button>
-      ${draftResultHtml}
     </div>
 
     <div class="card">
@@ -1370,7 +1251,7 @@ function deleteItem() {
     item.updatedAt = new Date().toISOString();
     saveItems();
   }
-  showScreen('kanban');
+  showScreen('items');
 }
 
 // ── Galeria zdjęć ──
@@ -1424,23 +1305,6 @@ function copyItemId(id) {
   navigator.clipboard.writeText(shortId).then(() => toast('Skopiowano ID: ' + shortId));
 }
 
-async function generateDraft() {
-  const txt = document.getElementById('draft-input')?.value?.trim(); if (!txt) return;
-  const cur = getItem(currentId); if (!cur) return;
-  const btn = document.getElementById('draft-btn'); btn.textContent = '⏳ Generuję...'; btn.disabled = true;
-  try {
-    const ctx = (cur.messages||[]).slice(-8).map(m => `${m.sender==='seller'?'Sprzedający':'Kupujący'}: ${m.originalText}`).join('\n');
-    draftOut = await callAI([{ role: 'user', content: `Kupuję na Kleinanzeigen.\nPrzedmiot: ${cur.title}\nCena: ${cur.finalPrice?cur.finalPrice+' EUR':cur.askingPrice?cur.askingPrice+' EUR':'nieznana'}${ctx?'\nRozmowa:\n'+ctx:''}\nMoje zamierzenie: ${txt}\nNapisz krótką, grzeczną wiadomość po niemiecku. Zwróć TYLKO tekst wiadomości.` }], 'Pomagasz pisać wiadomości po niemiecku na Kleinanzeigen. Pisz naturalnie, grzecznie i zwięźle.');
-    draftOut = draftOut.trim(); renderItem();
-    const inp = document.getElementById('draft-input'); if (inp) inp.value = txt;
-  } catch(e) { draftOut = 'Błąd: '+e.message; renderItem(); }
-}
-
-function copyDraft() {
-  const txt = document.getElementById('draft-text-out')?.textContent || draftOut;
-  if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => { const btn = document.querySelector('.copy-btn'); if (btn) { btn.textContent = '✅ Skopiowano!'; setTimeout(() => btn.textContent = '📋 Kopiuj', 2000); } });
-  else { const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
-}
 
 function esc(str) { if (!str && str !== 0) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function linkify(str) {
@@ -2280,49 +2144,56 @@ async function forcePushToGist() {
   if (ok) toast('⬆️ Lokalne dane wypchnięte do Gist');
 }
 
-function initSyncBtn() {
-  const btn = document.getElementById('sync-icon-btn');
-  if (!btn) return;
-  let pressTimer = null;
-  const startPress = () => {
-    pressTimer = setTimeout(() => { pressTimer = null; forcePushToGist(); }, 600);
-  };
-  const endPress = () => {
-    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; loadFromGist(); }
-  };
-  btn.addEventListener('mousedown', startPress);
-  btn.addEventListener('touchstart', startPress, { passive: true });
-  btn.addEventListener('mouseup', endPress);
-  btn.addEventListener('touchend', endPress);
-  btn.addEventListener('mouseleave', () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } });
+function pushToGistConfirm() {
+  if (confirm('Nadpisać dane w Gist danymi lokalnymi?')) forcePushToGist();
 }
+
+function switchPatchPane(btn) {
+  document.querySelectorAll('.seg-btn').forEach(b => { b.style.background = 'var(--white)'; b.style.color = 'var(--muted)'; });
+  btn.style.background = 'var(--ac)'; btn.style.color = '#fff';
+  document.querySelectorAll('.patch-pane').forEach(p => { p.hidden = true; });
+  document.getElementById('patch-' + btn.dataset.mode + '-pane').hidden = false;
+}
+
+function initSyncStatusRow() {
+  const dot = document.getElementById('sync-status-dot');
+  const lbl = document.getElementById('sync-status-label');
+  if (!dot || !lbl) return;
+  const gid = getGistId();
+  const tok = getGistToken();
+  if (!gid || !tok) {
+    dot.style.color = '#bbb'; lbl.textContent = 'Brak konfiguracji Gist';
+    return;
+  }
+  const verified = localStorage.getItem('ka_gist_verified') === '1';
+  if (verified) {
+    dot.style.color = '#27ae60'; lbl.textContent = 'Skonfigurowany';
+  } else {
+    dot.style.color = '#e67e22'; lbl.textContent = 'Nie zweryfikowany';
+  }
+  updateSyncTs(JSON.parse(localStorage.getItem('ka_items_meta') || '{}').lastSavedAt || null);
+}
+
+function initSyncBtn() { /* removed — sync moved to screen-sync D1 */ }
 
 function updateSyncTs(isoStr) {
   const el = document.getElementById('sync-ts');
-  if (!el) return;
-  if (!isoStr) { el.textContent = ''; return; }
+  const elLabel = document.getElementById('sync-ts-label');
+  if (!isoStr) {
+    if (el) el.textContent = '';
+    if (elLabel) elLabel.textContent = '';
+    return;
+  }
   const d = new Date(isoStr);
   const hhmm = d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
   const ddmm = d.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' });
-  el.textContent = `${hhmm} ${ddmm}`;
-  el.title = `Ostatni sync: ${d.toLocaleString('pl-PL')}`;
+  const text = `${hhmm} ${ddmm}`;
+  const titleText = `Ostatni sync: ${d.toLocaleString('pl-PL')}`;
+  if (el) { el.textContent = text; el.title = titleText; }
+  if (elLabel) { elLabel.textContent = text; elLabel.title = titleText; }
 }
 
-function setSyncIcon(state) {
-  const btn = document.getElementById('sync-icon-btn');
-  if (!btn) return;
-  const icons = { ok: '☁️', saving: '🔄', error: '⚠️', offline: '⚠️', unconfigured: '☁️' };
-  const titles = {
-    ok:            'Sync OK — kliknij aby odświeżyć | długi klik: wypchnij lokalne',
-    saving:        'Zapisywanie...',
-    error:         'Błąd synchronizacji — kliknij aby spróbować ponownie',
-    offline:       'Offline — dane lokalne',
-    unconfigured:  'Brak konfiguracji Gist — skonfiguruj w ⚙️'
-  };
-  btn.textContent = icons[state] || '☁️';
-  btn.title       = titles[state] || '';
-  btn.style.opacity = (state === 'unconfigured') ? '0.4' : '1';
-}
+function setSyncIcon(state) { /* sync icon removed from header — state reflected in screen-sync */ }
 
 function mergeItems(localItems, remoteItems) {
   // Klucz merge: conversationUrl (stabilny między urządzeniami), fallback na id
@@ -2553,42 +2424,6 @@ function setGistStatusEl(type, msg) {
   el.style.display = 'block';
 }
 
-async function saveGistSettings() {
-  const id = (document.getElementById('gist-id-input').value || '').trim();
-  const token = (document.getElementById('gist-token-input').value || '').trim();
-
-  // Wyczyść cache weryfikacji jeśli credentials się zmieniły
-  const prevId = localStorage.getItem('ka_gist_id') || '';
-  const prevToken = localStorage.getItem('ka_gist_token') || '';
-  if (id !== prevId || token !== prevToken) {
-    localStorage.removeItem('ka_gist_verified');
-  }
-
-  if (id) localStorage.setItem('ka_gist_id', id);
-  if (token) localStorage.setItem('ka_gist_token', token);
-
-  if (!id || !token) {
-    setGistStatusEl('warn', '⚠️ Podaj zarówno Gist ID jak i token.');
-    return;
-  }
-  setGistStatusEl('loading', '🔄 Sprawdzam połączenie...');
-  try {
-    const res = await fetch(`https://api.github.com/gists/${id}`, {
-      headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'KA-Asystent' }
-    });
-    if (res.status === 401) { localStorage.removeItem('ka_gist_verified'); setGistStatusEl('error', '🔴 Token nieprawidłowy lub wygasły (401)'); return; }
-    if (res.status === 404) { localStorage.removeItem('ka_gist_verified'); setGistStatusEl('error', '🔴 Gist nie znaleziony — sprawdź Gist ID (404)'); return; }
-    if (!res.ok)            { localStorage.removeItem('ka_gist_verified'); setGistStatusEl('error', `🔴 Błąd GitHub API: HTTP ${res.status}`); return; }
-    const gist = await res.json();
-    const login = gist.owner?.login || '?';
-    const files = Object.keys(gist.files || {}).join(', ') || '(brak plików)';
-    localStorage.setItem('ka_gist_verified', JSON.stringify({ login, files }));
-    setGistStatusEl('ok', `🟢 Połączony — @${login} · pliki: ${files}`);
-  } catch {
-    localStorage.removeItem('ka_gist_verified');
-    setGistStatusEl('error', '🔴 Brak połączenia z GitHub');
-  }
-}
 
 function updateGistStatus() {
   const id = getGistId();
@@ -2685,7 +2520,7 @@ const COLUMNS = [
 ];
 
 let currentKanbanView = localStorage.getItem('ka_kanban_view') || 'kanban';
-let kanbanModalItemId = null;
+let lastStatusChange = null;
 
 function setKanbanView(v) {
   currentKanbanView = v;
@@ -2694,21 +2529,25 @@ function setKanbanView(v) {
 }
 
 function buildKanbanCard(item) {
+  const col = COLUMNS.find(c => c.id === item.status) || COLUMNS[0];
   const sellerNote = item.seller && item.seller !== '—' ? `<div style="font-size:11px;color:#94a3b8;margin-top:3px">${esc(item.seller)}</div>` : '';
   const parentNote = item.parentItemId ? `<div style="font-size:10px;color:#a78bfa;margin-top:3px">↳ z zestawu</div>` : '';
   const notesNote = item.notes ? `<div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.3">${esc(item.notes.substring(0,50))}${item.notes.length > 50 ? '…' : ''}</div>` : '';
-  const price = item.finalPrice ? `<span style="font-size:12px;font-weight:700;color:#475569">${item.finalPrice} €</span>` : '<span></span>';
+  const alertBadges = getAlertBadges(item);
+  const price = item.finalPrice ? `<span style="font-size:12px;font-weight:700;color:#475569">${item.finalPrice} €</span>` : '';
   const carrier = item.carrier ? `<span style="font-size:10px;background:#f1f5f9;color:#64748b;padding:1px 5px;border-radius:6px">${esc(item.carrier)}</span>` : '';
   const salePlatform = item.salePlatform ? `<span style="font-size:10px;background:#dbeafe;color:#1d4ed8;padding:1px 5px;border-radius:6px">${esc(item.salePlatform)}${item.salePrice ? ' ' + item.salePrice + ' zł' : ''}</span>` : '';
   const repairNote = item.repairNotes ? `<div style="font-size:10px;color:#ef4444;margin-top:4px">🔧 ${esc(item.repairNotes.substring(0,40))}</div>` : '';
   const bundleCount = (item.childItemIds || []).length;
-  return `<div class="kb-card${item.isBundle ? ' bundle' : ''}" onclick="openDetailModal('${item.id}')">
+  const statusChip = `<span class="status-chip" onclick="event.stopPropagation();openStatusInlineMenu('${item.id}',event)" style="background:${col.color}22;color:${col.color};border:1px solid ${col.color}44;font-size:11px">${col.emoji} ${col.label}</span>`;
+  return `<div class="kb-card${item.isBundle ? ' bundle' : ''}" onclick="goItem('${item.id}')">
     <div class="kb-card-top">
       <div class="kb-card-title">${esc(item.title)}</div>
       ${item.isBundle ? `<span class="kb-card-bundle-tag">📦${bundleCount > 0 ? '×' + bundleCount : ''}</span>` : ''}
     </div>
     ${sellerNote}${parentNote}${notesNote}
-    <div class="kb-card-bottom">${price}${carrier}${salePlatform}</div>
+    ${alertBadges ? `<div style="margin-top:3px">${alertBadges}</div>` : ''}
+    <div class="kb-card-bottom" style="flex-wrap:wrap;gap:4px">${statusChip}${price}${carrier}${salePlatform}</div>
     ${repairNote}
   </div>`;
 }
@@ -2755,31 +2594,75 @@ function buildForwarderAlert() {
   </div>`;
 }
 
-function renderKanban() {
-  const wrap = document.getElementById('kb-content');
-  if (!wrap) return;
-
-  const headerHtml = `<div class="kb-header">
-    <div class="kb-header-row">
-      <div>
-        <div class="kb-title">📸 KA Deal Tracker</div>
-        <div class="kb-sub">${activeItems().length} pozycji w pipeline</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <div class="kb-toggle">
-          <button class="kb-toggle-btn${currentKanbanView === 'kanban' ? ' active' : ''}" onclick="setKanbanView('kanban')">Kanban</button>
-          <button class="kb-toggle-btn${currentKanbanView === 'list' ? ' active' : ''}" onclick="setKanbanView('list')">Lista</button>
-        </div>
-        <button onclick="showScreen('home')" style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px" title="Stara lista / Sync">📋</button>
-        <button onclick="showKanbanSettings()" style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px" title="Ustawienia">⚙️</button>
-      </div>
+function renderItems() {
+  const kbContent = document.getElementById('kb-content');
+  if (kbContent) {
+    kbContent.innerHTML = `<div style="padding:12px 16px 4px">
+      <div class="kb-title">📸 KA Deal Tracker</div>
     </div>
-  </div>`;
+    ${buildFinanceSummary()}
+    ${buildForwarderAlert()}`;
+  }
 
-  let mainContent;
+  const toggleKanban = document.getElementById('toggle-kanban');
+  const toggleList = document.getElementById('toggle-list');
+  if (toggleKanban) toggleKanban.classList.toggle('active', currentKanbanView === 'kanban');
+  if (toggleList) toggleList.classList.toggle('active', currentKanbanView === 'list');
+
+  let filtered = applyFilter(activeItems(), currentFilter);
+  if (currentSearch) {
+    const q = currentSearch.toLowerCase();
+    filtered = filtered.filter(i =>
+      ['title','trackingNumber','seller','notes','serialNumber','salePlatform'].some(f =>
+        String(i[f] || '').toLowerCase().includes(q)
+      )
+    );
+  }
+
+  const countEl = document.getElementById('item-count');
+  if (countEl) countEl.textContent = filtered.length + ' poz.';
+
+  syncFilterSelects();
+  const sortSel = document.getElementById('filter-sort');
+  if (sortSel) sortSel.value = currentSort;
+  const searchEl = document.getElementById('search-input');
+  if (searchEl && document.activeElement !== searchEl) searchEl.value = currentSearch;
+
+  const main = document.getElementById('items-main');
+  if (!main) return;
+
   if (currentKanbanView === 'kanban') {
-    const cols = COLUMNS.map(col => {
-      const colItems = sortItems(activeItems().filter(i => i.status === col.id), 'updated');
+    renderKanbanBoard(filtered, main);
+  } else {
+    renderItemsList(filtered, main);
+  }
+}
+
+function renderKanban() { renderItems(); }
+
+function renderKanbanBoard(filtered, main) {
+  const GROUP_COLS = {
+    buying:    ['negotiating','purchased'],
+    logistics: ['shipped_de','at_forwarder','shipped_pl','received'],
+    warehouse: ['inspecting','in_repair','in_stock'],
+    selling:   ['listed','sold','completed'],
+    closed:    ['closed']
+  };
+
+  let visibleColIds = null;
+  if (!['all','active','watchlist'].includes(currentFilter)) {
+    const grp = GROUP_COLS[currentFilter];
+    visibleColIds = new Set(grp || [currentFilter]);
+  }
+
+  const cols = COLUMNS
+    .filter(col => {
+      if (visibleColIds && !visibleColIds.has(col.id)) return false;
+      if (currentSearch) return filtered.some(i => i.status === col.id);
+      return true;
+    })
+    .map(col => {
+      const colItems = sortItems(filtered.filter(i => i.status === col.id), currentSort);
       const totalValue = colItems.reduce((s, i) => s + (i.finalPrice || 0), 0);
       return `<div class="kb-col">
         <div class="kb-col-inner" style="background:${col.bg}">
@@ -2797,119 +2680,88 @@ function renderKanban() {
         </div>
       </div>`;
     }).join('');
-    mainContent = `<div class="kanban-board">${cols}</div>`;
-  } else {
-    const groups = COLUMNS.map(col => {
-      const colItems = sortItems(activeItems().filter(i => i.status === col.id), 'updated');
-      if (!colItems.length) return '';
-      return `<div class="kb-list-group">
-        <div class="kb-list-header">
-          <span style="font-size:14px">${col.emoji}</span>
-          <span style="font-weight:700;font-size:13px;color:${col.color}">${col.label}</span>
-          <span style="background:${col.color};color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px">${colItems.length}</span>
-        </div>
-        ${colItems.map(buildKanbanCard).join('')}
-      </div>`;
-    }).join('');
-    mainContent = `<div class="kanban-list">${groups || '<div style="text-align:center;padding:40px;color:#94a3b8">Brak pozycji</div>'}</div>`;
+  main.innerHTML = `<div class="kanban-board">${cols || '<div style="text-align:center;padding:40px;color:#94a3b8">Brak pasujących pozycji</div>'}</div>`;
+}
+
+function renderItemsList(filtered, main) {
+  const sorted = sortItems(filtered, currentSort);
+  if (!sorted.length) {
+    const hasFilters = currentFilter !== 'all' || currentSearch !== '';
+    main.innerHTML = `<div class="empty" style="padding:32px 24px;text-align:center">
+      <div style="font-size:42px;margin-bottom:10px">${hasFilters ? '🔍' : '📦'}</div>
+      <div style="font-size:15px;font-weight:700;color:#777">${hasFilters ? 'Brak wyników' : 'Brak przedmiotów'}</div>
+      <div style="font-size:13px;color:#aaa;margin-top:6px;margin-bottom:${hasFilters?'14px':'0'}">${hasFilters ? 'Żaden przedmiot nie pasuje do aktywnych filtrów.' : 'Pobierz dane przez Synchronizacja → Pobierz z Gist.'}</div>
+      ${hasFilters ? '<button onclick="resetFilters()" style="padding:8px 18px;background:#E88B00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✕ Wyczyść filtry</button>' : ''}
+    </div>`;
+    return;
   }
-
-  wrap.innerHTML = headerHtml + buildFinanceSummary() + buildForwarderAlert() + mainContent;
+  main.innerHTML = `<div style="padding:4px 16px 8px">${sorted.map(item => {
+    const col = COLUMNS.find(c => c.id === item.status) || COLUMNS[0];
+    const alertBadges = getAlertBadges(item);
+    const priceStr = item.finalPrice ? `<span style="font-size:12px;font-weight:700;color:#475569">${item.finalPrice} €</span>` : '';
+    const trackStr = item.trackingNumber ? `<span style="font-size:10px;color:#64748b">🔢 ${esc(item.trackingNumber)}</span>` : '';
+    const notesStr = item.notes ? `<div style="font-size:11px;color:#94a3b8;margin-top:2px">${esc(item.notes.substring(0,60))}${item.notes.length>60?'…':''}</div>` : '';
+    const closedStyle = item.status === 'closed' ? 'opacity:0.5;' : '';
+    return `<div class="item-row" onclick="goItem('${item.id}')" style="${closedStyle}cursor:pointer">
+      <div class="item-thumb">${item.photos&&item.photos.length>0?`<img src="${item.photos[0].url}" alt="">`:item.thumbnail?`<img src="${item.thumbnail}" alt="">`:'📦'}</div>
+      <div class="item-info">
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+          <div class="item-title">${esc(item.title)}</div>${alertBadges}
+        </div>
+        ${item.seller&&item.seller!=='—'?`<div style="font-size:11px;color:#94a3b8">${esc(item.seller)}</div>`:''}
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap">
+          <span class="status-chip" onclick="event.stopPropagation();openStatusInlineMenu('${item.id}',event)" style="background:${col.color}22;color:${col.color};border:1px solid ${col.color}44">${col.emoji} ${col.label}</span>
+          ${priceStr}${trackStr}
+        </div>
+        ${notesStr}
+      </div>
+      <div class="item-arrow">›</div>
+    </div>`;
+  }).join('')}</div>`;
 }
 
-function showKanbanSettings() {
-  // Navigate to home screen and open settings panel
-  showScreen('home');
-  setTimeout(() => {
-    const p = document.getElementById('settings-panel');
-    if (p) p.style.display = 'block';
-    const gi = document.getElementById('gist-id-input');
-    if (gi) gi.value = getGistId();
-    const gt = document.getElementById('gist-token-input');
-    if (gt) gt.value = getGistToken();
-    updateGistStatus();
-    const s = getSettings();
-    const exEl = document.getElementById('setting-exchange');   if (exEl) exEl.value = s.exchangeRate;
-    const fwEl = document.getElementById('setting-forwarding'); if (fwEl) fwEl.value = s.forwardingPL;
-    const thEl = document.getElementById('setting-threshold');  if (thEl) thEl.value = s.alertThreshold;
-    const plEl = document.getElementById('setting-platform');   if (plEl) plEl.value = s.defaultPlatform;
-  }, 0);
-}
-
-function openDetailModal(itemId) {
-  kanbanModalItemId = itemId;
-  renderDetailModal();
-  document.getElementById('detail-overlay').classList.add('open');
-}
-
-function closeDetailModal() {
-  document.getElementById('detail-overlay').classList.remove('open');
-  kanbanModalItemId = null;
-}
-
-function changeStatusFromModal(itemId, newStatus) {
-  updateItem(itemId, { status: newStatus });
-  closeDetailModal();
-  renderKanban();
-}
-
-function openItemFromModal(itemId) {
-  closeDetailModal();
-  goItem(itemId);
-}
-
-function renderDetailModal() {
-  const item = getItem(kanbanModalItemId);
+function openStatusInlineMenu(itemId, ev) {
+  ev.stopPropagation();
+  const menu = document.getElementById('status-inline-menu');
+  const item = getItem(itemId);
   if (!item) return;
-  const col = COLUMNS.find(c => c.id === item.status) || COLUMNS[0];
-  const colIdx = COLUMNS.findIndex(c => c.id === item.status);
-  const prevCol = colIdx > 0 ? COLUMNS[colIdx - 1] : null;
-  const nextCol = colIdx < COLUMNS.length - 1 ? COLUMNS[colIdx + 1] : null;
-  const settings = getSettings();
-  const rate = item.exchangeRate || settings.exchangeRate || 4.30;
+  menu.innerHTML = COLUMNS.map(col =>
+    `<div class="smi${item.status===col.id?' cur':''}" onclick="changeStatusInline('${itemId}','${col.id}')" style="${item.status===col.id?'background:'+col.bg+';color:'+col.color:''}">
+      <span>${col.emoji}</span><span>${col.label}</span>
+    </div>`
+  ).join('');
+  const rect = ev.currentTarget.getBoundingClientRect();
+  const rightSpace = window.innerWidth - rect.left;
+  menu.style.top = (rect.bottom + 4) + 'px';
+  if (rightSpace < 190) { menu.style.right = '16px'; menu.style.left = ''; }
+  else { menu.style.left = rect.left + 'px'; menu.style.right = ''; }
+  menu.hidden = false;
+  setTimeout(() => document.addEventListener('click', closeStatusInlineMenu, { once: true, capture: true }), 0);
+}
 
-  const cells = [];
-  if (item.finalPrice) cells.push(`<div style="background:#f8fafc;padding:8px 12px;border-radius:8px">
-    <div style="font-size:10px;color:#94a3b8">Cena zakupu</div>
-    <div style="font-size:15px;font-weight:700">${item.finalPrice} €</div>
-    <div style="font-size:10px;color:#94a3b8">~${Math.round(item.finalPrice * rate)} PLN</div>
-  </div>`);
-  if (item.salePrice) cells.push(`<div style="background:#f0fdf4;padding:8px 12px;border-radius:8px">
-    <div style="font-size:10px;color:#94a3b8">Cena sprzedaży</div>
-    <div style="font-size:15px;font-weight:700;color:#16a34a">${item.salePrice} zł</div>
-    ${item.salePlatform ? `<div style="font-size:10px;color:#94a3b8">${esc(item.salePlatform)}</div>` : ''}
-  </div>`);
-  if (item.carrier) cells.push(`<div style="background:#f8fafc;padding:8px 12px;border-radius:8px">
-    <div style="font-size:10px;color:#94a3b8">Przewoźnik</div>
-    <div style="font-size:15px;font-weight:700">${esc(item.carrier)}</div>
-    ${item.trackingNumber ? `<div style="font-size:10px;color:#94a3b8">${esc(item.trackingNumber.substring(0,14))}</div>` : ''}
-  </div>`);
+function closeStatusInlineMenu() {
+  const menu = document.getElementById('status-inline-menu');
+  if (menu) menu.hidden = true;
+}
 
-  // Profit in modal
-  const profit = calculateProfit(item, settings);
-  const profitHtml = profit !== null ? `<div style="padding:8px 12px;border-radius:8px;background:${profit >= 0 ? '#f0fdf4' : '#fef2f2'};margin-bottom:12px;text-align:center">
-    <div style="font-size:16px;font-weight:800;color:${profit >= 0 ? '#16a34a' : '#dc2626'}">${profit >= 0 ? '+' : ''}${profit} PLN</div>
-    <div style="font-size:10px;color:#94a3b8">zysk szacunkowy</div>
-  </div>` : '';
-
-  const prevBtn = prevCol ? `<button onclick="changeStatusFromModal('${item.id}','${prevCol.id}')" style="flex:1;padding:10px;border-radius:10px;border:1px solid #e2e8f0;background:#fff;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;font-family:inherit">← ${prevCol.emoji} ${prevCol.label}</button>` : '';
-  const nextBtn = nextCol ? `<button onclick="changeStatusFromModal('${item.id}','${nextCol.id}')" style="flex:1;padding:10px;border-radius:10px;border:none;background:${nextCol.color};font-size:12px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit">${nextCol.emoji} ${nextCol.label} →</button>` : '';
-
-  document.getElementById('detail-modal-inner').innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-size:11px;font-weight:700;color:${col.color};background:${col.bg};padding:3px 10px;border-radius:8px">${col.emoji} ${col.label}</div>
-      <div onclick="closeDetailModal()" style="cursor:pointer;font-size:20px;color:#94a3b8;line-height:1">✕</div>
-    </div>
-    <div style="font-size:18px;font-weight:800;color:#1e293b;margin-bottom:4px">${esc(item.title)}</div>
-    ${item.seller && item.seller !== '—' ? `<div style="font-size:13px;color:#64748b;margin-bottom:12px">Sprzedawca: ${esc(item.seller)}</div>` : '<div style="margin-bottom:8px"></div>'}
-    ${item.isBundle ? `<div style="background:#fef3c7;padding:8px 12px;border-radius:8px;margin-bottom:12px;font-size:12px">📦 Zestaw — po odbiorze rozbij na części</div>` : ''}
-    ${item.notes ? `<div style="background:#fffbe6;border:1px solid #f0d060;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#5a4800;line-height:1.5">${esc(item.notes)}</div>` : ''}
-    ${cells.length ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">${cells.join('')}</div>` : ''}
-    ${item.repairNotes ? `<div style="background:#fef2f2;padding:8px 12px;border-radius:8px;margin-bottom:16px;font-size:12px;color:#dc2626">🔧 ${esc(item.repairNotes)}</div>` : ''}
-    ${profitHtml}
-    <div style="display:flex;gap:8px">${prevBtn}${nextBtn}</div>
-    <button onclick="openItemFromModal('${item.id}')" style="width:100%;padding:10px;border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;font-family:inherit;margin-top:8px">✏️ Otwórz szczegóły</button>
-  `;
+function changeStatusInline(itemId, newStatus) {
+  const item = getItem(itemId);
+  if (!item || item.status === newStatus) { closeStatusInlineMenu(); return; }
+  const prevStatus = item.status;
+  updateItem(itemId, { status: newStatus });
+  closeStatusInlineMenu();
+  renderItems();
+  lastStatusChange = { itemId, prevStatus, newStatus };
+  const newCol = COLUMNS.find(c => c.id === newStatus);
+  const label = newCol ? newCol.emoji + ' ' + newCol.label : newStatus;
+  toast('Status: ' + label, 5000, '↩ Cofnij', () => {
+    if (lastStatusChange && lastStatusChange.itemId === itemId && lastStatusChange.newStatus === newStatus) {
+      updateItem(itemId, { status: prevStatus });
+      lastStatusChange = null;
+      renderItems();
+      toast('↩ Cofnięto');
+    }
+  });
 }
 
 // ── FAZA C: Bundle Splitting ───────────────────────────────────────────────────
@@ -3197,7 +3049,7 @@ function confirmBundleSplit() {
   _bundleItems = []; // wyzeruj PRZED close — unika podwójnego confirm
   closeBundleSplit();
   toast(`✅ Rozbito na ${children.length} elementów`);
-  showScreen('kanban');
+  showScreen('items');
 }
 
 // ── FAZA D: Financial tracking ──────────────────────────────────────────────
@@ -3280,10 +3132,71 @@ Zasady:
 
 // ── End FAZA B ────────────────────────────────────────────────────────────────
 
-migrateApiKey();
+// ── Pull-to-refresh ───────────────────────────────────────────────────────────
+
+(function initPullToRefresh() {
+  if (window.matchMedia('(hover: hover)').matches) return;
+  const PTR_THRESHOLD = 60;
+  let ptrStartY = null;
+  let ptrTriggered = false;
+
+  let ptrEl = document.createElement('div');
+  ptrEl.className = 'ptr-indicator';
+  ptrEl.textContent = '⬇️ Pociągnij, żeby odświeżyć';
+  document.body.appendChild(ptrEl);
+
+  function renderPtr(delta) {
+    const clamped = Math.min(delta, PTR_THRESHOLD * 1.5);
+    ptrEl.style.top = (clamped - 44) + 'px';
+    if (delta > PTR_THRESHOLD) {
+      ptrEl.textContent = '↺ Puść, żeby odświeżyć';
+      ptrEl.classList.add('ready');
+    } else {
+      ptrEl.textContent = '⬇️ Pociągnij, żeby odświeżyć';
+      ptrEl.classList.remove('ready');
+    }
+  }
+  function hidePtr() {
+    ptrEl.style.top = '-44px';
+    ptrEl.classList.remove('ready');
+  }
+
+  const screen = document.getElementById('screen-items');
+  if (!screen) return;
+
+  screen.addEventListener('touchstart', (e) => {
+    if (window.scrollY > 0) return;
+    ptrStartY = e.touches[0].clientY;
+    ptrTriggered = false;
+  }, { passive: true });
+
+  screen.addEventListener('touchmove', (e) => {
+    if (ptrStartY === null) return;
+    const delta = e.touches[0].clientY - ptrStartY;
+    if (delta <= 0 || window.scrollY > 0) { ptrStartY = null; hidePtr(); return; }
+    renderPtr(delta);
+    if (delta > PTR_THRESHOLD) ptrTriggered = true;
+  }, { passive: true });
+
+  screen.addEventListener('touchend', async () => {
+    hidePtr();
+    if (ptrTriggered) {
+      ptrEl.textContent = '↺ Odświeżanie…';
+      ptrEl.style.top = '8px';
+      try { await loadFromGist(); }
+      finally { hidePtr(); }
+    }
+    ptrStartY = null; ptrTriggered = false;
+  });
+})();
+
 loadItems();
 migrateAllItems();
-showScreen('kanban');
+if (localStorage.getItem('ka_apikey')) {
+  localStorage.removeItem('ka_apikey');
+  toast('🔑 Klucz API Anthropic został usunięty — funkcje AI wyłączone w v3.0.');
+}
+showScreen('items');
 initSyncBtn();
 // Pokaż timestamp z poprzedniej sesji od razu przy starcie
 updateSyncTs(JSON.parse(localStorage.getItem('ka_items_meta') || '{}').lastSavedAt || null);
