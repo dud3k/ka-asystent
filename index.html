@@ -117,7 +117,7 @@
   .kanban-board::-webkit-scrollbar { height: 4px; } .kanban-board::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
   .kb-col { min-width: 260px; max-width: 280px; flex: 0 0 auto; scroll-snap-align: start; padding: 8px; }
   .kb-col-inner { border-radius: 14px; padding: 12px 10px; min-height: 200px; }
-  .kb-col-header { margin-bottom: 10px; padding-bottom: 8px; }
+  .kb-col-header { margin-bottom: 10px; padding-bottom: 8px; position: sticky; top: var(--items-sticky-top, 96px); z-index: 50; }
   .kb-col-header-row { display: flex; justify-content: space-between; align-items: center; }
   .kb-col-title { display: flex; align-items: center; gap: 5px; }
   .kb-col-count { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
@@ -163,6 +163,14 @@
   .card-details .details-body { padding: 14px 16px; border-top: 1px solid var(--border); }
   .details-label { flex: 1; }
   .details-meta { color: #475569; font-size: 12px; font-weight: 500; }
+  @media (min-width: 1024px) {
+    body[data-screen="items"] #header,
+    body[data-screen="items"] #items-toolbar { max-width: 1400px; }
+  }
+  @media (min-width: 1400px) {
+    body[data-screen="items"] #header,
+    body[data-screen="items"] #items-toolbar { max-width: 1600px; }
+  }
 </style>
 </head>
 <body>
@@ -1021,19 +1029,45 @@ function applyFilter(pool, key) {
   return pool.filter(i => i.status === key);
 }
 
+function updateStickyTop() {
+  const header = document.getElementById('header');
+  const toolbar = document.getElementById('items-toolbar');
+  if (!header || !toolbar) return;
+  const headerH = header.offsetHeight || 0;
+  const toolbarH = toolbar.offsetHeight || 0;
+  document.documentElement.style.setProperty('--header-height', headerH + 'px');
+  document.documentElement.style.setProperty('--items-sticky-top', (headerH + toolbarH) + 'px');
+}
+window.addEventListener('resize', () => {
+  if (window._stickyTopTimer) clearTimeout(window._stickyTopTimer);
+  window._stickyTopTimer = setTimeout(updateStickyTop, 150);
+});
+
 function showScreen(name) {
   if (name === 'kanban') name = 'items';
   if (name === 'home') name = 'items';
   currentScreen = name;
+  document.body.setAttribute('data-screen', name);
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const screenEl = document.getElementById('screen-' + name);
   if (!screenEl) return;
   screenEl.classList.add('active');
   const globalHeader = document.getElementById('header');
-  if (name === 'items' || name === 'add-item') {
+  if (name === 'add-item') {
     globalHeader.style.display = 'none';
-    if (name === 'items') renderItems();
-    else initAddItemForm();
+    initAddItemForm();
+    return;
+  }
+  if (name === 'items') {
+    globalHeader.style.display = '';
+    const backBtn = document.getElementById('back-btn');
+    const sub = document.getElementById('header-sub');
+    const title = document.getElementById('header-title');
+    backBtn.style.display = 'none';
+    sub.style.display = 'none';
+    title.textContent = '📸 KA Asystent';
+    renderItems();
+    updateStickyTop();
     return;
   }
   globalHeader.style.display = '';
@@ -2704,7 +2738,7 @@ function renderKanbanBoard(filtered, main) {
       const totalValue = colItems.reduce((s, i) => s + (i.finalPrice || 0), 0);
       return `<div class="kb-col">
         <div class="kb-col-inner" style="background:${col.bg}">
-          <div class="kb-col-header" style="border-bottom:2px solid ${col.color}22">
+          <div class="kb-col-header" style="border-bottom:2px solid ${col.color}22;background:${col.bg}">
             <div class="kb-col-header-row">
               <div class="kb-col-title">
                 <span style="font-size:16px">${col.emoji}</span>
