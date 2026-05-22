@@ -238,6 +238,28 @@
   <div id="item-content"></div>
 </div>
 
+<div id="screen-archive" class="screen">
+  <div style="padding:12px 16px 0">
+    <div class="archive-header" style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+      <button onclick="showScreen('items')" class="btn ghost" style="padding:6px 12px;font-size:14px">←</button>
+      <div style="font-weight:800;font-size:17px;flex:1">🗄️ Archiwum</div>
+      <div id="archive-count" style="font-size:12px;color:#475569"></div>
+    </div>
+    <div id="archive-stats" style="font-size:12px;color:#475569;margin-bottom:10px;padding:8px 12px;background:#f8fafc;border-radius:8px"></div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <input type="search" id="archive-search" placeholder="🔍 Szukaj po tytule, sprzedawcy, notatce…" oninput="renderArchive()" style="flex:1;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;background:#fff">
+      <select id="archive-sort" onchange="renderArchive()" style="padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;background:#fff;font-family:inherit">
+        <option value="archivedAt">Archiwizacja ↓</option>
+        <option value="createdAt">Data utworzenia</option>
+        <option value="price">Cena ↓</option>
+        <option value="name">Nazwa A-Z</option>
+      </select>
+    </div>
+    <div id="archive-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+  </div>
+  <div id="archive-list" style="padding:0 16px 80px"></div>
+</div>
+
 <div id="screen-sync" class="screen">
 
   <div class="card sync-section">
@@ -387,6 +409,7 @@
         <button class="kb-toggle-btn" id="toggle-list" onclick="setKanbanView('list')">Lista</button>
       </div>
       <span id="item-count" style="margin-left:auto;font-size:11px;color:#475569"></span>
+      <button onclick="showScreen('archive')" class="toolbar-icon-btn" title="Archiwum">🗄️</button>
       <button onclick="showScreen('sync')" class="toolbar-icon-btn" title="Synchronizacja danych">🔄</button>
       <button onclick="showScreen('settings')" class="toolbar-icon-btn" title="Ustawienia">⚙️</button>
     </div>
@@ -902,7 +925,8 @@ function saveItems() {
   scheduleSave();
 }
 function getItem(id) { return items.find(i => i.id === id) || null; }
-function activeItems() { return items.filter(i => !i.deletedAt); }
+function activeItems() { return items.filter(i => !i.deletedAt && !i.archived); }
+function archivedItems() { return items.filter(i => !i.deletedAt && i.archived); }
 function trackChange(item, field, newValue, source = 'manual') {
   if (!item.changelog) item.changelog = [];
   const oldValue = item[field];
@@ -919,7 +943,7 @@ function trackChange(item, field, newValue, source = 'manual') {
 }
 
 const TRACKED_FIELDS = ['status', 'finalPrice', 'trackingNumber', 'carrier', 'notes',
-  'inspectionStatus', 'repairCost', 'salePlatform', 'salePrice', 'serialNumber', 'model'];
+  'inspectionStatus', 'repairCost', 'salePlatform', 'salePrice', 'serialNumber', 'model', 'archived'];
 
 function updateItem(id, patch, source = 'manual') {
   items = items.map(i => {
@@ -936,6 +960,65 @@ function updateItem(id, patch, source = 'manual') {
     return updated;
   });
   saveItems();
+}
+
+// ── Archive helpers ───────────────────────────────────────────────────────────
+function archiveItem(id, reason = 'manual') {
+  updateItem(id, { archived: true, archivedAt: new Date().toISOString(), archivedReason: reason }, 'manual');
+}
+
+function unarchiveItem(id) {
+  updateItem(id, { archived: false, archivedAt: null, archivedReason: null }, 'manual');
+  toast('📤 Przywrócono z archiwum');
+}
+
+function showOnboardingArchiveModal(count) {
+  let modal = document.getElementById('archive-onboarding-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'archive-onboarding-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `<div style="background:#fff;border-radius:16px;padding:24px;max-width:400px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+    <div style="font-size:32px;text-align:center;margin-bottom:12px">🗄️</div>
+    <div style="font-weight:800;font-size:17px;margin-bottom:8px;text-align:center">Zrobiono porządek w Negocjacjach</div>
+    <div style="font-size:14px;color:#475569;margin-bottom:16px;line-height:1.6">
+      Z kolumny Negocjacje przeniesiono <strong>${count} pozycji</strong> do Archiwum — to rozmowy, których ogłoszenia zostały usunięte lub sprzedane bez Twojego udziału.<br><br>
+      Znajdziesz je pod ikoną 🗄️ w toolbarze, z wyszukiwarką i opcją „Przywróć z archiwum" gdyby coś trafiło tam omyłkowo.
+    </div>
+    <button class="btn" style="width:100%" onclick="document.getElementById('archive-onboarding-modal').remove();localStorage.setItem('ka_archive_seen','1')">Rozumiem</button>
+  </div>`;
+  modal.style.display = 'flex';
+}
+
+function runAutoArchive(opts = {}) {
+  const DEAD_STATUSES = ['deleted', 'sold', 'reserved'];
+  const REASON_BY_STATUS = { 'deleted': 'listing-deleted', 'sold': 'listing-sold', 'reserved': 'listing-reserved' };
+  let archivedCount = 0;
+  const now = new Date().toISOString();
+
+  items = items.map(item => {
+    if (item.archived) return item;
+    if (item.status !== 'negotiating') return item;
+    if (!DEAD_STATUSES.includes(item.listingStatus)) return item;
+    if (item.finalPrice) return item;
+    archivedCount++;
+    const updated = { ...item, archived: true, archivedAt: now, archivedReason: REASON_BY_STATUS[item.listingStatus] };
+    trackChange(updated, 'archived', true, 'auto');
+    return updated;
+  });
+
+  if (archivedCount > 0) {
+    saveItems();
+    const isFirstRun = opts.isFirstRun !== undefined ? opts.isFirstRun : !localStorage.getItem('ka_archive_seen');
+    if (archivedCount > 10 && isFirstRun) {
+      showOnboardingArchiveModal(archivedCount);
+    } else {
+      toast(`🗄️ Zarchiwizowano ${archivedCount} ${archivedCount === 1 ? 'pozycję' : 'pozycji'}`);
+    }
+  }
+  return archivedCount;
 }
 
 const ST = {
@@ -1048,6 +1131,7 @@ function showScreen(name) {
   const title = document.getElementById('header-title');
   backBtn.style.display = 'block';
   sub.style.display = 'none';
+  if (name === 'archive') { globalHeader.style.display = 'none'; renderArchive(); return; }
   if (name === 'sync') { title.textContent = '🔄 Synchronizacja'; renderSyncOverview(); initSyncStatusRow(); }
   else if (name === 'settings') { title.textContent = '⚙️ Ustawienia'; initSettingsScreen(); }
   else if (name === 'item') {
@@ -1238,6 +1322,10 @@ function renderItem() {
     <div style="display:flex;gap:8px;margin-bottom:8px">
       <button class="btn" style="background:${cur.watchlist?'#888':'#1a7a1a'}" onclick="toggleWatchlist()">${cur.watchlist?'Usuń z listy obserwowanych':'🔁 Dodaj do listy obserwowanych'}</button>
     </div>
+    ${cur.archived
+      ? `<button class="btn" style="background:#0369a1;margin-bottom:8px;width:100%" onclick="unarchiveItem('${esc(cur.id)}');showScreen('items')">📤 Przywróć z archiwum</button>`
+      : `<button class="btn ghost" style="margin-bottom:8px;width:100%" onclick="if(confirm('Archiwizować tę pozycję? Można później przywrócić.')){archiveItem('${esc(cur.id)}','manual');showScreen('items')}">🗄️ Archiwizuj</button>`
+    }
     <button class="btn ghost" onclick="deleteItem()">🗑️ Usuń przedmiot</button>
   `;
 }
@@ -1988,6 +2076,7 @@ function applyPatch() {
   renderSyncOverview();
   if (report.updated.length > 0 || report.created.length > 0) {
     document.getElementById('patch-input').value = '';
+    runAutoArchive({ isFirstRun: false });
   }
 }
 
@@ -2644,6 +2733,125 @@ function buildForwarderAlert() {
   </div>`;
 }
 
+// ── Archive screen ────────────────────────────────────────────────────────────
+let currentArchiveReason = localStorage.getItem('ka_archive_reason_pref') || 'all';
+let currentArchiveSort   = localStorage.getItem('ka_archive_sort_pref')   || 'archivedAt';
+
+const ARCHIVE_REASON_LABELS = {
+  'all':              'Wszystkie',
+  'listing-sold':     'Sprzedane',
+  'listing-deleted':  'Usunięte',
+  'listing-reserved': 'Zarezerwowane',
+  'manual':           'Ręcznie',
+};
+const ARCHIVE_REASON_COLORS = {
+  'listing-sold':     { bg: '#e2e8f0', color: '#475569' },
+  'listing-deleted':  { bg: '#fee2e2', color: '#991b1b' },
+  'listing-reserved': { bg: '#fef9c3', color: '#854d0e' },
+  'manual':           { bg: '#dbeafe', color: '#1e40af' },
+};
+
+function buildArchiveStats(archivedAll) {
+  const byReason = {
+    'listing-sold':     archivedAll.filter(i => i.archivedReason === 'listing-sold').length,
+    'listing-deleted':  archivedAll.filter(i => i.archivedReason === 'listing-deleted').length,
+    'listing-reserved': archivedAll.filter(i => i.archivedReason === 'listing-reserved').length,
+    'manual':           archivedAll.filter(i => i.archivedReason === 'manual').length,
+  };
+  const potentialValue = archivedAll.reduce((s, i) => s + (i.currentPrice || i.finalPrice || 0), 0);
+  return `${archivedAll.length} poz · ${byReason['listing-sold']} sold · ${byReason['listing-deleted']} deleted · ${byReason['listing-reserved']} reserved · ${byReason.manual} ręcznie · ~${Math.round(potentialValue)} € wartości potencjalnej`;
+}
+
+function renderArchive() {
+  const allArchived = archivedItems();
+  const sortEl = document.getElementById('archive-sort');
+  const searchEl = document.getElementById('archive-search');
+  if (sortEl) { sortEl.value = currentArchiveSort; }
+
+  const countEl = document.getElementById('archive-count');
+  const statsEl = document.getElementById('archive-stats');
+  const chipsEl = document.getElementById('archive-chips');
+  const listEl  = document.getElementById('archive-list');
+  if (!listEl) return;
+
+  if (countEl) countEl.textContent = allArchived.length + ' pozycji';
+  if (statsEl) statsEl.textContent = buildArchiveStats(allArchived);
+
+  // Chips
+  if (chipsEl) {
+    const byReason = { 'all': allArchived.length };
+    ['listing-sold','listing-deleted','listing-reserved','manual'].forEach(r => {
+      byReason[r] = allArchived.filter(i => i.archivedReason === r).length;
+    });
+    chipsEl.innerHTML = ['all','listing-sold','listing-deleted','listing-reserved','manual'].map(r => {
+      const active = currentArchiveReason === r;
+      const rc = ARCHIVE_REASON_COLORS[r] || { bg: '#f1f5f9', color: '#475569' };
+      const bg = active ? rc.bg : '#f1f5f9';
+      const col = active ? rc.color : '#475569';
+      const border = active ? `2px solid ${rc.color}` : '2px solid transparent';
+      return `<button onclick="setArchiveReason('${r}')" style="padding:4px 12px;border-radius:20px;border:${border};background:${bg};color:${col};font-size:12px;cursor:pointer;font-family:inherit">${ARCHIVE_REASON_LABELS[r]} (${byReason[r]})</button>`;
+    }).join('');
+  }
+
+  let list = allArchived;
+  if (currentArchiveReason !== 'all') list = list.filter(i => i.archivedReason === currentArchiveReason);
+
+  const q = (searchEl?.value || '').toLowerCase().trim();
+  if (q) list = list.filter(i => (i.title||'').toLowerCase().includes(q) || (i.seller||'').toLowerCase().includes(q) || (i.notes||'').toLowerCase().includes(q));
+
+  // Sort
+  list = [...list].sort((a, b) => {
+    switch (currentArchiveSort) {
+      case 'archivedAt': return new Date(b.archivedAt || 0) - new Date(a.archivedAt || 0);
+      case 'createdAt':  return new Date(b.createdAt  || 0) - new Date(a.createdAt  || 0);
+      case 'price':      return (b.currentPrice || b.finalPrice || 0) - (a.currentPrice || a.finalPrice || 0);
+      case 'name':       return (a.title||'').localeCompare(b.title||'');
+      default:           return 0;
+    }
+  });
+
+  if (allArchived.length === 0) {
+    listEl.innerHTML = `<div style="text-align:center;padding:48px 16px;color:#94a3b8">
+      <div style="font-size:48px;margin-bottom:12px">🗄️</div>
+      <div style="font-weight:700;margin-bottom:8px">Archiwum jest puste.</div>
+      <div style="font-size:13px;line-height:1.6">Pojawiają się tu rozmowy, których ogłoszenia zostały<br>usunięte lub sprzedane bez Twojego udziału.</div>
+    </div>`;
+    return;
+  }
+
+  if (list.length === 0) {
+    listEl.innerHTML = `<div style="text-align:center;padding:32px 16px;color:#94a3b8;font-size:13px">Brak wyników dla wybranych filtrów.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = list.map(item => {
+    const rc = ARCHIVE_REASON_COLORS[item.archivedReason] || { bg: '#f1f5f9', color: '#475569' };
+    const reasonLabel = ARCHIVE_REASON_LABELS[item.archivedReason] || item.archivedReason || '—';
+    const price = item.currentPrice || item.finalPrice;
+    const priceStr = price ? `${price} €` : '';
+    const date = item.archivedAt ? new Date(item.archivedAt).toLocaleDateString('pl-PL', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '';
+    const seller = item.seller || item.sellerName || '';
+    return `<div style="background:#fff;border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06)" onclick="goItem('${esc(item.id)}')">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(item.title||'—')}</div>
+        <div style="font-size:12px;color:#475569;margin-top:3px;display:flex;align-items:center;flex-wrap:wrap;gap:6px">
+          ${seller ? `<span>${esc(seller)}</span><span>·</span>` : ''}
+          <span style="background:${rc.bg};color:${rc.color};padding:1px 7px;border-radius:10px;font-size:11px">${reasonLabel}</span>
+          ${date ? `<span>·</span><span>${date}</span>` : ''}
+          ${priceStr ? `<span>·</span><span>${priceStr}</span>` : ''}
+        </div>
+      </div>
+      <button onclick="event.stopPropagation();unarchiveItem('${esc(item.id)}');renderArchive()" style="background:#e0f2fe;border:none;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:16px;flex-shrink:0" title="Przywróć z archiwum">📤</button>
+    </div>`;
+  }).join('');
+}
+
+function setArchiveReason(reason) {
+  currentArchiveReason = reason;
+  localStorage.setItem('ka_archive_reason_pref', reason);
+  renderArchive();
+}
+
 function renderItems() {
   const kbContent = document.getElementById('kb-content');
   if (kbContent) kbContent.innerHTML = '';
@@ -3233,6 +3441,7 @@ Zasady:
 
 loadItems();
 migrateAllItems();
+runAutoArchive({ isFirstRun: !localStorage.getItem('ka_archive_seen') });
 if (localStorage.getItem('ka_apikey')) {
   localStorage.removeItem('ka_apikey');
   toast('🔑 Klucz API Anthropic został usunięty — funkcje AI wyłączone w v3.0.');
