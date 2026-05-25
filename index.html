@@ -409,6 +409,7 @@
         <button class="kb-toggle-btn" id="toggle-list" onclick="setKanbanView('list')">Lista</button>
       </div>
       <span id="item-count" style="margin-left:auto;font-size:11px;color:#475569"></span>
+      <button onclick="manualRunAutoArchive()" class="toolbar-icon-btn" title="Sprawdź archiwizację martwych negocjacji">🧹</button>
       <button onclick="showScreen('archive')" class="toolbar-icon-btn" title="Archiwum">🗄️</button>
       <button onclick="showScreen('sync')" class="toolbar-icon-btn" title="Synchronizacja danych">🔄</button>
       <button onclick="showScreen('settings')" class="toolbar-icon-btn" title="Ustawienia">⚙️</button>
@@ -943,7 +944,8 @@ function trackChange(item, field, newValue, source = 'manual') {
 }
 
 const TRACKED_FIELDS = ['status', 'finalPrice', 'trackingNumber', 'carrier', 'notes',
-  'inspectionStatus', 'repairCost', 'salePlatform', 'salePrice', 'serialNumber', 'model', 'archived'];
+  'inspectionStatus', 'repairCost', 'salePlatform', 'salePrice', 'serialNumber', 'model', 'archived',
+  'listingStatus', 'currentPrice', 'listingUpdatedAt'];
 
 function updateItem(id, patch, source = 'manual') {
   items = items.map(i => {
@@ -1002,15 +1004,19 @@ function runAutoArchive(opts = {}) {
     if (item.archived) return item;
     if (item.status !== 'negotiating') return item;
     if (!DEAD_STATUSES.includes(item.listingStatus)) return item;
-    if (item.finalPrice) return item;
+    // Guard finalPrice — TYLKO dla 'reserved' (rezerwacje wracają, dogadana cena = transakcja może iść)
+    // Dla 'deleted'/'sold' archiwizujemy niezależnie od finalPrice (listing nie wróci, transakcja umarła)
+    // BYPASS przy manual trigger (opts.manual === true) — user explicit click = świadoma akcja
+    if (!opts.manual && item.listingStatus === 'reserved' && item.finalPrice) return item;
     archivedCount++;
     const updated = { ...item, archived: true, archivedAt: now, archivedReason: REASON_BY_STATUS[item.listingStatus] };
-    trackChange(updated, 'archived', true, 'auto');
+    trackChange(updated, 'archived', true, opts.manual ? 'manual-trigger' : 'auto');
     return updated;
   });
 
   if (archivedCount > 0) {
     saveItems();
+    renderItems();   // UI refresh — items znikają natychmiast z kanbana
     const isFirstRun = opts.isFirstRun !== undefined ? opts.isFirstRun : !localStorage.getItem('ka_archive_seen');
     if (archivedCount > 10 && isFirstRun) {
       showOnboardingArchiveModal(archivedCount);
@@ -1019,6 +1025,33 @@ function runAutoArchive(opts = {}) {
     }
   }
   return archivedCount;
+}
+
+function manualRunAutoArchive() {
+  const DEAD_STATUSES = ['deleted', 'sold', 'reserved'];
+  const candidates = items.filter(i =>
+    !i.archived &&
+    i.status === 'negotiating' &&
+    DEAD_STATUSES.includes(i.listingStatus)
+  );
+
+  if (candidates.length === 0) {
+    toast('✅ Brak kandydatów do archiwizacji — wszystkie aktywne negocjacje mają żywe ogłoszenia');
+    return;
+  }
+
+  const breakdown = {};
+  for (const i of candidates) {
+    const k = i.listingStatus + (i.finalPrice ? ' (z ceną)' : '');
+    breakdown[k] = (breakdown[k] || 0) + 1;
+  }
+  const breakdownStr = Object.entries(breakdown).map(([k, n]) => `  • ${n}× ${k}`).join('\n');
+
+  const msg = `Znaleziono ${candidates.length} kandydatów do archiwizacji:\n\n${breakdownStr}\n\nUWAGA: ten trigger ignoruje guard 'finalPrice' (auto-archive normalnie pomija items z ustawioną ceną dla statusu 'reserved'). Kontynuować?`;
+
+  if (!confirm(msg)) return;
+
+  runAutoArchive({ manual: true });
 }
 
 const ST = {
