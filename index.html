@@ -974,6 +974,39 @@ function unarchiveItem(id) {
   toast('📤 Przywrócono z archiwum');
 }
 
+// Zwraca true gdy pozycja nosi sygnały DOKONANEGO zakupu/wysyłki — nie wolno jej
+// auto-archiwizować mimo martwego ogłoszenia (ogłoszenie zniknęło BO zakup się udał).
+function hasPurchaseSignal(item) {
+  if (item.trackingNumber) return true;
+  if (item.logisticStatus) return true;
+  const byBuyer  = (item.messages || []).filter(m => m.sender === 'buyer');
+  const bySeller = (item.messages || []).filter(m => m.sender === 'seller' || m.sender === 'system');
+  const txt = m => (m.originalText || m.text || '').toLowerCase();
+  const sellerText = bySeller.map(txt).join(' ');
+
+  const SELLER_PATTERNS = [
+    /\b(?:wurde|ist|habe|haben|hab)\s+bezahlt\b/,
+    /\bgeld\s+(?:erhalten|bekommen|gekommen|ist\s+da)\b/,
+    /\bzahlung\s+(?:ist\s+|hat\s+|wurde\s+)?(?:erhalten|eingegangen|bekommen|gutgeschrieben)\b/,
+    /\betikett\s+erstellt\b/,
+    /\bangebot\s+angenommen\b/,
+    /\bkauf\s+aktiviert\b/,
+    /\b(?:paket|sendung)\b.*\b(?:unterwegs|abgeschickt|verschickt|zugestellt|kommt|geht\s+(?:heute|morgen)?\s*ab)\b/,
+    /\bverschicke?\s+(?:ich|es|morgen|heute)\b/,
+  ];
+  if (SELLER_PATTERNS.some(re => re.test(sellerText))) return true;
+
+  // Ścieżka poza platformą: Marcin potwierdza przelew ORAZ podaje PEŁNY blok adresu.
+  // Wymaga OBU elementów w tej samej wiadomości (TASK_028 + recenzja Gemini).
+  const PAID_TOKENS = /(?<!\w)(?:überwiesen|bezahlt|geld\s+ist\s+(?:raus|unterwegs|da))/;
+  const isFullAddress = t =>
+    (t.includes('rwonline') || t.includes('heilige-grab')) &&
+    (t.includes('02828') || t.includes('görlitz'));
+  if (byBuyer.some(m => { const t = txt(m); return PAID_TOKENS.test(t) && isFullAddress(t); })) return true;
+
+  return false;
+}
+
 function showOnboardingArchiveModal(count) {
   let modal = document.getElementById('archive-onboarding-modal');
   if (!modal) {
@@ -997,34 +1030,67 @@ function showOnboardingArchiveModal(count) {
 function runAutoArchive(opts = {}) {
   const DEAD_STATUSES = ['deleted', 'sold', 'reserved'];
   const REASON_BY_STATUS = { 'deleted': 'listing-deleted', 'sold': 'listing-sold', 'reserved': 'listing-reserved' };
-  let archivedCount = 0;
+  const archivedBatch = [];
   const now = new Date().toISOString();
 
   items = items.map(item => {
     if (item.archived) return item;
     if (item.status !== 'negotiating') return item;
     if (!DEAD_STATUSES.includes(item.listingStatus)) return item;
+    if (hasPurchaseSignal(item)) return item;             // nie archiwizuj udanych zakupów
     // Guard finalPrice — TYLKO dla 'reserved' (rezerwacje wracają, dogadana cena = transakcja może iść)
     // Dla 'deleted'/'sold' archiwizujemy niezależnie od finalPrice (listing nie wróci, transakcja umarła)
     // BYPASS przy manual trigger (opts.manual === true) — user explicit click = świadoma akcja
     if (!opts.manual && item.listingStatus === 'reserved' && item.finalPrice) return item;
-    archivedCount++;
+    archivedBatch.push({ id: item.id, title: item.title || item.sellerName || '?', reason: REASON_BY_STATUS[item.listingStatus] });
     const updated = { ...item, archived: true, archivedAt: now, archivedReason: REASON_BY_STATUS[item.listingStatus] };
     trackChange(updated, 'archived', true, opts.manual ? 'manual-trigger' : 'auto');
     return updated;
   });
 
-  if (archivedCount > 0) {
+  if (archivedBatch.length > 0) {
     saveItems();
     renderItems();   // UI refresh — items znikają natychmiast z kanbana
     const isFirstRun = opts.isFirstRun !== undefined ? opts.isFirstRun : !localStorage.getItem('ka_archive_seen');
-    if (archivedCount > 10 && isFirstRun) {
-      showOnboardingArchiveModal(archivedCount);
+    if (archivedBatch.length > 10 && isFirstRun) {
+      showOnboardingArchiveModal(archivedBatch.length);
     } else {
-      toast(`🗄️ Zarchiwizowano ${archivedCount} ${archivedCount === 1 ? 'pozycję' : 'pozycji'}`);
+      showArchiveBatchNotification(archivedBatch);
     }
   }
-  return archivedCount;
+  return archivedBatch.length;
+}
+
+function showArchiveBatchNotification(batch) {
+  const el = document.createElement('div');
+  el.id = 'archive-batch-notification';
+  el.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;border-radius:12px;padding:12px 16px;max-width:360px;width:calc(100% - 32px);z-index:9999;box-shadow:0 4px 24px rgba(0,0,0,0.4);font-size:13px';
+  const listHtml = batch.slice(0, 5).map(b => {
+    const reasonLabel = { 'listing-deleted': 'usunięte', 'listing-sold': 'sprzedane', 'listing-reserved': 'zarezerwowane' }[b.reason] || b.reason;
+    return `<div style="margin-top:4px;opacity:0.85">🗄️ ${(b.title).substring(0, 40)} <span style="opacity:0.6">(${reasonLabel})</span></div>`;
+  }).join('');
+  const more = batch.length > 5 ? `<div style="margin-top:4px;opacity:0.6">…i ${batch.length - 5} więcej</div>` : '';
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <strong>Zarchiwizowano ${batch.length} ${batch.length === 1 ? 'pozycję' : 'pozycji'}</strong>
+      <button onclick="document.getElementById('archive-batch-notification')?.remove()" style="background:none;border:none;color:#94a3b8;font-size:18px;cursor:pointer;line-height:1;padding:0 0 0 8px">×</button>
+    </div>
+    ${listHtml}${more}
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button id="archive-undo-btn" style="flex:1;padding:6px 12px;border-radius:8px;border:none;background:#3b82f6;color:#fff;font-size:13px;font-weight:600;cursor:pointer">↩ Cofnij wszystkie</button>
+      <button onclick="document.getElementById('archive-batch-notification')?.remove()" style="flex:1;padding:6px 12px;border-radius:8px;border:1px solid #475569;background:none;color:#94a3b8;font-size:13px;cursor:pointer">Zamknij</button>
+    </div>`;
+  document.getElementById('archive-batch-notification')?.remove();
+  document.body.appendChild(el);
+  const batchIds = batch.map(b => b.id);
+  el.querySelector('#archive-undo-btn').addEventListener('click', () => {
+    batchIds.forEach(id => updateItem(id, { archived: false, archivedAt: null, archivedReason: null }, 'manual'));
+    saveItems();
+    renderItems();
+    el.remove();
+    toast(`↩ Przywrócono ${batchIds.length} ${batchIds.length === 1 ? 'pozycję' : 'pozycji'}`);
+  });
+  setTimeout(() => el?.remove(), 15000);
 }
 
 function manualRunAutoArchive() {
