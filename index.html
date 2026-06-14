@@ -223,6 +223,15 @@
     </div>
 
     <div class="card sync-section">
+      <h3>🔑 Klucze Gemini</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Po jednym kluczu w linii. Limit ~20 zapytań/dzień/klucz — dodaj kilka dla rotacji.</p>
+      <textarea id="gemini-keys" rows="3" class="inp mb8" placeholder="AIza...&#10;AIza..."></textarea>
+      <input id="gemini-model" class="inp mb8" placeholder="Model (np. gemini-2.0-flash)">
+      <button class="btn" onclick="saveGeminiSettings()">💾 Zapisz klucze i model</button>
+      <div id="gemini-usage" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+    </div>
+
+    <div class="card sync-section">
       <h3>📊 Statystyki pipeline</h3>
       <div id="settings-stats"></div>
     </div>
@@ -465,6 +474,9 @@
 
       <div class="lbl mb8">Status</div>
       <select id="add-status" class="inp mb14"></select>
+
+      <div class="lbl mb8">Link ogłoszenia (Kleinanzeigen)</div>
+      <input id="add-listing" class="inp mb14" type="text" placeholder="Wklej link lub całą wiadomość udostępniania z apki KA">
 
       <div class="lbl mb8">Cena zakupu</div>
       <div class="row mb8">
@@ -847,6 +859,7 @@ function saveNewItem() {
     serialNumber: document.getElementById('add-serial').value.trim() || null,
     model:        document.getElementById('add-model').value.trim() || null,
     notes:        document.getElementById('add-notes').value.trim() || '',
+    listingUrl:   (() => { const raw = document.getElementById('add-listing').value.trim(); return raw ? (cleanKaListingUrl(raw) || null) : null; })(),
     thumbnail:    null,
     photos:       [],
     photosFolderId: null,
@@ -878,7 +891,7 @@ function saveNewItem() {
 }
 
 function _resetAddItemForm() {
-  ['add-title','add-price-eur','add-price-pln','add-date','add-serial','add-model','add-sale-pln','add-notes'].forEach(id => {
+  ['add-title','add-price-eur','add-price-pln','add-date','add-serial','add-model','add-sale-pln','add-notes','add-listing'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -897,12 +910,35 @@ function initSettingsScreen() {
   const thEl = document.getElementById('setting-threshold');  if (thEl) thEl.value = s.alertThreshold;
   const plEl = document.getElementById('setting-platform');   if (plEl) plEl.value = s.defaultPlatform;
   renderSettingsStats();
+  loadGeminiSettings();
 }
 
 function renderSettingsStats() {
   const wrap = document.getElementById('settings-stats');
   if (!wrap) return;
   wrap.innerHTML = buildFinanceSummary() + buildForwarderAlert();
+}
+
+function loadGeminiSettings() {
+  const ta = document.getElementById('gemini-keys'); if (ta) ta.value = getGeminiKeys().join('\n');
+  const mi = document.getElementById('gemini-model'); if (mi) mi.value = getGeminiModel();
+  renderGeminiUsage();
+}
+function saveGeminiSettings() {
+  const keys = (document.getElementById('gemini-keys').value || '').split('\n').map(s=>s.trim()).filter(Boolean);
+  localStorage.setItem('ka_gemini_keys', JSON.stringify(keys));
+  const model = (document.getElementById('gemini-model').value || '').trim();
+  if (model) localStorage.setItem('ka_gemini_model', model);
+  toast(`✅ Zapisano ${keys.length} kluczy`);
+  renderGeminiUsage();
+}
+function renderGeminiUsage() {
+  const el = document.getElementById('gemini-usage'); if (!el) return;
+  const u = getGeminiUsage(); const today = todayStr();
+  el.innerHTML = getGeminiKeys().map((k,i)=>{
+    const c = (u[k] && u[k].date===today) ? u[k].count : 0;
+    return `Klucz ${i+1} (…${esc(k.slice(-4))}): ${c}/${GEMINI_DAILY_LIMIT}`;
+  }).join('<br>') || 'Brak kluczy';
 }
 
 function loadItems() {
@@ -962,6 +998,227 @@ function updateItem(id, patch, source = 'manual') {
     return updated;
   });
   saveItems();
+}
+
+// ── ASYSTENT ODPOWIEDZI (Gemini) ─────────────────────────────────────────────
+function calcPaypalGross(price, takeFee) {
+  const p = Number(price);
+  if (!isFinite(p) || p <= 0) return null;
+  if (!takeFee) return Math.round(p * 100) / 100;
+  return Math.round(((p + 0.35) / 0.9751) * 100) / 100;
+}
+
+function cleanKaListingUrl(text) {
+  if (typeof text !== 'string') return '';
+  const m = text.match(/https?:\/\/\S+/i);
+  if (!m) return '';
+  const url = m[0];
+  if (!/kleinanzeigen\.de/i.test(url)) return '';
+  return url.split('#')[0].split('?')[0].replace(/[).,]+$/, '');
+}
+
+function pickGeminiKey(keys, usage, limit, today) {
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i];
+    const u = usage[k];
+    const count = (u && u.date === today) ? u.count : 0;
+    if (count < limit) return { key: k, index: i, count };
+  }
+  return null;
+}
+function recordGeminiUsage(usage, key, today) {
+  const next = { ...usage };
+  const u = next[key];
+  const count = (u && u.date === today) ? u.count : 0;
+  next[key] = { date: today, count: count + 1 };
+  return next;
+}
+function markGeminiKeyExhausted(usage, key, limit, today) {
+  return { ...usage, [key]: { date: today, count: limit } };
+}
+
+const GEMINI_DAILY_LIMIT = 20;
+function getGeminiKeys()  { try { return JSON.parse(localStorage.getItem('ka_gemini_keys')  || '[]'); } catch { return []; } }
+function getGeminiUsage() { try { return JSON.parse(localStorage.getItem('ka_gemini_usage') || '{}'); } catch { return {}; } }
+function setGeminiUsage(u){ localStorage.setItem('ka_gemini_usage', JSON.stringify(u)); }
+function getGeminiModel() { return localStorage.getItem('ka_gemini_model') || 'gemini-2.0-flash'; }
+function todayStr()       { return new Date().toISOString().slice(0,10); }
+
+function geminiIsFirstMessage(item) {
+  const msgs = (item && item.messages) || [];
+  return !msgs.some(m => m.sender === 'buyer');
+}
+
+function parseGeminiReply(rawText) {
+  if (typeof rawText !== 'string') return null;
+  let txt = rawText.trim();
+  const fence = txt.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+  if (fence) txt = fence[1].trim();
+  try {
+    const o = JSON.parse(txt);
+    return { analysis: o.analysis || '', version_faithful: o.version_faithful || '', version_strategic: o.version_strategic || '' };
+  } catch {
+    return { analysis: '', version_faithful: '', version_strategic: '', _raw: rawText };
+  }
+}
+
+const GEMINI_SYSTEM_PROMPT = `Jesteś osobistym asystentem i tłumaczem Marcina do obsługi transakcji zakupowych na Kleinanzeigen.de. Cel: skuteczne, naturalne domykanie zakupów po niemiecku.
+
+Zasady:
+1. Ton (Du/Sie): jeśli sprzedawca pisze per „Du" — odpowiadaj „Du". Domyślnie oraz przy pierwszym kontakcie używaj „Sie", chyba że kontekst (np. kategoria hobby) sugeruje luz.
+2. Powitania/pożegnania: stosuj TYLKO gdy w danych zaznaczono, że to pierwsza wiadomość w wątku. Dobierz powitanie do pory dnia (Guten Morgen / Guten Tag / Guten Abend) na podstawie podanego aktualnego czasu. W kolejnych wiadomościach — bez powitań i pożegnań.
+3. Logistyka „nur Abholung": jeśli kontekst ogłoszenia wskazuje tylko odbiór osobisty, najpierw ustal cenę; o wysyłkę pytaj dopiero w kolejnym kroku, chyba że użytkownik wyraźnie chce wysyłkę wliczoną w cenę.
+4. Płatność: preferowana metoda to PayPal Waren und Dienstleistungen (G&S).
+5. Zwróć WYŁĄCZNIE obiekt JSON zgodny ze schematem (bez markdownu, bez bloków kodu):
+   - analysis: po polsku — krótkie tłumaczenie ostatniej wiadomości sprzedawcy, ocena jego nastawienia i ewentualne „czerwone flagi".
+   - version_faithful: po niemiecku — wersja blisko propozycji użytkownika.
+   - version_strategic: po niemiecku — wersja optymalizująca szansę domknięcia (zwroty typu „Schmerzgrenze", „inkl. Versand", „fairer Kompromiss").
+Nie licz kwot PayPal — kalkulację wykonuje aplikacja.`;
+
+function buildGeminiContext(item, freshSellerMsg) {
+  const L = [];
+  L.push(`OGŁOSZENIE: ${item.title || '(brak tytułu)'}`);
+  if (item.askingPrice) L.push(`Cena wywoławcza: ${item.askingPrice} EUR`);
+  if (item.finalPrice)  L.push(`Ustalona cena: ${item.finalPrice} EUR`);
+  if (item.notes)       L.push(`Kontekst ogłoszenia: ${item.notes}`);
+  const hist = (item.messages || []).map(m => {
+    const who = m.sender === 'buyer' ? 'JA (kupujący)' : (m.sender === 'seller' ? 'SPRZEDAWCA' : 'SYSTEM');
+    const t = m.originalText || m.text || '';
+    return t ? `${who}: ${t}` : null;
+  }).filter(Boolean).join('\n');
+  if (hist) L.push(`\nHISTORIA ROZMOWY (oryginały DE):\n${hist}`);
+  if (freshSellerMsg && freshSellerMsg.trim())
+    L.push(`\nNAJNOWSZA WIADOMOŚĆ SPRZEDAWCY (świeża, jeszcze nie w historii):\n${freshSellerMsg.trim()}`);
+  return L.join('\n');
+}
+
+function buildGeminiPayload({ item, freshSellerMsg, polishDraft, isFirstMessage, nowStr }) {
+  const userText = [
+    buildGeminiContext(item, freshSellerMsg),
+    `\nAKTUALNY CZAS: ${nowStr}`,
+    `CZY TO PIERWSZA MOJA WIADOMOŚĆ W TYM WĄTKU: ${isFirstMessage ? 'TAK' : 'NIE'}`,
+    `\nCO CHCĘ PRZEKAZAĆ (po polsku): ${polishDraft}`,
+  ].join('\n');
+  return {
+    systemInstruction: { parts: [{ text: GEMINI_SYSTEM_PROMPT }] },
+    contents: [{ role: 'user', parts: [{ text: userText }] }],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: 'object',
+        properties: {
+          analysis:          { type: 'string' },
+          version_faithful:  { type: 'string' },
+          version_strategic: { type: 'string' },
+        },
+        required: ['analysis', 'version_faithful', 'version_strategic'],
+      },
+    },
+  };
+}
+
+function buildOutboundMessage(de, pl, nowIso) {
+  return { sender: 'buyer', originalText: de, translatedText: pl || '', timestamp: nowIso, source: 'assistant' };
+}
+
+function updatePaypalCalc() {
+  const price = document.getElementById('pp-price')?.value;
+  const fee = document.getElementById('pp-fee')?.checked;
+  const out = document.getElementById('pp-out'); if (!out) return;
+  const v = calcPaypalGross(price, fee);
+  out.textContent = v == null ? '' : `→ Do przelania: ${v.toFixed(2).replace('.', ',')} €`;
+}
+
+async function geminiGenerate(itemId) {
+  const item = getItem(itemId); if (!item) return;
+  const draft = (document.getElementById('asst-draft')?.value || '').trim();
+  if (!draft) { toast('✍️ Napisz po polsku, co chcesz przekazać'); return; }
+  const fresh = document.getElementById('asst-fresh')?.value || '';
+  const listingEl = document.getElementById('asst-listing');
+  if (listingEl && listingEl.value.trim()) {
+    const cleanUrl = cleanKaListingUrl(listingEl.value);
+    if (cleanUrl) updateItem(itemId, { listingUrl: cleanUrl }, 'manual');
+    else toast('⚠️ Nie rozpoznano linku ogłoszenia Kleinanzeigen');
+  }
+  const out = document.getElementById('asst-result');
+  out.innerHTML = '<div style="color:#475569;font-size:13px">⏳ Generuję…</div>';
+  const payload = buildGeminiPayload({
+    item, freshSellerMsg: fresh, polishDraft: draft,
+    isFirstMessage: geminiIsFirstMessage(item),
+    nowStr: new Date().toLocaleString('pl-PL'),
+  });
+  const r = await callGemini(payload);
+  if (!r) { out.innerHTML = ''; return; }
+  if (r._raw) { out.innerHTML = `<div class="note-box">⚠️ Nieoczekiwany format. Surowa odpowiedź:<pre style="white-space:pre-wrap">${esc(r._raw)}</pre></div>`; return; }
+  renderAsstResult(itemId, r, draft);
+}
+
+function renderAsstResult(itemId, r, draft) {
+  const out = document.getElementById('asst-result');
+  out.innerHTML = `
+    ${buildDetailsSection('asst-analysis', `<span class="details-label">🔍 Analiza</span>`, `<div style="font-size:13px;white-space:pre-wrap">${esc(r.analysis)}</div>`)}
+    <div style="font-weight:700;font-size:12px;margin:8px 0 2px">Wersja 1 (blisko Twojej)</div>
+    <div class="bubble them" id="asst-v1">${esc(r.version_faithful)}</div>
+    <button class="btn-sm" onclick="pickAsstVersion('asst-v1')">📋 Użyj tej wersji</button>
+    <div style="font-weight:700;font-size:12px;margin:8px 0 2px">Wersja 2 (strategiczna)</div>
+    <div class="bubble them" id="asst-v2">${esc(r.version_strategic)}</div>
+    <button class="btn-sm" onclick="pickAsstVersion('asst-v2')">📋 Użyj tej wersji</button>
+    <div style="font-weight:700;font-size:12px;margin:10px 0 2px">Edytuj przed wysłaniem</div>
+    <textarea class="inp mb8" id="asst-final" rows="4">${esc(r.version_strategic)}</textarea>
+    <button class="btn" onclick="geminiSendAndOpen('${itemId}', ${JSON.stringify(draft)})">📋 Kopiuj + otwórz KA</button>
+  `;
+}
+
+function pickAsstVersion(id) {
+  const src = document.getElementById(id); const dst = document.getElementById('asst-final');
+  if (src && dst) dst.value = src.textContent;
+}
+
+function geminiSendAndOpen(itemId, polishDraft) {
+  const item = getItem(itemId); if (!item) return;
+  const de = (document.getElementById('asst-final')?.value || '').trim();
+  if (!de) { toast('Brak treści do wysłania'); return; }
+  navigator.clipboard?.writeText(de).catch(()=>{});
+  const msg = buildOutboundMessage(de, polishDraft, new Date().toISOString());
+  const updated = [...(item.messages || []), msg];
+  updateItem(itemId, { messages: updated }, 'manual');
+  trackChange(getItem(itemId), 'messages', '+1 wychodząca (asystent)', 'manual');
+  saveItems();
+  const url = item.conversationUrl || item.listingUrl;
+  if (url) window.open(url, '_blank');
+  toast('📋 Skopiowano — wklej w Kleinanzeigen');
+  renderItem();
+}
+
+function deleteMessage(itemId, idx) {
+  const item = getItem(itemId); if (!item || !item.messages) return;
+  if (!confirm('Usunąć tę wiadomość z historii?')) return;
+  const msgs = item.messages.filter((_, i) => i !== idx);
+  updateItem(itemId, { messages: msgs }, 'manual');
+  renderItem();
+}
+
+async function callGemini(payload) {
+  const keys = getGeminiKeys();
+  if (keys.length === 0) { toast('🔑 Dodaj klucz Gemini w Ustawieniach'); return null; }
+  let usage = getGeminiUsage();
+  const today = todayStr();
+  const model = getGeminiModel();
+  for (;;) {
+    const pick = pickGeminiKey(keys, usage, GEMINI_DAILY_LIMIT, today);
+    if (!pick) { toast(`⛔ Limit Gemini na dziś wyczerpany (${keys.length} kluczy)`); return null; }
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(pick.key)}`;
+    let res;
+    try {
+      res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    } catch (e) { toast('🌐 Błąd połączenia z Gemini'); return null; }
+    if (res.status === 429) { usage = markGeminiKeyExhausted(usage, pick.key, GEMINI_DAILY_LIMIT, today); setGeminiUsage(usage); continue; }
+    if (!res.ok) { toast(`⚠️ Gemini HTTP ${res.status}`); return null; }
+    usage = recordGeminiUsage(usage, pick.key, today); setGeminiUsage(usage);
+    const data = await res.json();
+    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    return parseGeminiReply(raw);
+  }
 }
 
 // ── Archive helpers ───────────────────────────────────────────────────────────
@@ -1320,10 +1577,11 @@ function renderItem() {
   const listingUrl = cur.listingUrl ? `<a href="${cur.listingUrl}" target="_blank" style="font-size:12px;color:${AC};font-weight:600;text-decoration:none">🏷️ Zobacz ogłoszenie →</a>` : '';
   const notesHtml = cur.notes ? `<div class="note-box">${linkify(cur.notes)}</div>` : '';
   const msgsHtml = cur.messages && cur.messages.length > 0
-    ? `<div class="chat-list">${cur.messages.map(msg => {
+    ? `<div class="chat-list">${cur.messages.map((msg, idx) => {
       const ts = msg.timestamp ? new Date(msg.timestamp) : null;
       const timeStr = ts ? ts.toLocaleString('pl-PL', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
-      return `<div class="chat-row ${msg.sender==='buyer'?'me':'them'}"><div class="chat-who">${msg.sender==='seller'?'🇩🇪 Sprzedający':'Ty'}${timeStr ? `<span class="chat-time">${timeStr}</span>` : ''}</div><div class="bubble ${msg.sender==='buyer'?'me':'them'}">${esc(msg.translatedText||msg.originalText)}${msg.originalText&&msg.originalText!==msg.translatedText?`<div class="bubble-orig">🇩🇪 ${esc(msg.originalText)}</div>`:''}</div></div>`;
+      const trashBtn = msg.source === 'assistant' ? `<button class="btn-sm" title="Usuń (nie wysłano)" onclick="deleteMessage('${cur.id}', ${idx})">🗑️</button>` : '';
+      return `<div class="chat-row ${msg.sender==='buyer'?'me':'them'}"><div class="chat-who">${msg.sender==='seller'?'🇩🇪 Sprzedający':'Ty'}${timeStr ? `<span class="chat-time">${timeStr}</span>` : ''}${trashBtn}</div><div class="bubble ${msg.sender==='buyer'?'me':'them'}">${esc(msg.translatedText||msg.originalText)}${msg.originalText&&msg.originalText!==msg.translatedText?`<div class="bubble-orig">🇩🇪 ${esc(msg.originalText)}</div>`:''}</div></div>`;
     }).join('')}</div>`
     : `<div style="text-align:center;padding:14px 0;color:#475569;font-size:13px">Brak wiadomości. Dodaj screenshot z rozmowy.</div>`;
   // Conditional sections
@@ -1400,6 +1658,26 @@ function renderItem() {
     ${buildDetailsSection('chat',
         `<span class="details-label">💬 Rozmowa</span><span class="details-meta">${(cur.messages||[]).length} wiadomości</span>`,
         msgsHtml)}
+
+    ${buildDetailsSection('assistant',
+      `<span class="details-label">✍️ Asystent odpowiedzi</span><span class="details-meta">Gemini</span>`,
+      `
+      ${cur.listingUrl ? '' : `<input class="inp mb8" id="asst-listing" placeholder="Link ogłoszenia (nowa rozmowa)">`}
+      <textarea class="inp mb8" id="asst-fresh" rows="2" placeholder="Świeża wiadomość sprzedawcy (DE, opcjonalnie)"></textarea>
+      <textarea class="inp mb8" id="asst-draft" rows="3" placeholder="Co chcesz przekazać? (po polsku)"></textarea>
+      <button class="btn" onclick="geminiGenerate('${cur.id}')">✨ Generuj odpowiedź</button>
+      <div id="asst-result" style="margin-top:10px"></div>
+      `)}
+
+    ${buildDetailsSection('paypal',
+      `<span class="details-label">💶 Kalkulator PayPal (G&S)</span>`,
+      `
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input class="inp" id="pp-price" type="number" step="0.01" placeholder="Cena ustalona (EUR)" style="flex:1" oninput="updatePaypalCalc()">
+        <label style="font-size:13px"><input type="checkbox" id="pp-fee" checked onchange="updatePaypalCalc()"> biorę prowizję</label>
+      </div>
+      <div id="pp-out" style="margin-top:8px;font-weight:700"></div>
+      `)}
 
     ${buildDetailsSection('price',
         `<span class="details-label">💰 Cena zakupu (EUR)</span><span class="details-meta">${cur.finalPrice ? cur.finalPrice + ' EUR' : '—'}</span>`,
