@@ -1150,12 +1150,11 @@ async function geminiGenerate(itemId) {
   const r = await callGemini(payload);
   if (!r) { out.innerHTML = ''; return; }
   if (r._raw) { out.innerHTML = `<div class="note-box">⚠️ Nieoczekiwany format. Surowa odpowiedź:<pre style="white-space:pre-wrap">${esc(r._raw)}</pre></div>`; return; }
-  renderAsstResult(itemId, r, draft);
+  renderAsstResult(itemId, r);
 }
 
-function renderAsstResult(itemId, r, draft) {
-  const out = document.getElementById('asst-result');
-  out.innerHTML = `
+function buildAsstResultHtml(itemId, r) {
+  return `
     ${buildDetailsSection('asst-analysis', `<span class="details-label">🔍 Analiza</span>`, `<div style="font-size:13px;white-space:pre-wrap">${esc(r.analysis)}</div>`)}
     <div style="font-weight:700;font-size:12px;margin:8px 0 2px">Wersja 1 (blisko Twojej)</div>
     <div class="bubble them" id="asst-v1">${esc(r.version_faithful)}</div>
@@ -1165,28 +1164,42 @@ function renderAsstResult(itemId, r, draft) {
     <button class="btn-sm" onclick="pickAsstVersion('asst-v2')">📋 Użyj tej wersji</button>
     <div style="font-weight:700;font-size:12px;margin:10px 0 2px">Edytuj przed wysłaniem</div>
     <textarea class="inp mb8" id="asst-final" rows="4">${esc(r.version_strategic)}</textarea>
-    <button class="btn" onclick="geminiSendAndOpen('${itemId}', ${JSON.stringify(draft)})">📋 Kopiuj + otwórz KA</button>
+    <button class="btn" onclick="geminiSendAndOpen('${itemId}')">📋 Kopiuj + otwórz KA</button>
   `;
+}
+function renderAsstResult(itemId, r) {
+  document.getElementById('asst-result').innerHTML = buildAsstResultHtml(itemId, r);
 }
 
 function pickAsstVersion(id) {
   const src = document.getElementById(id); const dst = document.getElementById('asst-final');
-  if (src && dst) dst.value = src.textContent;
+  if (src && dst) { dst.value = src.textContent; dst.focus(); toast('✏️ Wstawiono do edytora — dopracuj i wyślij'); }
 }
 
-function geminiSendAndOpen(itemId, polishDraft) {
+function geminiSendAndOpen(itemId) {
   const item = getItem(itemId); if (!item) return;
   const de = (document.getElementById('asst-final')?.value || '').trim();
   if (!de) { toast('Brak treści do wysłania'); return; }
-  navigator.clipboard?.writeText(de).catch(()=>{});
+  const polishDraft = (document.getElementById('asst-draft')?.value || '').trim();
+
+  // 1. Schowek (async) — inicjowany w geście, z realnym feedbackiem
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(de)
+      .then(() => toast('📋 Skopiowano — wklej w Kleinanzeigen'))
+      .catch(() => toast('⚠️ Nie udało się skopiować — zaznacz tekst w polu i skopiuj ręcznie'));
+  } else {
+    toast('⚠️ Schowek niedostępny — zaznacz tekst w polu i skopiuj ręcznie');
+  }
+
+  // 2. Otwórz KA — synchronicznie, wciąż w geście (mobile: nie blokowane przez popup-blocker)
+  const url = item.conversationUrl || item.listingUrl;
+  if (url) window.open(url, '_blank', 'noopener');
+
+  // 3. Zapis do historii (niezależnie od schowka/otwarcia)
   const msg = buildOutboundMessage(de, polishDraft, new Date().toISOString());
-  const updated = [...(item.messages || []), msg];
-  updateItem(itemId, { messages: updated }, 'manual');
+  updateItem(itemId, { messages: [...(item.messages || []), msg] }, 'manual');
   trackChange(getItem(itemId), 'messages', '+1 wychodząca (asystent)', 'manual');
   saveItems();
-  const url = item.conversationUrl || item.listingUrl;
-  if (url) window.open(url, '_blank');
-  toast('📋 Skopiowano — wklej w Kleinanzeigen');
   renderItem();
 }
 
