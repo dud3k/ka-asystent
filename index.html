@@ -569,7 +569,7 @@ function saveSettings(partial) {
   localStorage.setItem('ka_settings_meta', JSON.stringify({ updatedAt: new Date().toISOString() }));
   scheduleSave();  // wypchnij zmianę ustawień do Gist
 }
-function autosaveGist() {
+async function autosaveGist() {
   const gid = (document.getElementById('gist-id-input').value || '').trim();
   const tok = (document.getElementById('gist-token-input').value || '').trim();
   const prevId = localStorage.getItem('ka_gist_id') || '';
@@ -577,8 +577,23 @@ function autosaveGist() {
   if (gid !== prevId || tok !== prevToken) localStorage.removeItem('ka_gist_verified');
   if (gid) localStorage.setItem('ka_gist_id', gid);
   if (tok) localStorage.setItem('ka_gist_token', tok);
-  updateGistStatus();
   toast('✓ Zapisano');
+  // Zweryfikuj realnie (onblur, 1 request) — „zielono" ma znaczyć że token DZIAŁA, nie że jest wpisany
+  if (gid && tok) {
+    setGistStatusEl('loading', '🔄 Sprawdzam token…');
+    try {
+      const res = await fetch(`https://api.github.com/gists/${gid}`, {
+        headers: { Authorization: `Bearer ${tok}`, 'User-Agent': 'KA-Asystent' }
+      });
+      if (res.status === 401) { localStorage.removeItem('ka_gist_verified'); setGistStatusEl('error', '🔴 Token nieprawidłowy lub wygasły (401) — wygeneruj nowy'); return; }
+      if (res.status === 404) { localStorage.removeItem('ka_gist_verified'); setGistStatusEl('error', '🔴 Gist nie znaleziony (404) — sprawdź Gist ID'); return; }
+      if (!res.ok)            { localStorage.removeItem('ka_gist_verified'); setGistStatusEl('error', `🔴 Błąd GitHub API: HTTP ${res.status}`); return; }
+      localStorage.setItem('ka_gist_verified', '1');
+    } catch {
+      localStorage.removeItem('ka_gist_verified'); // offline — nie potwierdzono
+    }
+  }
+  updateGistStatus();
 }
 
 function autosaveAppSetting(key, parseFn) {
@@ -2862,7 +2877,18 @@ async function loadFromGist(silent = false) {
     const res = await fetch(`https://api.github.com/gists/${gistId}`, {
       headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'KA-Asystent' }
     });
-    if (!res.ok) { if (!silent) setSyncIcon('error'); return; }
+    if (!res.ok) {
+      setSyncIcon('error');
+      if (res.status === 401) {
+        localStorage.removeItem('ka_gist_verified'); // token martwy — przestań pokazywać „zielono"
+        toast('⚠️ Token GitHub wygasł/nieprawidłowy (401) — wpisz nowy w ⚙️');
+      } else if (res.status === 404) {
+        toast('⚠️ Gist nie znaleziony (404) — sprawdź Gist ID w ⚙️');
+      } else {
+        toast(`⚠️ Błąd pobierania z Gist: HTTP ${res.status}`);
+      }
+      return;
+    }
     const gist = await res.json();
 
     // Zapisz Gist-level updated_at (używane przez auto-poll do szybkiego sprawdzenia czy coś się zmieniło)
@@ -2960,10 +2986,12 @@ function updateGistStatus() {
   if (!id && !token) { setGistStatusEl('warn', '⚪ Nie skonfigurowano — wpisz Gist ID i token'); return; }
   if (!token)        { setGistStatusEl('warn', '⚠️ Brak tokenu GitHub'); return; }
   if (!id)           { setGistStatusEl('warn', '⚠️ Brak Gist ID'); return; }
-  // Użyj cache ostatniej weryfikacji (żeby nie spowalniać otwarcia ustawień API callem)
-  const verified = JSON.parse(localStorage.getItem('ka_gist_verified') || 'null');
-  if (verified) { setGistStatusEl('ok', `🟢 Połączony — @${verified.login} · pliki: ${verified.files}`); return; }
-  setGistStatusEl('ok', `🟢 Token skonfigurowany · Gist: ${id.slice(0, 8)}…  (kliknij Zapisz żeby zweryfikować)`);
+  // 🟢 tylko gdy token NAPRAWDĘ zweryfikowany (ka_gist_verified='1' ustawiane po udanym teście API w autosaveGist)
+  if (localStorage.getItem('ka_gist_verified') === '1') {
+    setGistStatusEl('ok', `🟢 Połączony · Gist: ${id.slice(0, 8)}…`);
+  } else {
+    setGistStatusEl('warn', `🟡 Token wpisany, niezweryfikowany — kliknij w pole i wyjdź (onblur) by sprawdzić · Gist: ${id.slice(0, 8)}…`);
+  }
 }
 
 async function importPatchFromGist(autoImport = false) {
