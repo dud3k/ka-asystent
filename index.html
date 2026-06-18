@@ -946,7 +946,10 @@ function loadItems() {
     const raw = localStorage.getItem('ka_items_v2');
     if (raw !== null) {
       // User has data (or explicitly cleared to [])
-      items = JSON.parse(raw) || [];
+      items = (JSON.parse(raw) || []).map(it => {
+        if (!it.revisionAt) it.revisionAt = it.updatedAt || it.createdAt || '1970-01-01T00:00:00.000Z';
+        return it;
+      });
       return;
     }
   } catch {}
@@ -960,6 +963,10 @@ function saveItems() {
   items = items.filter(i => !i.deletedAt || i.deletedAt > cutoff);
   localStorage.setItem('ka_items_v2', JSON.stringify(items));
   scheduleSave();
+}
+function bumpRevision(item) {
+  item.revisionAt = new Date().toISOString();
+  return item;
 }
 function getItem(id) { return items.find(i => i.id === id) || null; }
 function activeItems() { return items.filter(i => !i.deletedAt && !i.archived); }
@@ -995,6 +1002,7 @@ function updateItem(id, patch, source = 'manual') {
     }
     Object.assign(updated, patch);
     updated.updatedAt = new Date().toISOString();
+    bumpRevision(updated);
     return updated;
   });
   saveItems();
@@ -1766,6 +1774,7 @@ function deleteItem() {
   if (item) {
     item.deletedAt = new Date().toISOString();
     item.updatedAt = new Date().toISOString();
+    bumpRevision(item);
     saveItems();
   }
   showScreen('items');
@@ -1921,6 +1930,7 @@ function fixSortDates() {
     const updatedTs = item.updatedAt ? new Date(item.updatedAt).getTime() : 0;
     if (maxMsgTs > updatedTs) {
       item.updatedAt = new Date(maxMsgTs).toISOString();
+      bumpRevision(item);
       fixed++;
     }
   });
@@ -2067,6 +2077,7 @@ function importScanDirect(ev) {
           if (uniqueNew.length > 0) {
             existing.messages = [...(existing.messages||[]), ...uniqueNew];
             existing.updatedAt = conv.lastMessageDate || getLastMsgDate(existing.messages) || new Date().toISOString();
+            bumpRevision(existing);
             report.updated.push(`${title} (+${uniqueNew.length} wiad.)`);
           } else {
             report.skipped.push(title);
@@ -2093,6 +2104,7 @@ function importScanDirect(ev) {
             messages: mappedMsgs,
             createdAt: ts,
             updatedAt: ts,
+            revisionAt: ts,
           };
           items.unshift(item);
           report.created.push(title);
@@ -2247,7 +2259,8 @@ function executePatch(patch, dryRun, strictMode = false) {
         thumbnail: null,
         messages: [],
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        revisionAt: new Date().toISOString()
       };
       if (!dryRun) items.unshift(item);
       report.created.push({ title: item.title });
@@ -2311,6 +2324,7 @@ function executePatch(patch, dryRun, strictMode = false) {
     if (changes.length > 0) {
       if (!dryRun) {
         item.updatedAt = getLastMsgDate(item.messages) || new Date().toISOString();
+        bumpRevision(item);
       }
       report.updated.push({ title: item.title, changes });
       report.details.push(`✏️ <strong>${esc(item.title)}</strong>: ${changes.join(', ')}`);
@@ -2355,7 +2369,10 @@ function executePatch(patch, dryRun, strictMode = false) {
           }
         }
         if (changes.length > 0) {
-          if (!dryRun) existing.updatedAt = getLastMsgDate(existing.messages) || new Date().toISOString();
+          if (!dryRun) {
+            existing.updatedAt = getLastMsgDate(existing.messages) || new Date().toISOString();
+            bumpRevision(existing);
+          }
           report.updated.push({ title: existing.title, changes });
           report.details.push(`🔄 <strong>${esc(existing.title)}</strong> (merge): ${changes.join(', ')}`);
         }
@@ -2394,6 +2411,7 @@ function executePatch(patch, dryRun, strictMode = false) {
       messages: mappedMsgs,
       createdAt: normNewSet.createdAt || normNewSet.lastMessageDate || normNewSet.lastActivity || new Date().toISOString(),
       updatedAt: normNewSet.lastMessageDate || getLastMsgDate(mappedMsgs) || normNewSet.lastActivity || new Date().toISOString(),
+      revisionAt: new Date().toISOString(),
       serialNumber: normNewSet.serialNumber || null,
       model: normNewSet.model || null
     };
@@ -2755,9 +2773,9 @@ function mergeItems(localItems, remoteItems) {
       // Istnieje tylko lokalnie — zachowaj
       merged.set(key, local);
     } else {
-      // Istnieje w obu — LWW per item
-      const localTime  = new Date(local.updatedAt  || 0).getTime();
-      const remoteTime = new Date(remote.updatedAt || 0).getTime();
+      // LWW po revisionAt (czas edycji), nie updatedAt (= data ostatniej wiad.) — patrz TASK_041 Filar 3
+      const localTime  = new Date(local.revisionAt  || local.updatedAt  || 0).getTime();
+      const remoteTime = new Date(remote.revisionAt || remote.updatedAt || 0).getTime();
       merged.set(key, remoteTime > localTime ? remote : local);
     }
   }
@@ -3694,6 +3712,7 @@ function confirmBundleSplit() {
   trackChange(parent, 'status', 'completed', 'manual');
   Object.assign(parent, parentPatch);
   parent.updatedAt = new Date().toISOString();
+  bumpRevision(parent);
   // Prepend children
   children.forEach(child => items.unshift(child));
   saveItems();
