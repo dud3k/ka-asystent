@@ -1314,6 +1314,7 @@ function runAutoArchive(opts = {}) {
   items = items.map(item => {
     if (item.archived) return item;
     if (item.status !== 'negotiating') return item;
+    if (item.listingStatus === 'active') return item;     // aktywne ogłoszenie — nigdy nie archiwizuj (TASK_041 D4)
     if (!DEAD_STATUSES.includes(item.listingStatus)) return item;
     if (hasPurchaseSignal(item)) return item;             // nie archiwizuj udanych zakupów
     // Guard finalPrice — TYLKO dla 'reserved' (rezerwacje wracają, dogadana cena = transakcja może iść)
