@@ -2225,21 +2225,35 @@ function executePatch(patch, dryRun, strictMode = false) {
   (patch.updates || []).forEach((upd, idx) => {
     let item = findItemByMatch(upd.match);
     if (!item) {
-      // Guard: aktualizacje samego statusu ogłoszenia (np. source 'scraper-stale-check')
-      // NIE mogą tworzyć nowych rekordów. Nie niosą tytułu ani wiadomości, więc powstałby
-      // pusty "Nowy przedmiot" (ghost). Mają sens tylko dla pozycji już istniejących.
+      // Kryterium realnej treści (D1 TASK_042 — kontrolowana duplikacja z analyze.js hasContentCheck)
+      // Tworzymy rekord gdy update niesie: wiadomości LUB tytuł LUB status z payment-derived.
+      // NIGDY gdy source==='scraper-stale-check' i brak powyższego (anty-ghost).
+      const PAYMENT_DERIVED_STATUSES_APP = new Set(['purchased', 'shipped', 'received', 'shipped_de', 'at_forwarder', 'shipped_pl', 'dostarczone_de', 'dostarczone_pl', 'oplacony', 'wyslane_de', 'wyslane_pl']);
       const setData = upd.set || {};
-      const hasContent = !!(setData.title || (upd.addMessages && upd.addMessages.length > 0));
+      const hasContent = !!(
+        (upd.addMessages && upd.addMessages.length > 0) ||
+        setData.title ||
+        (setData.status && PAYMENT_DERIVED_STATUSES_APP.has(setData.status))
+      );
       if (upd.source === 'scraper-stale-check' || !hasContent) {
+        // Loud Rejection: warn gdy odrzucamy paczkę z hasContent=true (nie powinno się zdarzyć tu,
+        // ale logujemy defensywnie gdy scraper-stale-check dostanie realną treść)
+        if (hasContent) {
+          console.warn(`[WARN] Odrzucono aktualizację mimo realnej treści! ID: ${upd.match}`);
+        }
         report.details.push(`⏭️ Pominięto aktualizację statusu ogłoszenia — brak pasującego rekordu dla: "${esc(upd.match)}"`);
         return;
       }
       if (strictMode) {
+        // Loud Rejection w trybie ścisłym gdy mamy realną treść
+        if (hasContent) {
+          console.warn(`[WARN] Odrzucono aktualizację mimo realnej treści! ID: ${upd.match} (strict mode)`);
+        }
         report.errors.push(`Nie znaleziono rekordu dla "${upd.match}"`);
         report.details.push(`⛔ Pominięto (tryb ścisły) — brak rekordu dla: "${esc(upd.match)}"`);
         return;
       }
-      // Auto-create new item from update data
+      // Auto-create new item from update data (Filar B TASK_042 — create-on-content)
       const s = upd.set || {};
       const convUrl = upd.match.startsWith('http') ? upd.match : `https://www.kleinanzeigen.de/m-nachrichten.html?conversationId=${upd.match}`;
       const trackUrl = s.trackingNumber && s.carrier ? getTrackUrl(s.carrier, s.trackingNumber) : null;
@@ -2248,6 +2262,7 @@ function executePatch(patch, dryRun, strictMode = false) {
         title: s.title || 'Nowy przedmiot',
         description: s.description || '',
         status: s.status || 'negotiating',
+        logisticStatus: s.logisticStatus || null,
         askingPrice: s.askingPrice || null,
         finalPrice: s.finalPrice || null,
         carrier: s.carrier || null,
@@ -2259,6 +2274,7 @@ function executePatch(patch, dryRun, strictMode = false) {
         watchlist: s.watchlist || false,
         thumbnail: null,
         messages: [],
+        changelog: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         revisionAt: new Date().toISOString()
