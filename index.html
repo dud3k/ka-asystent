@@ -185,7 +185,14 @@
     <h2 style="font-size:17px;font-weight:800;margin-bottom:16px">⚙️ Ustawienia</h2>
 
     <div class="card sync-section">
-      <h3>☁️ Synchronizacja z chmurą</h3>
+      <h3>🔐 Konto (Supabase)</h3>
+      <div id="sb-account-status" style="font-size:13px;margin-bottom:10px">—</div>
+      <button class="btn ghost" onclick="supabaseLogout()">🚪 Wyloguj</button>
+    </div>
+
+    <div class="card sync-section">
+      <h3>📡 Kanał skanera (legacy)</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Gist służy już TYLKO do komunikacji ze skanerem (ka-status/ka-command) — dane aplikacji żyją w Supabase. Kanał umiera w etapie C (TASK_046).</p>
       <div class="lbl mb8">Gist ID</div>
       <input type="text" id="gist-id-input" placeholder="ID Gista (np. d77bb625...)" class="inp mb8"
              onblur="autosaveGist()" oninput="autosaveGist.pending=true">
@@ -272,17 +279,13 @@
 <div id="screen-sync" class="screen">
 
   <div class="card sync-section">
-    <h3>☁️ Synchronizacja z Gist</h3>
-    <div id="sync-status-row" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px">
-      <span id="sync-status-dot">●</span>
-      <span id="sync-status-label">Sprawdzanie...</span>
-      <span id="sync-ts-label" style="color:#475569;font-size:11px;margin-left:auto"></span>
-    </div>
+    <h3>☁️ Supabase — synchronizacja</h3>
+    <div id="sb-sync-status" style="font-size:13px;line-height:1.7;margin-bottom:10px">—</div>
     <div style="display:flex;gap:8px;margin-top:10px">
-      <button class="btn" onclick="pullFromGist()" style="flex:1">⬇️ Pobierz z Gist</button>
-      <button class="btn" onclick="pushToGistConfirm()" style="flex:1;background:#555">⬆️ Wyślij do Gist</button>
+      <button class="btn" onclick="syncFromSupabase({ manual: true })" style="flex:1">🔄 Synchronizuj</button>
+      <button class="btn" onclick="fullSyncFromSupabase()" style="flex:1;background:#555">⟳ Pełny sync</button>
     </div>
-    <p style="font-size:11px;color:var(--muted);margin-top:6px">Wyślij = nadpisz dane w chmurze lokalnymi. Pytanie potwierdzenia przed wykonaniem.</p>
+    <p style="font-size:11px;color:var(--muted);margin-top:6px">Normalnie pobierana jest tylko delta (zmiany od ostatniego syncu). Pełny sync pobiera wszystkie wiersze z bazy. Lokalne niewysłane zmiany (kolejka) nigdy nie są nadpisywane.</p>
   </div>
 
   <div class="card sync-section" id="remote-scan-card">
@@ -355,7 +358,6 @@
     <div style="display:flex;gap:0;margin-bottom:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
       <button class="seg-btn active" data-mode="file" onclick="switchPatchPane(this)" style="flex:1;padding:8px;border:none;background:var(--ac);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📁 Plik</button>
       <button class="seg-btn" data-mode="paste" onclick="switchPatchPane(this)" style="flex:1;padding:8px;border:none;background:var(--white);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📋 Wklej</button>
-      <button class="seg-btn" data-mode="gist" onclick="switchPatchPane(this)" style="flex:1;padding:8px;border:none;background:var(--white);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">☁️ Z Gist</button>
     </div>
     <div id="patch-file-pane" class="patch-pane">
       <label style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:var(--white);border:2px dashed var(--ac);border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;color:var(--ac);font-family:inherit;position:relative;overflow:hidden">
@@ -370,15 +372,11 @@
         <button class="btn" onclick="previewPatch()" style="flex:1;background:#555">👁 Podgląd</button>
       </div>
     </div>
-    <div id="patch-gist-pane" class="patch-pane" hidden>
-      <button class="btn" onclick="importPatchFromGist()" style="width:100%">☁️ Importuj patch z Gist</button>
-    </div>
     <div style="margin-top:10px;display:flex;align-items:center;gap:8px;padding:8px;background:#1a1a2e;border-radius:8px">
       <input type="checkbox" id="strict-mode-cb" style="cursor:pointer;width:16px;height:16px;flex-shrink:0">
       <label for="strict-mode-cb" style="cursor:pointer;font-size:12px;color:var(--muted);line-height:1.4">🔒 Tryb ścisły — tylko aktualizuj istniejące rekordy</label>
     </div>
     <div id="patch-report"></div>
-    <div id="gist-import-report"></div>
   </div>
 
   <div class="card sync-section">
@@ -517,6 +515,19 @@
   <div class="detail-modal" style="max-height:90vh" onclick="event.stopPropagation()" id="bundle-split-inner"></div>
 </div>
 
+<div id="login-overlay" style="position:fixed;inset:0;background:var(--bg);z-index:20000;display:none;align-items:center;justify-content:center;padding:16px">
+  <div class="card" style="width:100%;max-width:360px">
+    <h2 style="font-size:17px;font-weight:800;margin-bottom:6px">🔐 KA Asystent — logowanie</h2>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Zaloguj się do bazy (Supabase). Dane lokalne pozostają na urządzeniu — blokowany jest tylko sync i widok.</p>
+    <div class="lbl mb8">E-mail</div>
+    <input id="login-email" type="email" class="inp mb8" autocomplete="username" value="marcin-dudek@o2.pl">
+    <div class="lbl mb8">Hasło</div>
+    <input id="login-password" type="password" class="inp mb8" autocomplete="current-password" onkeydown="if(event.key==='Enter')doSupabaseLogin()">
+    <div id="login-error" style="display:none;font-size:12px;color:var(--danger);margin-bottom:8px"></div>
+    <button class="btn" id="login-btn" onclick="doSupabaseLogin()">Zaloguj</button>
+  </div>
+</div>
+
 <div id="lightbox" class="lightbox hidden" onclick="closeLightbox()">
   <button class="lb-close" onclick="closeLightbox()">×</button>
   <button class="lb-prev" onclick="event.stopPropagation();lbNav(-1)">&#8249;</button>
@@ -524,11 +535,339 @@
   <button class="lb-next" onclick="event.stopPropagation();lbNav(1)">&#8250;</button>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.min.js"
+        integrity="sha384-DjOvX/sJLsmbMrw4wTvf6l3kiGBjdxyOO6X2MTFwOOXGkjN/mE08BoDzrpaaIjil"
+        crossorigin="anonymous"></script>
 <script>
 const AC = '#E88B00';
 let currentFilter = 'all';
 let currentSort = localStorage.getItem('ka_sort_pref') || 'updated';
 let currentSearch = '';
+
+// ── Supabase — klient (ADR_008 etap B, TASK_045) ─────────────────────────────
+// Klucz publishable jest JAWNY z założenia — dane chroni RLS + Supabase Auth (sonda S4).
+const SB_URL = 'https://vvwzetkkrllsapnqhton.supabase.co';
+const SB_KEY = 'sb_publishable_cljNb_4p0oVoJ1mbwBDGYg_T4RAI-eV';
+// Offline-first: gdy CDN nie załadował się (brak sieci przy pierwszym otwarciu),
+// sb === null i cała warstwa sync jest pomijana — aplikacja działa z localStorage.
+const sb = (typeof supabase !== 'undefined' && supabase.createClient)
+  ? supabase.createClient(SB_URL, SB_KEY)
+  : null;
+let sbSession = null;
+
+// [SYNC-CORE-START] — sekcja ekstrahowana przez tests/app.test.js (nie zmieniaj markerów).
+// Kod w tej sekcji może odwoływać się tylko do: sb, sbSession, items, localStorage,
+// setTimeout/clearTimeout oraz (opcjonalnie, przez typeof-guard) toast/renderItems/updateSupabaseSyncUI.
+
+// ── Mapper camelCase ↔ snake_case — lustrzany do tools/migrate-to-supabase.js ─
+// Kontrolowana duplikacja (wzorzec D1 z TASK_042): test symetrii w tests/app.test.js
+// porównuje tę mapę 1:1 z CAMEL_TO_SNAKE z narzędzia migracji — rozjazd = fail testu.
+const APP_CAMEL_TO_SNAKE = {
+  id:              'id',
+  conversationId:  'conversation_id',
+  conversationUrl: 'conversation_url',
+  listingUrl:      'listing_url',
+  title:           'title',
+  status:          'status',
+  listingStatus:   'listing_status',
+  askingPrice:     'asking_price',
+  finalPrice:      'final_price',
+  currentPrice:    'current_price',
+  carrier:         'carrier',
+  trackingNumber:  'tracking_number',
+  trackingUrl:     'tracking_url',
+  notes:           'notes',
+  watchlist:       'watchlist',
+  archived:        'archived',
+  deletedAt:       'deleted_at',
+  createdAt:       'created_at',
+  updatedAt:       'updated_at',
+  revisionAt:      'revision_at',
+  messages:        'messages',
+  changelog:       'changelog',
+  costs:           'costs',
+  screenshots:     'screenshots',
+  // logisticStatus → extra (pole nieznane, jak w migracji)
+};
+const APP_SNAKE_TO_CAMEL = Object.fromEntries(
+  Object.entries(APP_CAMEL_TO_SNAKE).map(([c, s]) => [s, c])
+);
+
+// Item (camelCase, model aplikacji) → wiersz tabeli items (snake_case).
+// Pola nieznane lądują w extra{} — round-trip bez strat.
+function itemToRow(item) {
+  const row = { extra: {} };
+  for (const [key, value] of Object.entries(item)) {
+    const snake = APP_CAMEL_TO_SNAKE[key];
+    if (!snake) { row.extra[key] = value; continue; }
+    row[snake] = value === undefined ? null : value;
+  }
+  if (!row.id) return null; // bez id nie ma czego upsertować
+  return row;
+}
+
+// Wiersz tabeli items (snake_case) → item aplikacji (camelCase).
+// Nieznane kolumny są ignorowane; extra{} wraca do korzenia itemu.
+function rowToItem(row) {
+  const item = {};
+  for (const [key, value] of Object.entries(row)) {
+    if (key === 'extra') continue;
+    const camel = APP_SNAKE_TO_CAMEL[key];
+    if (!camel) continue;
+    item[camel] = value;
+  }
+  if (row.extra && typeof row.extra === 'object') Object.assign(item, row.extra);
+  return item;
+}
+
+// ── Kolejki sync: dirty (upsert) + deletes (purge) + kursor delty ─────────────
+function getDirtyIds() { try { return JSON.parse(localStorage.getItem('ka_dirty_ids') || '[]'); } catch { return []; } }
+function setDirtyIds(ids) { localStorage.setItem('ka_dirty_ids', JSON.stringify(Array.from(new Set(ids)))); }
+function markDirty(ids) { setDirtyIds(getDirtyIds().concat(ids)); }
+function getDirtyDeletes() { try { return JSON.parse(localStorage.getItem('ka_dirty_deletes') || '[]'); } catch { return []; } }
+function setDirtyDeletes(ids) { localStorage.setItem('ka_dirty_deletes', JSON.stringify(Array.from(new Set(ids)))); }
+function getSyncCursor() { return localStorage.getItem('ka_last_sync_at') || null; }
+// Kursor = MAX z updated_at widzianych wierszy (uwaga z recenzji: trigger nadaje
+// każdemu rekordowi paczki minimalnie inny timestamp — dlatego MAX po batchu).
+function advanceSyncCursor(rows) {
+  const max = (rows || []).map(r => r && r.updated_at).filter(Boolean).sort().pop() || null;
+  if (!max) return;
+  const cur = getSyncCursor();
+  if (!cur || max > cur) localStorage.setItem('ka_last_sync_at', max);
+}
+
+// ── Wykrywanie zmian: snapshot per-item (id → JSON) ───────────────────────────
+// saveItemsCore porównuje bieżący stan ze snapshotem — call-sites mutujące items
+// nie muszą wiedzieć o kolejce dirty (wszystkie i tak kończą w saveItems()).
+let _snapshotById = new Map();
+function resetSyncSnapshot(list) {
+  _snapshotById = new Map((list || []).filter(i => i && i.id).map(i => [i.id, JSON.stringify(i)]));
+}
+
+// Zapis: localStorage OD RAZU (offline-first) + zmienione id do dirty + debounce 2 s → flush.
+function saveItemsCore() {
+  // 1. Purge: fizycznie usuń itemy soft-deleted > 30 dni temu; delete w bazie przez
+  //    kolejkę ka_dirty_deletes (C.7 — inaczej delta wskrzeszałaby wyczyszczone wiersze).
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const purgedIds = items.filter(i => i.deletedAt && i.deletedAt <= cutoff).map(i => i.id);
+  if (purgedIds.length) {
+    items = items.filter(i => !i.deletedAt || i.deletedAt > cutoff);
+    setDirtyDeletes(getDirtyDeletes().concat(purgedIds));
+    setDirtyIds(getDirtyIds().filter(id => !purgedIds.includes(id)));
+    purgedIds.forEach(id => _snapshotById.delete(id));
+  }
+  // 2. Cache lokalny natychmiast
+  localStorage.setItem('ka_items_v2', JSON.stringify(items));
+  // 3. Zmienione itemy → kolejka dirty
+  const changed = [];
+  for (const it of items) {
+    if (!it || !it.id) continue;
+    const s = JSON.stringify(it);
+    if (_snapshotById.get(it.id) !== s) { changed.push(it.id); _snapshotById.set(it.id, s); }
+  }
+  if (changed.length) markDirty(changed);
+  // 4. Debounce 2 s → upsert do Supabase
+  scheduleFlush();
+  if (typeof updateSupabaseSyncUI === 'function') updateSupabaseSyncUI();
+  return changed;
+}
+
+let _flushTimer = null;
+let _flushing = false;
+let _flushFailToastShown = false;
+function scheduleFlush() {
+  if (!sb) return;
+  clearTimeout(_flushTimer);
+  _flushTimer = setTimeout(() => { flushDirty(); }, 2000);
+}
+function notifyFlushFail(msg) {
+  if (_flushFailToastShown) return; // toast tylko przy pierwszym failu
+  _flushFailToastShown = true;
+  if (typeof toast === 'function') toast('⚠️ ' + msg);
+}
+
+// Flush kolejek do Supabase: najpierw delete (purge), potem upsert dirty.
+// Sukces → zdejmij z kolejki; fail sieciowy/API → zostaw (retry przy kolejnym flush/sync).
+async function flushDirty() {
+  if (!sb || !sbSession) return false; // offline / niezalogowany — kolejka czeka
+  if (_flushing) return false;
+  clearTimeout(_flushTimer); _flushTimer = null;
+  const delIds = getDirtyDeletes();
+  const sendIds = getDirtyIds();
+  if (!delIds.length && !sendIds.length) return true;
+  _flushing = true;
+  try {
+    let ok = true;
+    if (delIds.length) {
+      const { error } = await sb.from('items').delete().in('id', delIds);
+      if (error) ok = false;
+      else setDirtyDeletes(getDirtyDeletes().filter(id => !delIds.includes(id)));
+    }
+    if (sendIds.length) {
+      const toSend = items.filter(i => sendIds.includes(i.id));
+      const rows = toSend.map(itemToRow).filter(Boolean).map(r => {
+        const c = { ...r };
+        delete c.updated_at; // updated_at ustawia WYŁĄCZNIE trigger bazy (autorytatywny)
+        return c;
+      });
+      // dirty-id bez itemu w cache (np. dane wyczyszczone ręcznie) — zdejmij z kolejki
+      const orphaned = sendIds.filter(id => !toSend.some(i => i.id === id));
+      if (rows.length) {
+        const { data, error } = await sb.from('items').upsert(rows, { onConflict: 'id' }).select();
+        if (error) ok = false;
+        else {
+          // Zwrócone wiersze (autorytatywny updated_at z triggera) → z powrotem do cache.
+          // skipDirty:false — to NASZ świeżo zapisany batch. Akceptowana mikro-race:
+          // edycja itemu w trakcie lotu upserta może zostać cofnięta do wersji z batcha
+          // (jednoosobowa aplikacja + debounce 2 s — patrz spec C.6).
+          applyRowsToCache(data || [], { skipDirty: false });
+          advanceSyncCursor(data || []); // kursor = MAX z updated_at batcha
+          setDirtyIds(getDirtyIds().filter(id => !sendIds.includes(id)));
+        }
+      }
+      if (ok && orphaned.length) setDirtyIds(getDirtyIds().filter(id => !orphaned.includes(id)));
+    }
+    if (ok) _flushFailToastShown = false;
+    else notifyFlushFail('Nie udało się zapisać do bazy — kolejka czeka, spróbuję ponownie');
+    return ok;
+  } catch (e) {
+    notifyFlushFail('Offline — zapis do bazy w kolejce, spróbuję ponownie');
+    return false;
+  } finally {
+    _flushing = false;
+    if (typeof updateSupabaseSyncUI === 'function') updateSupabaseSyncUI();
+  }
+}
+
+// Aplikowanie wierszy z bazy do cache. Itemy będące w ka_dirty_ids są POMIJANE
+// (bloker z recenzji: lokalna niezsynchronizowana edycja nigdy nie jest nadpisywana).
+function applyRowsToCache(rows, opts = {}) {
+  const skipDirty = opts.skipDirty !== false; // domyślnie pomijaj dirty
+  const dirty = new Set(skipDirty ? getDirtyIds() : []);
+  const byId = new Map(items.filter(i => i && i.id).map(i => [i.id, i]));
+  let applied = 0;
+  for (const row of rows || []) {
+    if (!row || !row.id) continue;
+    if (dirty.has(row.id)) continue;
+    const item = rowToItem(row);
+    byId.set(row.id, item);
+    _snapshotById.set(row.id, JSON.stringify(item)); // wiersz z bazy = stan zsynchronizowany
+    applied++;
+  }
+  if (applied > 0) {
+    items = Array.from(byId.values());
+    localStorage.setItem('ka_items_v2', JSON.stringify(items));
+  }
+  return applied;
+}
+
+// Sync z bazy. ŻELAZNA KOLEJNOŚĆ (bloker z recenzji): najpierw flush kolejki dirty,
+// dopiero potem pobranie i zaaplikowanie danych. Delta-first: updated_at > kursor;
+// pełny select tylko gdy cache pusty / brak kursora / ręczny "Pełny sync".
+let _syncing = false;
+async function syncFromSupabase(opts = {}) {
+  if (!sb || !sbSession) return null;
+  if (_syncing) return null;
+  _syncing = true;
+  try {
+    await flushDirty();
+    const cursor = getSyncCursor();
+    const full = !!opts.full || !cursor || items.length === 0;
+    let query = sb.from('items').select('*');
+    if (!full) query = query.gt('updated_at', cursor);
+    const { data, error } = await query;
+    if (error) {
+      if (opts.manual && typeof toast === 'function') toast('⚠️ Sync nieudany: ' + error.message);
+      return null;
+    }
+    const applied = applyRowsToCache(data || []); // dirty pomijane
+    advanceSyncCursor(data || []);
+    localStorage.setItem('ka_last_sync_done', new Date().toISOString());
+    if (applied > 0 && typeof renderItems === 'function'
+        && typeof currentScreen !== 'undefined' && currentScreen === 'items') renderItems();
+    if (typeof updateSupabaseSyncUI === 'function') updateSupabaseSyncUI();
+    if (opts.manual && typeof toast === 'function') toast(`✅ Sync OK (${full ? 'pełny' : 'delta'}: ${applied} zaktualizowanych)`);
+    return applied;
+  } catch (e) {
+    if (opts.manual && typeof toast === 'function') toast('⚠️ Sync nieudany (offline?)');
+    return null;
+  } finally { _syncing = false; }
+}
+
+// [SYNC-CORE-END]
+
+// ── Supabase Auth — ekran logowania + trwała sesja (TASK_045 B) ───────────────
+function showLoginScreen() {
+  const el = document.getElementById('login-overlay');
+  if (el) el.style.display = 'flex';
+}
+function hideLoginScreen() {
+  const el = document.getElementById('login-overlay');
+  if (el) el.style.display = 'none';
+}
+function setLoginError(msg) {
+  const el = document.getElementById('login-error');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
+}
+async function doSupabaseLogin() {
+  if (!sb) { setLoginError('Brak połączenia z biblioteką Supabase (offline?). Odśwież stronę z dostępem do sieci.'); return; }
+  const email = (document.getElementById('login-email').value || '').trim();
+  const password = document.getElementById('login-password').value || '';
+  if (!email || !password) { setLoginError('Podaj e-mail i hasło.'); return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = '⏳ Logowanie…';
+  try {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) { setLoginError('Logowanie nieudane: ' + error.message); return; }
+    setLoginError('');
+    document.getElementById('login-password').value = '';
+    // hideLoginScreen + sync wykona onAuthStateChange (SIGNED_IN)
+  } finally { btn.disabled = false; btn.textContent = 'Zaloguj'; }
+}
+async function supabaseLogout() {
+  if (!sb) return;
+  if (!confirm('Wylogować z Supabase? Dane lokalne pozostaną na urządzeniu.')) return;
+  await sb.auth.signOut(); // SIGNED_OUT → onAuthStateChange → ekran logowania
+}
+function renderSupabaseAccountStatus() {
+  const el = document.getElementById('sb-account-status');
+  if (!el) return;
+  if (!sb) { el.textContent = '⚠️ Biblioteka Supabase nie załadowana (offline?) — tylko dane lokalne.'; return; }
+  el.textContent = sbSession
+    ? '🟢 Zalogowany: ' + ((sbSession.user && sbSession.user.email) || '(brak e-mail)')
+    : '⚪ Nie zalogowany';
+}
+function updateSupabaseSyncUI() {
+  const el = document.getElementById('sb-sync-status');
+  if (!el) return;
+  const dirty = getDirtyIds().length + getDirtyDeletes().length;
+  const last = localStorage.getItem('ka_last_sync_done');
+  const sess = !sb ? '⚠️ Biblioteka Supabase niezaładowana (offline?)'
+    : (sbSession ? '🟢 Zalogowany: ' + ((sbSession.user && sbSession.user.email) || '') : '⚪ Nie zalogowany');
+  el.innerHTML = `${esc(sess)}<br>Ostatni sync: ${last ? esc(new Date(last).toLocaleString('pl-PL')) : '—'}`
+    + `<br>Kolejka zmian (dirty): <strong>${dirty}</strong>`;
+}
+function fullSyncFromSupabase() {
+  if (!confirm('Pełny sync pobierze wszystkie wiersze z bazy (nadpisze lokalne itemy spoza kolejki dirty). Kontynuować?')) return;
+  syncFromSupabase({ full: true, manual: true });
+}
+async function initAuth() {
+  if (!sb) return false; // CDN nie załadował się (offline) — pracuj lokalnie, bez ekranu logowania
+  sb.auth.onAuthStateChange((event, session) => {
+    sbSession = session;
+    if (session) hideLoginScreen(); else showLoginScreen(); // SIGNED_OUT / definitywny fail refresh → login
+    renderSupabaseAccountStatus();
+    if (typeof updateSupabaseSyncUI === 'function') updateSupabaseSyncUI();
+    if (event === 'SIGNED_IN' && typeof syncFromSupabase === 'function') syncFromSupabase();
+  });
+  const { data: { session } } = await sb.auth.getSession(); // persistSession + auto-refresh: domyślne supabase-js
+  sbSession = session;
+  if (session) hideLoginScreen(); else showLoginScreen();
+  renderSupabaseAccountStatus();
+  return !!session;
+}
 
 function genId() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
@@ -567,7 +906,7 @@ function getSettings() {
 function saveSettings(partial) {
   localStorage.setItem('ka_settings', JSON.stringify(Object.assign(getSettings(), partial)));
   localStorage.setItem('ka_settings_meta', JSON.stringify({ updatedAt: new Date().toISOString() }));
-  scheduleSave();  // wypchnij zmianę ustawień do Gist
+  // Ustawienia są lokalne per-urządzenie (sync ustawień umarł razem ze ścieżką Gist-items)
 }
 function autosaveGist() {
   const gid = (document.getElementById('gist-id-input').value || '').trim();
@@ -634,7 +973,12 @@ function toast(msg, duration = 3000, actionLabel = null, actionCallback = null) 
 function migrateItem(item) {
   const NEW_STATUSES = ['negotiating','purchased','closed','shipped_de','at_forwarder',
     'shipped_pl','received','inspecting','in_repair','in_stock','listed','sold','completed'];
-  if (NEW_STATUSES.includes(item.status) && !item.logisticStatus) return item;
+  if (NEW_STATUSES.includes(item.status) && !item.logisticStatus) {
+    // TASK_045 (dawny TASK_043/B): usuń wiszący klucz logisticStatus:null —
+    // zostawiony klucz sprawiał, że każdy start "migrował" i zapisywał w kółko.
+    delete item.logisticStatus;
+    return item;
+  }
 
   const old = item.status;
   const oldLog = item.logisticStatus;
@@ -659,7 +1003,9 @@ function migrateItem(item) {
 }
 
 function migrateAllItems() {
-  const needsMigration = items.some(i => i.logisticStatus !== undefined);
+  // Warunek na TRUTHY (nie !== undefined): logisticStatus:null nie jest powodem do
+  // migracji — stary warunek napędzał pętlę zapisu co start (TASK_045 / eks-TASK_043 B).
+  const needsMigration = items.some(i => i.logisticStatus);
   if (!needsMigration) return;
   items = items.map(migrateItem);
   saveItems();
@@ -904,6 +1250,7 @@ function initSettingsScreen() {
   const gi = document.getElementById('gist-id-input');     if (gi) gi.value = getGistId();
   const gt = document.getElementById('gist-token-input');  if (gt) gt.value = getGistToken();
   updateGistStatus();
+  renderSupabaseAccountStatus();
   const s = getSettings();
   const exEl = document.getElementById('setting-exchange');   if (exEl) exEl.value = s.exchangeRate;
   const fwEl = document.getElementById('setting-forwarding'); if (fwEl) fwEl.value = s.forwardingPL;
@@ -950,19 +1297,17 @@ function loadItems() {
         if (!it.revisionAt) it.revisionAt = it.updatedAt || it.createdAt || '1970-01-01T00:00:00.000Z';
         return it;
       });
+      resetSyncSnapshot(items); // baseline — załadowany stan nie jest "zmianą" do wysłania
       return;
     }
   } catch {}
   // First run — start with empty list
   items = [];
+  resetSyncSnapshot(items);
   saveItems();
 }
 function saveItems() {
-  // Purge: usuń fizycznie itemy soft-deleted > 30 dni temu
-  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  items = items.filter(i => !i.deletedAt || i.deletedAt > cutoff);
-  localStorage.setItem('ka_items_v2', JSON.stringify(items));
-  scheduleSave();
+  saveItemsCore(); // purge + localStorage + kolejka dirty + debounce flush (sekcja SYNC-CORE)
 }
 function bumpRevision(item) {
   item.revisionAt = new Date().toISOString();
@@ -1510,7 +1855,7 @@ function showScreen(name) {
   backBtn.style.display = 'block';
   sub.style.display = 'none';
   if (name === 'archive') { globalHeader.style.display = 'none'; renderArchive(); return; }
-  if (name === 'sync') { title.textContent = '🔄 Synchronizacja'; renderSyncOverview(); initSyncStatusRow(); }
+  if (name === 'sync') { title.textContent = '🔄 Synchronizacja'; renderSyncOverview(); updateSupabaseSyncUI(); }
   else if (name === 'settings') { title.textContent = '⚙️ Ustawienia'; initSettingsScreen(); }
   else if (name === 'item') {
     const cur = getItem(currentId);
@@ -2519,11 +2864,6 @@ function applyPatch() {
 let _scanPollTimer = null;
 let _scanMode = 'days';
 
-// ── GistSync globals ──────────────────────────────────────────────────────────
-let _saveTimeout  = null;
-let _lastSyncHash = null;
-const GIST_DATA_FILE = 'ka-data.json';
-
 const GH_OWNER    = 'dud3k';
 const GH_REPO     = 'ka-scraper';
 const GH_WORKFLOW = 'scrape.yml';
@@ -2688,8 +3028,8 @@ function renderScanStatus(status) {
   if (resetBtn) resetBtn.style.display = running ? 'inline-block' : 'none';
   if (status.phase === 'done') {
     clearInterval(_scanPollTimer); _scanPollTimer = null;
-    toast('✅ Skan gotowy — importuję patch...');
-    importPatchFromGist(true); // autoImport=true: no confirm dialog
+    toast('✅ Skan gotowy — synchronizuję z bazą...');
+    syncFromSupabase(); // wyniki skanu trafiają do Supabase (etap C, TASK_046) — pobierz deltę
   }
 }
 
@@ -2709,273 +3049,11 @@ async function resetScanStatus() {
   } catch (err) { toast('❌ ' + err.message); }
 }
 
-// ── GistSync — dwukierunkowy sync App ↔ Gist ─────────────────────────────────
-
-async function forcePushToGist() {
-  _lastSyncHash = null; // reset hash so saveToGist doesn't skip
-  const ok = await saveToGist(items);
-  if (ok) toast('⬆️ Lokalne dane wypchnięte do Gist');
-}
-
-function pushToGistConfirm() {
-  if (confirm('Nadpisać dane w Gist danymi lokalnymi?')) forcePushToGist();
-}
-
 function switchPatchPane(btn) {
   document.querySelectorAll('.seg-btn').forEach(b => { b.style.background = 'var(--white)'; b.style.color = 'var(--muted)'; });
   btn.style.background = 'var(--ac)'; btn.style.color = '#fff';
   document.querySelectorAll('.patch-pane').forEach(p => { p.hidden = true; });
   document.getElementById('patch-' + btn.dataset.mode + '-pane').hidden = false;
-}
-
-function initSyncStatusRow() {
-  const dot = document.getElementById('sync-status-dot');
-  const lbl = document.getElementById('sync-status-label');
-  if (!dot || !lbl) return;
-  const gid = getGistId();
-  const tok = getGistToken();
-  if (!gid || !tok) {
-    dot.style.color = '#475569'; lbl.textContent = 'Brak konfiguracji Gist';
-    return;
-  }
-  const verified = localStorage.getItem('ka_gist_verified') === '1';
-  if (verified) {
-    dot.style.color = '#27ae60'; lbl.textContent = 'Skonfigurowany';
-  } else {
-    dot.style.color = '#e67e22'; lbl.textContent = 'Nie zweryfikowany';
-  }
-  updateSyncTs(JSON.parse(localStorage.getItem('ka_items_meta') || '{}').lastSavedAt || null);
-}
-
-function initSyncBtn() { /* removed — sync moved to screen-sync D1 */ }
-
-function updateSyncTs(isoStr) {
-  const el = document.getElementById('sync-ts');
-  const elLabel = document.getElementById('sync-ts-label');
-  if (!isoStr) {
-    if (el) el.textContent = '';
-    if (elLabel) elLabel.textContent = '';
-    return;
-  }
-  const d = new Date(isoStr);
-  const hhmm = d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
-  const ddmm = d.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' });
-  const text = `${hhmm} ${ddmm}`;
-  const titleText = `Ostatni sync: ${d.toLocaleString('pl-PL')}`;
-  if (el) { el.textContent = text; el.title = titleText; }
-  if (elLabel) { elLabel.textContent = text; elLabel.title = titleText; }
-}
-
-function setSyncIcon(state) { /* sync icon removed from header — state reflected in screen-sync */ }
-
-function mergeItems(localItems, remoteItems) {
-  // Klucz merge: conversationUrl (stabilny między urządzeniami), fallback na id
-  // Child items z bundle split dziedziczą conversationUrl parenta — używaj id aby uniknąć kolizji
-  function mergeKey(item) {
-    if (item.parentItemId) return item.id;
-    return item.conversationUrl || item.id;
-  }
-
-  const localMap  = new Map();
-  const remoteMap = new Map();
-  localItems.forEach(i  => localMap.set(mergeKey(i), i));
-  remoteItems.forEach(i => remoteMap.set(mergeKey(i), i));
-
-  const merged = new Map();
-
-  // 1. Wszystkie lokalne itemy
-  for (const [key, local] of localMap) {
-    const remote = remoteMap.get(key);
-    if (!remote) {
-      // Istnieje tylko lokalnie — zachowaj
-      merged.set(key, local);
-    } else {
-      // LWW po revisionAt (czas edycji), nie updatedAt (= data ostatniej wiad.) — patrz TASK_041 Filar 3
-      const localTime  = new Date(local.revisionAt  || local.updatedAt  || 0).getTime();
-      const remoteTime = new Date(remote.revisionAt || remote.updatedAt || 0).getTime();
-      merged.set(key, remoteTime > localTime ? remote : local);
-    }
-  }
-
-  // 2. Itemy tylko w remote (nowe z drugiego urządzenia)
-  for (const [key, remote] of remoteMap) {
-    if (!merged.has(key)) {
-      merged.set(key, remote);
-    }
-  }
-
-  return Array.from(merged.values());
-}
-
-async function saveToGist(itemsToSave) {
-  const gistId = getGistId();
-  const token  = getGistToken();
-  if (!gistId || !token) { setSyncIcon('unconfigured'); return false; }
-  setSyncIcon('saving');
-
-  try {
-    // 1. Read: pobierz aktualny stan Gist
-    let mergedItems = itemsToSave;
-    const getRes = await fetch(`https://api.github.com/gists/${gistId}`, {
-      headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'KA-Asystent' }
-    });
-    if (getRes.ok) {
-      const gist = await getRes.json();
-      const file = gist.files?.[GIST_DATA_FILE];
-      if (file?.content) {
-        const remote = JSON.parse(file.content);
-        if (remote.items && remote.items.length > 0) {
-          // 2. Merge: połącz lokalne z remote
-          mergedItems = mergeItems(itemsToSave, remote.items);
-        }
-      }
-    }
-    // Jeśli GET nie zadziałał (offline, 404) — zapisz lokalne bez merge
-
-    // 3. Write: zapisz zmergowany wynik
-    const settings = getSettings();
-    const settingsMeta = JSON.parse(localStorage.getItem('ka_settings_meta') || '{}');
-    const payload = {
-      lastSavedAt: new Date().toISOString(),
-      items: mergedItems,
-      settings: settings,
-      settingsUpdatedAt: settingsMeta.updatedAt || new Date().toISOString()
-    };
-    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'User-Agent': 'KA-Asystent' },
-      body: JSON.stringify({ files: { [GIST_DATA_FILE]: { content: JSON.stringify(payload) } } })
-    });
-    if (res.status === 401) { toast('⚠️ Token wygasł — wpisz nowy w ⚙️'); setSyncIcon('error'); return false; }
-    if (res.status === 404) { toast('⚠️ Gist nie znaleziony — sprawdź Gist ID'); setSyncIcon('error'); return false; }
-    if (!res.ok) { toast(`⚠️ Błąd zapisu Gist: ${res.status}`); setSyncIcon('error'); return false; }
-
-    // Zaktualizuj lokalne dane zmergowanym wynikiem
-    items = mergedItems;
-    localStorage.setItem('ka_items_v2', JSON.stringify(items));
-    localStorage.setItem('ka_items_meta', JSON.stringify({ lastSavedAt: payload.lastSavedAt }));
-    setSyncIcon('ok');
-    updateSyncTs(payload.lastSavedAt);
-    return true;
-  } catch {
-    setSyncIcon('offline');
-    toast('⚠️ Offline — dane lokalne');
-    return false;
-  }
-}
-
-function scheduleSave() {
-  if (!getGistId() || !getGistToken()) return;
-  const hash = items.map(i => (i.id || '') + ':' + (i.updatedAt || '') + ':' + (i.deletedAt || '')).sort().join('|');
-  if (hash === _lastSyncHash) return;
-  clearTimeout(_saveTimeout);
-  _saveTimeout = setTimeout(async () => {
-    const ok = await saveToGist(items);
-    if (ok) _lastSyncHash = hash;
-  }, 3000);
-}
-
-let _lastGistUpdatedAt = null; // Gist-level updated_at — do wykrywania zmian bez parsowania JSON
-
-async function checkPendingPatch() {
-  const gistId = getGistId();
-  const token  = getGistToken();
-  if (!gistId || !token) return;
-  try {
-    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
-      headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'KA-Asystent' }
-    });
-    if (!res.ok) return;
-    const gist = await res.json();
-    const patchFile = gist.files && gist.files['ka-patch.json'];
-    if (patchFile && patchFile.content) {
-      toast('📦 Znaleziono patch z ostatniego skanu — importuję...', 3000);
-      await importPatchFromGist(true);
-    }
-  } catch (_) {
-    // cicho — nie blokuj startu aplikacji
-  }
-}
-
-async function loadFromGist(silent = false) {
-  const gistId = getGistId();
-  const token  = getGistToken();
-  if (!gistId || !token) { setSyncIcon('unconfigured'); return; }
-  if (!silent) setSyncIcon('saving');
-  try {
-    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
-      headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'KA-Asystent' }
-    });
-    if (!res.ok) { if (!silent) setSyncIcon('error'); return; }
-    const gist = await res.json();
-
-    // Zapisz Gist-level updated_at (używane przez auto-poll do szybkiego sprawdzenia czy coś się zmieniło)
-    _lastGistUpdatedAt = gist.updated_at;
-
-    const file = gist.files?.[GIST_DATA_FILE];
-    if (!file?.content) {
-      // ka-data.json nie istnieje w Gist — wypchnij lokalne dane (inicjalizacja)
-      await saveToGist(items);
-      return;
-    }
-    const remote = JSON.parse(file.content);
-    const localMeta     = JSON.parse(localStorage.getItem('ka_items_meta') || '{}');
-    const localSavedAt  = localMeta.lastSavedAt || null;
-    const remoteSavedAt = remote.lastSavedAt || null;
-    if (remote.items && remote.items.length > 0) {
-      const remoteItems = remote.items || [];
-      const before = items.length;
-      items = mergeItems(items, remoteItems);
-      localStorage.setItem('ka_items_v2', JSON.stringify(items));
-      localStorage.setItem('ka_items_meta', JSON.stringify({ lastSavedAt: remoteSavedAt }));
-      _lastSyncHash = null;
-      migrateAllItems();
-      renderKanban();
-      updateSyncTs(remoteSavedAt);
-      // Sync ustawień — remote wygrywa jeśli nowsze
-      if (remote.settings && remote.settingsUpdatedAt) {
-        const localSettingsMeta = JSON.parse(localStorage.getItem('ka_settings_meta') || '{}');
-        if (!localSettingsMeta.updatedAt || remote.settingsUpdatedAt > localSettingsMeta.updatedAt) {
-          localStorage.setItem('ka_settings', JSON.stringify(remote.settings));
-          localStorage.setItem('ka_settings_meta', JSON.stringify({ updatedAt: remote.settingsUpdatedAt }));
-        }
-      }
-      const diff = items.length - before;
-      if (!silent) toast(`✅ Sync OK (${items.length} itemów${diff > 0 ? ', +' + diff + ' nowych' : ''})`);
-      else         toast(`🔄 Sync (${items.length} itemów${diff > 0 ? ', +' + diff + ' nowych' : ''})`, 2000);
-    } else {
-      // Dane lokalne aktualne — pokaż timestamp z meta
-      updateSyncTs(localSavedAt);
-    }
-    setSyncIcon('ok');
-  } catch {
-    setSyncIcon('offline');
-    if (!silent) toast('⚠️ Offline — dane lokalne');
-  }
-}
-
-// Auto-poll: sprawdza Gist co 60s, pobiera dane tylko gdy updated_at się zmieniło
-let _autoPollTimer = null;
-async function autoPollGist() {
-  const gistId = getGistId();
-  const token  = getGistToken();
-  if (!gistId || !token) return;
-  try {
-    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
-      headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'KA-Asystent' }
-    });
-    if (!res.ok) return;
-    const gist = await res.json();
-    if (gist.updated_at && gist.updated_at !== _lastGistUpdatedAt) {
-      // Gist się zmienił — załaduj w tle (silent=true, bez toastu "zapisano" ale z "zaktualizowano")
-      await loadFromGist(true);
-    }
-  } catch { /* brak internetu — ignoruj, spróbuje za 60s */ }
-}
-
-function startAutoPoll() {
-  if (_autoPollTimer) return;
-  _autoPollTimer = setInterval(autoPollGist, 60000); // co 60 sekund
 }
 
 // ── Gist Import ───────────────────────────────────────────────────────────────
@@ -3008,71 +3086,6 @@ function updateGistStatus() {
   const verified = JSON.parse(localStorage.getItem('ka_gist_verified') || 'null');
   if (verified) { setGistStatusEl('ok', `🟢 Połączony — @${verified.login} · pliki: ${verified.files}`); return; }
   setGistStatusEl('ok', `🟢 Token skonfigurowany · Gist: ${id.slice(0, 8)}…  (kliknij Zapisz żeby zweryfikować)`);
-}
-
-async function importPatchFromGist(autoImport = false) {
-  const gistId = getGistId();
-  if (!gistId) {
-    if (!autoImport) alert('Brak GIST_ID — podaj go w ustawieniach (⚙️).');
-    return;
-  }
-  const reportEl = document.getElementById('gist-import-report');
-  if (reportEl) reportEl.innerHTML = '<div class="sync-report">⏳ Pobieranie patcha z Gist...</div>';
-  try {
-    const token = getGistToken();
-    const headers = { 'User-Agent': 'KA-Asystent' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const resp = await fetch(`https://api.github.com/gists/${gistId}`, { headers });
-    if (!resp.ok) throw new Error(`GitHub API: HTTP ${resp.status}`);
-
-    const gist = await resp.json();
-    const patchFile = gist.files && gist.files['ka-patch.json'];
-    if (!patchFile || !patchFile.content) {
-      if (reportEl) reportEl.innerHTML = '<div class="sync-report">⚠️ Brak ka-patch.json w Gist. Może nie ma nowego patcha?</div>';
-      return;
-    }
-
-    const result = parsePatch(patchFile.content);
-    if (!result.ok) {
-      if (reportEl) reportEl.innerHTML = `<div class="sync-report error">❌ Błąd parsowania patcha: ${esc(result.error)}</div>`;
-      return;
-    }
-
-    const updates = (result.patch.updates || []).length;
-    const newItems = (result.patch.newItems || []).length;
-    if (!autoImport && !confirm(`Importuj patch z Gist?\n\n${updates} aktualizacji\n${newItems} nowych pozycji`)) {
-      if (reportEl) reportEl.innerHTML = '';
-      return;
-    }
-
-    const strictMode = document.getElementById('strict-mode-cb')?.checked || false;
-    const report = executePatch(result.patch, false, strictMode);
-    if (!autoImport) renderPatchReport(report, false);
-    renderSyncOverview();
-
-    const msg = `${report.updated.length} zaktualizowanych, ${report.created.length} nowych`;
-    if (autoImport) toast(`✅ Patch zaimportowany automatycznie (${msg})`);
-
-    // Delete ka-patch.json from Gist after successful import
-    if (token && (report.updated.length > 0 || report.created.length > 0)) {
-      try {
-        await fetch(`https://api.github.com/gists/${gistId}`, {
-          method: 'PATCH',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ files: { 'ka-patch.json': null } })
-        });
-        if (reportEl) reportEl.innerHTML = '<div class="sync-report">✅ Patch zaimportowany i usunięty z Gist.</div>';
-      } catch (_) {
-        if (reportEl) reportEl.innerHTML = '<div class="sync-report">⚠️ Patch zaimportowany, ale nie udało się usunąć z Gist.</div>';
-      }
-    } else if (!token) {
-      if (reportEl) reportEl.innerHTML = '<div class="sync-report">✅ Patch zaimportowany. (Dodaj token GitHub w ⚙️ żeby auto-usuwać patch z Gist.)</div>';
-    }
-  } catch (err) {
-    if (reportEl) reportEl.innerHTML = `<div class="sync-report error">❌ Błąd: ${esc(err.message)}</div>`;
-    else toast(`❌ Auto-import nieudany: ${err.message}`);
-  }
 }
 
 // ── End Sync ─────────────────────────────────────────────────────────────────
@@ -3867,7 +3880,7 @@ Zasady:
     if (ptrTriggered) {
       ptrEl.textContent = '↺ Odświeżanie…';
       ptrEl.style.top = '8px';
-      try { await loadFromGist(); }
+      try { await syncFromSupabase({ manual: true }); }
       finally { hidePtr(); }
     }
     ptrStartY = null; ptrTriggered = false;
@@ -3881,14 +3894,17 @@ if (localStorage.getItem('ka_apikey')) {
   localStorage.removeItem('ka_apikey');
   toast('🔑 Klucz API Anthropic został usunięty — funkcje AI wyłączone w v3.0.');
 }
-showScreen('items');
-initSyncBtn();
-// Pokaż timestamp z poprzedniej sesji od razu przy starcie
-updateSyncTs(JSON.parse(localStorage.getItem('ka_items_meta') || '{}').lastSavedAt || null);
-loadFromGist().then(() => {
-  checkPendingPatch(); // sprawdz czy ka-patch.json czeka w Gist (np. cron nocny)
+showScreen('items');           // offline-first: render z localStorage, bez czekania na sieć
+initAuth().then(hasSession => {           // sesja Supabase w tle; brak sesji → ekran logowania
+  if (hasSession) syncFromSupabase();     // pierwszy sync po starcie (flush dirty → delta/pełny)
 });
-startAutoPoll(); // auto-poll co 60s — wykrywa zmiany z innych urządzeń
+setInterval(() => syncFromSupabase(), 60000);   // poll delty co 60 s (realtime NIE w tym tasku)
+// Wymuszony flush przy chowaniu karty — ucieczka danych zanim system ubije kartę (spec C.6)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') flushDirty();
+});
+// Flush przy odzyskaniu sieci (twardy wymóg 2 — edycja offline nie ginie)
+window.addEventListener('online', () => { flushDirty(); });
 </script>
 </body>
 </html>
