@@ -628,6 +628,44 @@ function markDirty(ids) { setDirtyIds(getDirtyIds().concat(ids)); }
 function getDirtyDeletes() { try { return JSON.parse(localStorage.getItem('ka_dirty_deletes') || '[]'); } catch { return []; } }
 function setDirtyDeletes(ids) { localStorage.setItem('ka_dirty_deletes', JSON.stringify(Array.from(new Set(ids)))); }
 function getSyncCursor() { return localStorage.getItem('ka_last_sync_at') || null; }
+
+// ── TASK_060 Część C.1: trwała bazówka dirty (przeżywa restart aplikacji) ────
+// _snapshotById żyje wyłącznie w pamięci i przy starcie aplikacji jest ustawiany
+// na BIEŻĄCĄ (już edytowaną) zawartość localStorage — nie nadaje się jako punkt
+// odniesienia do diffu przy scalaniu w flushDirty. ka_dirty_base w localStorage
+// to jedyny trwały ślad "jaka była wersja itemu, zanim urządzenie zaczęło go
+// edytować" — bez niego diff po restarcie wychodzi pusty i scalenie po cichu
+// gubi lokalną zmianę (dokładnie tak zaczął się incydent 2026-08-28).
+function getDirtyBaseMap() { try { return JSON.parse(localStorage.getItem('ka_dirty_base') || '{}'); } catch { return {}; } }
+function setDirtyBaseMap(map) { localStorage.setItem('ka_dirty_base', JSON.stringify(map)); }
+function getDirtyBase(id) {
+  const map = getDirtyBaseMap();
+  return Object.prototype.hasOwnProperty.call(map, id) ? map[id] : null;
+}
+// Zapis WYŁĄCZNIE przy przejściu clean → dirty; jeśli wpis już istnieje — nie ruszaj
+// go (pierwsza edycja wyznacza bazę, kolejne edycje przed flushem nie nadpisują jej).
+function setDirtyBaseIfAbsent(id, item) {
+  const map = getDirtyBaseMap();
+  if (Object.prototype.hasOwnProperty.call(map, id)) return;
+  map[id] = item;
+  setDirtyBaseMap(map);
+}
+function clearDirtyBase(id) {
+  const map = getDirtyBaseMap();
+  if (Object.prototype.hasOwnProperty.call(map, id)) { delete map[id]; setDirtyBaseMap(map); }
+}
+
+// ── TASK_060 Część C.1 pkt 3: kopia konfliktu (fallback bez bazówki) ─────────
+function getConflictBackupMap() { try { return JSON.parse(localStorage.getItem('ka_conflict_backup') || '{}'); } catch { return {}; } }
+function setConflictBackup(id, item) {
+  const map = getConflictBackupMap();
+  map[id] = item;
+  localStorage.setItem('ka_conflict_backup', JSON.stringify(map));
+}
+function getConflictBackup(id) {
+  const map = getConflictBackupMap();
+  return Object.prototype.hasOwnProperty.call(map, id) ? map[id] : null;
+}
 // Kursor = MAX z updated_at widzianych wierszy (uwaga z recenzji: trigger nadaje
 // każdemu rekordowi paczki minimalnie inny timestamp — dlatego MAX po batchu).
 function advanceSyncCursor(rows) {
@@ -655,16 +693,24 @@ function saveItemsCore() {
     items = items.filter(i => !i.deletedAt || i.deletedAt > cutoff);
     setDirtyDeletes(getDirtyDeletes().concat(purgedIds));
     setDirtyIds(getDirtyIds().filter(id => !purgedIds.includes(id)));
-    purgedIds.forEach(id => _snapshotById.delete(id));
+    purgedIds.forEach(id => { _snapshotById.delete(id); clearDirtyBase(id); });
   }
   // 2. Cache lokalny natychmiast
   localStorage.setItem('ka_items_v2', JSON.stringify(items));
-  // 3. Zmienione itemy → kolejka dirty
+  // 3. Zmienione itemy → kolejka dirty. C.1: przy KAŻDEJ zmianie próbujemy zapisać
+  //    bazówkę (wersję sprzed TEJ edycji) do ka_dirty_base — setDirtyBaseIfAbsent
+  //    jest no-opem, jeśli wpis już istnieje, więc druga i kolejne edycje przed
+  //    flushem nie nadpisują bazy ustalonej przy pierwszej.
   const changed = [];
   for (const it of items) {
     if (!it || !it.id) continue;
     const s = JSON.stringify(it);
-    if (_snapshotById.get(it.id) !== s) { changed.push(it.id); _snapshotById.set(it.id, s); }
+    const prev = _snapshotById.get(it.id);
+    if (prev !== s) {
+      changed.push(it.id);
+      if (prev !== undefined) setDirtyBaseIfAbsent(it.id, JSON.parse(prev));
+      _snapshotById.set(it.id, s);
+    }
   }
   if (changed.length) markDirty(changed);
   // 4. Debounce 2 s → upsert do Supabase
@@ -706,27 +752,100 @@ async function flushDirty() {
     }
     if (sendIds.length) {
       const toSend = items.filter(i => sendIds.includes(i.id));
-      const rows = toSend.map(itemToRow).filter(Boolean).map(r => {
-        const c = { ...r };
-        delete c.updated_at; // updated_at ustawia WYŁĄCZNIE trigger bazy (autorytatywny)
-        return c;
-      });
-      // dirty-id bez itemu w cache (np. dane wyczyszczone ręcznie) — zdejmij z kolejki
-      const orphaned = sendIds.filter(id => !toSend.some(i => i.id === id));
-      if (rows.length) {
-        const { data, error } = await sb.from('items').upsert(rows, { onConflict: 'id' }).select();
-        if (error) ok = false;
-        else {
-          // Zwrócone wiersze (autorytatywny updated_at z triggera) → z powrotem do cache.
-          // skipDirty:false — to NASZ świeżo zapisany batch. Akceptowana mikro-race:
-          // edycja itemu w trakcie lotu upserta może zostać cofnięta do wersji z batcha
-          // (jednoosobowa aplikacja + debounce 2 s — patrz spec C.6).
-          applyRowsToCache(data || [], { skipDirty: false });
-          advanceSyncCursor(data || []); // kursor = MAX z updated_at batcha
-          setDirtyIds(getDirtyIds().filter(id => !sendIds.includes(id)));
+      const stripRow = (r) => { const c = { ...r }; delete c.updated_at; return c; }; // updated_at ustawia WYŁĄCZNIE trigger bazy
+
+      // TASK_060 Część C: strażnik wersji. Jeden round-trip po CAŁE wiersze (nie
+      // samo updated_at) — pula jednorazowo wysyłanych itemów jest znikoma, a przy
+      // konflikcie i tak potrzebny jest pełny wiersz do scalenia (uwaga z recenzji TYP A).
+      const { data: baseRows, error: verError } = await sb.from('items').select('*').in('id', sendIds);
+      if (verError) {
+        ok = false;
+      } else {
+        const baseById = new Map((baseRows || []).filter(r => r && r.id).map(r => [r.id, r]));
+        const rows = [];
+        const conflictIds = [];
+        const conflictFieldsById = {};
+        const fallbackIds = [];
+        for (const item of toSend) {
+          const dbRow = baseById.get(item.id);
+          if (!dbRow) {
+            // Punkt 5: itemu nie ma jeszcze w bazie → zapis normalny (nowa pozycja).
+            const row = itemToRow(item);
+            if (row) rows.push(stripRow(row));
+            continue;
+          }
+          const base = getDirtyBase(item.id);
+          if (!base || !base.updatedAt) {
+            // C.1 pkt 3 — brak wiarygodnej bazówki (localStorage wyczyszczony, item
+            // dirty sprzed tej zmiany...): NIE zgadujemy w żadną stronę. Baza wygrywa,
+            // pełna lokalna wersja → ka_conflict_backup, zapis WSTRZYMANY, id zdjęte
+            // z kolejki (żeby nie kręcić pętli retry).
+            fallbackIds.push(item.id);
+            setConflictBackup(item.id, item);
+            applyRowsToCache([dbRow], { skipDirty: false }); // cache <- baza (czyści też ewentualną bazówkę)
+            continue;
+          }
+          if (!dbRow.updated_at || dbRow.updated_at <= base.updatedAt) {
+            // Baza nie jest nowsza niż bazówka → zapis jak dotąd, bez scalania.
+            const row = itemToRow(item);
+            if (row) rows.push(stripRow(row));
+            continue;
+          }
+          // Baza nowsza → SCAL, nie nadpisuj: wiersz z bazy + WYŁĄCZNIE pola różniące
+          // się między lokalnym itemem a jego wersją bazową (diff per-pole, płytki
+          // po kluczach itemu).
+          const diffKeys = Object.keys(item).filter(k => JSON.stringify(item[k]) !== JSON.stringify(base[k]));
+          const merged = rowToItem(dbRow);
+          for (const k of diffKeys) merged[k] = item[k];
+          merged.id = item.id;
+          const row = itemToRow(merged);
+          if (row) rows.push(stripRow(row));
+          conflictIds.push(item.id);
+          conflictFieldsById[item.id] = diffKeys;
         }
+
+        if (fallbackIds.length) {
+          setDirtyIds(getDirtyIds().filter(id => !fallbackIds.includes(id)));
+          fallbackIds.forEach(id => clearDirtyBase(id));
+          fallbackIds.forEach(id => {
+            const it = toSend.find(i => i.id === id);
+            const title = (it && it.title) || id;
+            if (typeof toast === 'function') toast(`⚠️ Nie mogłem scalić „${title}" — wersja z bazy wygrała, Twoja kopia jest w kopii konfliktu`);
+          });
+          console.warn('[sync] konflikt bez bazówki — baza wygrała, lokalna kopia w ka_conflict_backup:', fallbackIds);
+          // Uwaga z recenzji TYP B: fallback nadpisał cache wierszem z bazy po cichu —
+          // bez odświeżenia lista/kanban pokazywałyby stare dane do najbliższego pollu.
+          if (typeof renderItems === 'function') renderItems();
+        }
+
+        // dirty-id bez itemu w cache (np. dane wyczyszczone ręcznie) — zdejmij z kolejki
+        const orphaned = sendIds.filter(id => !toSend.some(i => i.id === id));
+        if (rows.length) {
+          const { data, error } = await sb.from('items').upsert(rows, { onConflict: 'id' }).select();
+          if (error) ok = false;
+          else {
+            // Zwrócone wiersze (autorytatywny updated_at z triggera) → z powrotem do cache.
+            // skipDirty:false — to NASZ świeżo zapisany batch. Akceptowana mikro-race:
+            // edycja itemu w trakcie lotu upserta może zostać cofnięta do wersji z batcha
+            // (jednoosobowa aplikacja + debounce 2 s — patrz spec C.6).
+            // TASK_060 Część A: kursor NIE jest przesuwany tu — patrz komentarz przy advanceCursorSafely.
+            applyRowsToCache(data || [], { skipDirty: false });
+            const sentIds = rows.map(r => r.id);
+            setDirtyIds(getDirtyIds().filter(id => !sentIds.includes(id)));
+            sentIds.forEach(id => clearDirtyBase(id));
+            if (conflictIds.length) {
+              // Część E: cisza jest tu głównym wrogiem — incydent trwał tydzień, bo nic nie krzyknęło.
+              if (typeof toast === 'function') toast(`⚠️ Baza miała nowszą wersję (${conflictIds.length}) — scalono zmiany lokalne`);
+              console.warn('[sync] scalono konflikty wersji:', conflictIds.map(id => ({ id, fields: conflictFieldsById[id] })));
+              // Uwaga z recenzji TYP B: scalenie mogło zmienić pola, których użytkownik
+              // jeszcze nie widział (status/cena/wiadomości z bazy) — odśwież od razu,
+              // nie czekaj do najbliższego pollu.
+              if (typeof renderItems === 'function') renderItems();
+            }
+          }
+        }
+        if (ok && orphaned.length) setDirtyIds(getDirtyIds().filter(id => !orphaned.includes(id)));
       }
-      if (ok && orphaned.length) setDirtyIds(getDirtyIds().filter(id => !orphaned.includes(id)));
     }
     if (ok) _flushFailToastShown = false;
     else notifyFlushFail('Nie udało się zapisać do bazy — kolejka czeka, spróbuję ponownie');
@@ -742,24 +861,43 @@ async function flushDirty() {
 
 // Aplikowanie wierszy z bazy do cache. Itemy będące w ka_dirty_ids są POMIJANE
 // (bloker z recenzji: lokalna niezsynchronizowana edycja nigdy nie jest nadpisywana).
+// TASK_060 Część B: zwraca też appliedRows/skippedRows (nie tylko applied jako liczbę) —
+// syncFromSupabase potrzebuje ich do bezpiecznego przesunięcia kursora (pominięty dirty
+// wiersz nie może wypaść z okna delty, patrz advanceCursorSafely niżej).
 function applyRowsToCache(rows, opts = {}) {
   const skipDirty = opts.skipDirty !== false; // domyślnie pomijaj dirty
   const dirty = new Set(skipDirty ? getDirtyIds() : []);
   const byId = new Map(items.filter(i => i && i.id).map(i => [i.id, i]));
-  let applied = 0;
+  const appliedRows = [];
+  const skippedRows = [];
   for (const row of rows || []) {
     if (!row || !row.id) continue;
-    if (dirty.has(row.id)) continue;
+    if (dirty.has(row.id)) { skippedRows.push(row); continue; }
     const item = rowToItem(row);
     byId.set(row.id, item);
     _snapshotById.set(row.id, JSON.stringify(item)); // wiersz z bazy = stan zsynchronizowany
-    applied++;
+    clearDirtyBase(row.id); // C.1: wiersz przyjęty z bazy — ewentualna bazówka dirty nieaktualna
+    appliedRows.push(row);
   }
-  if (applied > 0) {
+  if (appliedRows.length > 0) {
     items = Array.from(byId.values());
     localStorage.setItem('ka_items_v2', JSON.stringify(items));
   }
-  return applied;
+  return { applied: appliedRows.length, appliedRows, skippedRows };
+}
+
+// TASK_060 Część B: kursor = najwyższy updated_at taki, że WSZYSTKIE wiersze o
+// updated_at <= kursor zostały zaaplikowane. Gdy nic nie pominięto — MAX z całego
+// batcha (zachowanie bez zmian). Gdy coś pominięto (dirty) — tylko zaaplikowane
+// wiersze starsze niż najstarszy pominięty; inaczej pominięty wiersz wypadłby
+// z okna delty na zawsze (skutek uboczny naprawiony tu, nie sama zasada
+// "dirty nigdy nie jest nadpisywany z bazy").
+function advanceCursorSafely(appliedRows, skippedRows) {
+  if (!skippedRows || !skippedRows.length) { advanceSyncCursor(appliedRows); return; }
+  const skippedMin = skippedRows.map(r => r && r.updated_at).filter(Boolean).sort()[0];
+  if (!skippedMin) { advanceSyncCursor(appliedRows); return; }
+  const safeRows = (appliedRows || []).filter(r => r && r.updated_at && r.updated_at < skippedMin);
+  advanceSyncCursor(safeRows);
 }
 
 // Sync z bazy. ŻELAZNA KOLEJNOŚĆ (bloker z recenzji): najpierw flush kolejki dirty,
@@ -773,7 +911,11 @@ async function syncFromSupabase(opts = {}) {
   try {
     await flushDirty();
     const cursor = getSyncCursor();
-    const full = !!opts.full || !cursor || items.length === 0;
+    // TASK_060 Część D: kursor starszy niż 24h wymusza pełny sync. Tani bezpiecznik
+    // dokładnie dla scenariusza z incydentu 2026-08-28 ("odpaliłem apkę po tygodniowej
+    // przerwie") — po dłuższej nieobecności nie ufamy kursorowi, pobieramy wszystko.
+    const cursorStale = !!cursor && (Date.now() - new Date(cursor).getTime() > 24 * 60 * 60 * 1000);
+    const full = !!opts.full || !cursor || items.length === 0 || cursorStale;
     let query = sb.from('items').select('*');
     if (!full) query = query.gt('updated_at', cursor);
     const { data, error } = await query;
@@ -781,8 +923,8 @@ async function syncFromSupabase(opts = {}) {
       if (opts.manual && typeof toast === 'function') toast('⚠️ Sync nieudany: ' + error.message);
       return null;
     }
-    const applied = applyRowsToCache(data || []); // dirty pomijane
-    advanceSyncCursor(data || []);
+    const { applied, appliedRows, skippedRows } = applyRowsToCache(data || []); // dirty pomijane
+    advanceCursorSafely(appliedRows, skippedRows); // Część B: nie przeskocz pominiętego dirty
     localStorage.setItem('ka_last_sync_done', new Date().toISOString());
     if (applied > 0 && typeof renderItems === 'function'
         && typeof currentScreen !== 'undefined' && currentScreen === 'items') renderItems();
